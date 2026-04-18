@@ -4,13 +4,15 @@ const teamCountEl = document.getElementById('teamCount');
 const yearRangeEl = document.getElementById('yearRange');
 const cellCountEl = document.getElementById('cellCount');
 const timelineWrap = document.getElementById('timelineWrap');
+const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
+
+restoreSavedTimeline();
 
 fileInput.addEventListener('change', async (event) => {
   const [file] = event.target.files || [];
   if (!file) return;
 
   setStatus(`Loading ${file.name}...`, 'info');
-  resetStats();
 
   try {
     const text = await readLeagueFile(file);
@@ -18,13 +20,21 @@ fileInput.addEventListener('change', async (event) => {
     const timeline = buildTimelineData(league);
     renderTimeline(timeline);
     updateStats(timeline);
+    persistTimeline(file.name, timeline);
     setStatus(`Loaded ${file.name}.`, 'info');
   } catch (error) {
     console.error(error);
-    timelineWrap.className = 'timeline-wrap empty-state';
-    timelineWrap.innerHTML = '<div class="empty-copy"><p>Could not load that league file.</p></div>';
-    resetStats();
-    setStatus(error.message || 'Could not parse league file.', 'error');
+    if (hasSavedTimeline()) {
+      setStatus(
+        `Could not load ${file.name}. Keeping your currently saved timeline. ${error.message || ''}`.trim(),
+        'error',
+      );
+    } else {
+      timelineWrap.className = 'timeline-wrap empty-state';
+      timelineWrap.innerHTML = '<div class="empty-copy"><p>Could not load that league file.</p></div>';
+      resetStats();
+      setStatus(error.message || 'Could not parse league file.', 'error');
+    }
   }
 });
 
@@ -37,6 +47,82 @@ function resetStats() {
   teamCountEl.textContent = '—';
   yearRangeEl.textContent = '—';
   cellCountEl.textContent = '—';
+}
+
+function persistTimeline(fileName, timeline) {
+  try {
+    const snapshot = {
+      fileName,
+      savedAt: new Date().toISOString(),
+      timeline: serializeTimeline(timeline),
+    };
+    localStorage.setItem(SAVED_TIMELINE_KEY, JSON.stringify(snapshot));
+  } catch (error) {
+    console.warn('Could not save timeline to localStorage.', error);
+  }
+}
+
+function hasSavedTimeline() {
+  return Boolean(localStorage.getItem(SAVED_TIMELINE_KEY));
+}
+
+function restoreSavedTimeline() {
+  try {
+    const raw = localStorage.getItem(SAVED_TIMELINE_KEY);
+    if (!raw) return;
+
+    const snapshot = JSON.parse(raw);
+    const timeline = deserializeTimeline(snapshot?.timeline);
+    if (!timeline) return;
+
+    renderTimeline(timeline);
+    updateStats(timeline);
+
+    const savedStamp = snapshot.savedAt
+      ? ` Last saved ${new Date(snapshot.savedAt).toLocaleString()}.`
+      : '';
+    const fileText = snapshot.fileName ? `Saved league: ${snapshot.fileName}.` : 'Restored saved league timeline.';
+    setStatus(`${fileText} Upload a new league file to replace it.${savedStamp}`, 'info');
+  } catch (error) {
+    console.warn('Could not restore saved timeline from localStorage.', error);
+    localStorage.removeItem(SAVED_TIMELINE_KEY);
+  }
+}
+
+function serializeTimeline(timeline) {
+  return {
+    years: timeline.years,
+    minYear: timeline.minYear,
+    maxYear: timeline.maxYear,
+    rows: timeline.rows.map((row) => ({
+      tid: row.tid,
+      latestLocation: row.latestLocation,
+      firstSeason: row.firstSeason,
+      lastSeason: row.lastSeason,
+      years: row.years,
+      entriesByYear: Array.from(row.entriesByYear.entries()),
+    })),
+  };
+}
+
+function deserializeTimeline(snapshot) {
+  if (!snapshot || !Array.isArray(snapshot.rows) || !Array.isArray(snapshot.years)) {
+    return null;
+  }
+
+  return {
+    years: snapshot.years,
+    minYear: snapshot.minYear,
+    maxYear: snapshot.maxYear,
+    rows: snapshot.rows.map((row) => ({
+      tid: row.tid,
+      latestLocation: row.latestLocation,
+      firstSeason: row.firstSeason,
+      lastSeason: row.lastSeason,
+      years: Array.isArray(row.years) ? row.years : [],
+      entriesByYear: new Map(Array.isArray(row.entriesByYear) ? row.entriesByYear : []),
+    })),
+  };
 }
 
 async function readLeagueFile(file) {
