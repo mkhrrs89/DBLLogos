@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>DBL Logo Timeline</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Delta Basketball League</p>
+          <h1>Logo Timeline</h1>
+          <p class="subtle">
+            Upload a BBGM / DBL league export and view every franchise’s main logo across league history.
+          </p>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="panel controls-panel">
+          <div class="upload-block">
+            <label class="upload-label" for="leagueFile">League file</label>
+            <input
+              id="leagueFile"
+              class="file-input"
+              type="file"
+              accept=".json,.gz,.json.gz,application/json,application/gzip"
+            />
+            <p class="hint">Supports plain JSON exports and <code>.json.gz</code> files.</p>
+          </div>
+
+          <div class="status-grid">
+            <div class="stat-card">
+              <span class="stat-label">Franchises</span>
+              <strong id="teamCount">—</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Years</span>
+              <strong id="yearRange">—</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Cells</span>
+              <strong id="cellCount">—</strong>
+            </div>
+          </div>
+
+          <div id="statusMessage" class="status-message info">
+            Pick a league export to build the timeline.
+          </div>
+        </section>
+
+        <section class="panel timeline-panel">
+          <div class="timeline-toolbar">
+            <div>
+              <h2>Timeline</h2>
+              <p class="subtle">Sticky years across the top. Sticky franchise locations down the left.</p>
+            </div>
+          </div>
+
+          <div id="timelineWrap" class="timeline-wrap empty-state">
+            <div class="empty-copy">
+              <p>No league file loaded yet.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

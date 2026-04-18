@@ -1,0 +1,239 @@
+const fileInput = document.getElementById('leagueFile');
+const statusMessage = document.getElementById('statusMessage');
+const teamCountEl = document.getElementById('teamCount');
+const yearRangeEl = document.getElementById('yearRange');
+const cellCountEl = document.getElementById('cellCount');
+const timelineWrap = document.getElementById('timelineWrap');
+
+fileInput.addEventListener('change', async (event) => {
+  const [file] = event.target.files || [];
+  if (!file) return;
+
+  setStatus(`Loading ${file.name}...`, 'info');
+  resetStats();
+
+  try {
+    const text = await readLeagueFile(file);
+    const league = JSON.parse(text);
+    const timeline = buildTimelineData(league);
+    renderTimeline(timeline);
+    updateStats(timeline);
+    setStatus(`Loaded ${file.name}.`, 'info');
+  } catch (error) {
+    console.error(error);
+    timelineWrap.className = 'timeline-wrap empty-state';
+    timelineWrap.innerHTML = '<div class="empty-copy"><p>Could not load that league file.</p></div>';
+    resetStats();
+    setStatus(error.message || 'Could not parse league file.', 'error');
+  }
+});
+
+function setStatus(message, type = 'info') {
+  statusMessage.textContent = message;
+  statusMessage.className = `status-message ${type}`;
+}
+
+function resetStats() {
+  teamCountEl.textContent = '—';
+  yearRangeEl.textContent = '—';
+  cellCountEl.textContent = '—';
+}
+
+async function readLeagueFile(file) {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const isGzip = file.name.endsWith('.gz') || (bytes[0] === 0x1f && bytes[1] === 0x8b);
+
+  if (isGzip) {
+    if (!window.pako) {
+      throw new Error('Gzip support did not load.');
+    }
+    return window.pako.ungzip(bytes, { to: 'string' });
+  }
+
+  return new TextDecoder().decode(bytes);
+}
+
+function buildTimelineData(league) {
+  if (!league || !Array.isArray(league.teams)) {
+    throw new Error('This file does not look like a valid league export.');
+  }
+
+  const rows = league.teams
+    .map((team) => normalizeTeamTimeline(team))
+    .filter((row) => row.years.length > 0)
+    .sort((a, b) => {
+      if (a.latestLocation !== b.latestLocation) {
+        return a.latestLocation.localeCompare(b.latestLocation);
+      }
+      return a.firstSeason - b.firstSeason;
+    });
+
+  if (!rows.length) {
+    throw new Error('No team season history was found in this file.');
+  }
+
+  const minYear = Math.min(...rows.map((row) => row.firstSeason));
+  const maxYear = Math.max(...rows.map((row) => row.lastSeason));
+  const years = range(minYear, maxYear);
+
+  return {
+    years,
+    rows,
+    minYear,
+    maxYear,
+  };
+}
+
+function normalizeTeamTimeline(team) {
+  const seasons = Array.isArray(team.seasons)
+    ? team.seasons
+        .filter((season) => Number.isFinite(season?.season))
+        .sort((a, b) => a.season - b.season)
+    : [];
+
+  const years = seasons.map((season) => season.season);
+  const firstSeason = years.length ? years[0] : null;
+  const lastSeason = years.length ? years[years.length - 1] : null;
+  const latestSeason = seasons[seasons.length - 1] || {};
+  const latestLocation = latestSeason.region || team.region || 'Unknown';
+
+  const entriesByYear = new Map();
+  let lastKnownLogo = null;
+
+  for (const season of seasons) {
+    const logoURL = normalizeLogoUrl(season.imgURL || season.imgURLSmall || team.imgURL || team.imgURLSmall || '');
+    if (logoURL) {
+      lastKnownLogo = logoURL;
+    }
+    entriesByYear.set(season.season, {
+      year: season.season,
+      logoURL: logoURL || lastKnownLogo || '',
+    });
+  }
+
+  return {
+    tid: team.tid,
+    latestLocation,
+    firstSeason,
+    lastSeason,
+    years,
+    entriesByYear,
+  };
+}
+
+function normalizeLogoUrl(url) {
+  if (typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  return trimmed;
+}
+
+function renderTimeline(timeline) {
+  const { years, rows } = timeline;
+  timelineWrap.className = 'timeline-wrap';
+
+  const table = document.createElement('table');
+  table.className = 'timeline-table';
+
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+
+  const corner = document.createElement('th');
+  corner.className = 'corner-header';
+  corner.textContent = 'Franchise';
+  headRow.appendChild(corner);
+
+  for (const year of years) {
+    const th = document.createElement('th');
+    th.className = 'year-header';
+    th.textContent = year;
+    headRow.appendChild(th);
+  }
+
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  for (const row of rows) {
+    const tr = document.createElement('tr');
+
+    const rowHeader = document.createElement('th');
+    rowHeader.className = 'row-header';
+    rowHeader.scope = 'row';
+    rowHeader.innerHTML = `
+      <div class="row-label">
+        <strong>${escapeHtml(row.latestLocation)}</strong>
+        <span class="row-years">${row.firstSeason}–${row.lastSeason}</span>
+      </div>
+    `;
+    tr.appendChild(rowHeader);
+
+    let carryForwardLogo = '';
+
+    for (const year of years) {
+      const td = document.createElement('td');
+      const seasonEntry = row.entriesByYear.get(year);
+
+      if (seasonEntry?.logoURL) {
+        carryForwardLogo = seasonEntry.logoURL;
+      }
+
+      const withinFranchiseSpan = year >= row.firstSeason && year <= row.lastSeason;
+
+      if (!withinFranchiseSpan) {
+        td.className = 'empty-cell';
+        td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
+      } else {
+        const logoToShow = seasonEntry?.logoURL || carryForwardLogo;
+        if (logoToShow) {
+          td.className = 'logo-cell';
+          td.innerHTML = `
+            <div class="logo-card">
+              <img src="${escapeAttribute(logoToShow)}" alt="${escapeAttribute(row.latestLocation)} logo, ${year}" loading="lazy" referrerpolicy="no-referrer" />
+            </div>
+          `;
+        } else {
+          td.className = 'empty-cell';
+          td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
+        }
+      }
+
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+  }
+
+  table.appendChild(tbody);
+  timelineWrap.innerHTML = '';
+  timelineWrap.appendChild(table);
+}
+
+function updateStats(timeline) {
+  const totalCells = timeline.rows.length * timeline.years.length;
+  teamCountEl.textContent = timeline.rows.length.toLocaleString();
+  yearRangeEl.textContent = `${timeline.minYear}–${timeline.maxYear}`;
+  cellCountEl.textContent = totalCells.toLocaleString();
+}
+
+function range(start, end) {
+  const years = [];
+  for (let year = start; year <= end; year += 1) {
+    years.push(year);
+  }
+  return years;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
