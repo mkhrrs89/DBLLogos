@@ -4,7 +4,12 @@ const teamCountEl = document.getElementById('teamCount');
 const yearRangeEl = document.getElementById('yearRange');
 const cellCountEl = document.getElementById('cellCount');
 const timelineWrap = document.getElementById('timelineWrap');
+const mobileFullscreenBtn = document.getElementById('mobileFullscreenBtn');
+const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
+const timelineFullscreen = document.getElementById('timelineFullscreen');
+const timelineFullscreenWrap = document.getElementById('timelineFullscreenWrap');
 const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
+let currentTimeline = null;
 
 restoreSavedTimeline();
 
@@ -35,6 +40,26 @@ fileInput.addEventListener('change', async (event) => {
       resetStats();
       setStatus(error.message || 'Could not parse league file.', 'error');
     }
+  }
+});
+
+mobileFullscreenBtn.addEventListener('click', () => {
+  if (!currentTimeline) return;
+  timelineFullscreen.hidden = false;
+  document.body.classList.add('fullscreen-open');
+  renderTimelineInto(currentTimeline, timelineFullscreenWrap);
+});
+
+closeFullscreenBtn.addEventListener('click', closeFullscreenTimeline);
+timelineFullscreen.addEventListener('click', (event) => {
+  if (event.target === timelineFullscreen) {
+    closeFullscreenTimeline();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !timelineFullscreen.hidden) {
+    closeFullscreenTimeline();
   }
 });
 
@@ -215,8 +240,13 @@ function normalizeLogoUrl(url) {
 }
 
 function renderTimeline(timeline) {
+  return renderTimelineInto(timeline, timelineWrap);
+}
+
+function renderTimelineInto(timeline, targetWrap) {
   const { years, rows } = timeline;
-  timelineWrap.className = 'timeline-wrap';
+  currentTimeline = timeline;
+  targetWrap.className = 'timeline-wrap';
 
   const table = document.createElement('table');
   table.className = 'timeline-table';
@@ -292,8 +322,13 @@ function renderTimeline(timeline) {
   }
 
   table.appendChild(tbody);
-  timelineWrap.innerHTML = '';
-  timelineWrap.appendChild(table);
+  targetWrap.innerHTML = '';
+  targetWrap.appendChild(table);
+}
+
+function closeFullscreenTimeline() {
+  timelineFullscreen.hidden = true;
+  document.body.classList.remove('fullscreen-open');
 }
 
 function updateStats(timeline) {
