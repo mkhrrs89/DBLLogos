@@ -6,9 +6,11 @@ const cellCountEl = document.getElementById('cellCount');
 const timelineWrap = document.getElementById('timelineWrap');
 const mobileFullscreenBtn = document.getElementById('mobileFullscreenBtn');
 const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
+const activeTeamsOnlyToggle = document.getElementById('activeTeamsOnlyToggle');
 const timelineFullscreen = document.getElementById('timelineFullscreen');
 const timelineFullscreenWrap = document.getElementById('timelineFullscreenWrap');
 const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
+let fullTimeline = null;
 let currentTimeline = null;
 
 restoreSavedTimeline();
@@ -23,8 +25,7 @@ fileInput.addEventListener('change', async (event) => {
     const text = await readLeagueFile(file);
     const league = JSON.parse(text);
     const timeline = buildTimelineData(league);
-    renderTimeline(timeline);
-    updateStats(timeline);
+    setTimeline(timeline);
     persistTimeline(file.name, timeline);
     setStatus(`Loaded ${file.name}.`, 'info');
   } catch (error) {
@@ -48,6 +49,11 @@ mobileFullscreenBtn.addEventListener('click', () => {
   timelineFullscreen.hidden = false;
   document.body.classList.add('fullscreen-open');
   renderTimelineInto(currentTimeline, timelineFullscreenWrap);
+});
+
+activeTeamsOnlyToggle.addEventListener('change', () => {
+  if (!fullTimeline) return;
+  setTimeline(fullTimeline);
 });
 
 closeFullscreenBtn.addEventListener('click', closeFullscreenTimeline);
@@ -100,8 +106,7 @@ function restoreSavedTimeline() {
     const timeline = deserializeTimeline(snapshot?.timeline);
     if (!timeline) return;
 
-    renderTimeline(timeline);
-    updateStats(timeline);
+    setTimeline(timeline);
 
     const savedStamp = snapshot.savedAt
       ? ` Last saved ${new Date(snapshot.savedAt).toLocaleString()}.`
@@ -243,9 +248,44 @@ function renderTimeline(timeline) {
   return renderTimelineInto(timeline, timelineWrap);
 }
 
+function setTimeline(timeline) {
+  fullTimeline = timeline;
+  currentTimeline = getVisibleTimeline(timeline);
+  renderTimeline(currentTimeline);
+  updateStats(currentTimeline);
+  if (!timelineFullscreen.hidden) {
+    renderTimelineInto(currentTimeline, timelineFullscreenWrap);
+  }
+}
+
+function getVisibleTimeline(timeline) {
+  if (!activeTeamsOnlyToggle?.checked) {
+    return {
+      years: timeline.years,
+      rows: timeline.rows,
+      minYear: timeline.minYear,
+      maxYear: timeline.maxYear,
+    };
+  }
+
+  const activeRows = timeline.rows.filter((row) => row.lastSeason === timeline.maxYear);
+
+  return {
+    years: timeline.years,
+    rows: activeRows,
+    minYear: timeline.minYear,
+    maxYear: timeline.maxYear,
+  };
+}
+
 function renderTimelineInto(timeline, targetWrap) {
   const { years, rows } = timeline;
-  currentTimeline = timeline;
+  if (!rows.length) {
+    targetWrap.className = 'timeline-wrap empty-state';
+    targetWrap.innerHTML = '<div class="empty-copy"><p>No active teams found in this league file.</p></div>';
+    return;
+  }
+
   targetWrap.className = 'timeline-wrap';
 
   const table = document.createElement('table');
