@@ -107,6 +107,10 @@ h2 {
   gap: 14px;
 }
 
+.controls-panel > * {
+  min-width: 0;
+}
+
 .upload-block {
   display: grid;
   gap: 8px;
@@ -120,11 +124,13 @@ h2 {
 
 .file-input {
   width: 100%;
+  min-width: 0;
   padding: 12px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--line-strong);
   background: rgba(255,255,255,0.04);
   color: var(--text);
+  overflow: hidden;
 }
 
 .status-grid {
@@ -152,6 +158,8 @@ h2 {
   border: 1px solid var(--line);
   background: rgba(255,255,255,0.035);
   color: var(--text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .status-message.info {
