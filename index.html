@@ -53,8 +53,13 @@
 
         <section class="panel timeline-panel">
           <div class="timeline-toolbar">
-            <div>
+            <div class="timeline-heading">
               <h2>Timeline</h2>
+              <button id="mobileFullscreenBtn" class="mobile-fullscreen-btn" type="button">
+                Fullscreen
+              </button>
+            </div>
+            <div>
               <p class="subtle">Sticky years across the top. Sticky franchise locations down the left.</p>
             </div>
           </div>
@@ -66,6 +71,14 @@
           </div>
         </section>
       </main>
+    </div>
+
+    <div id="timelineFullscreen" class="timeline-fullscreen" hidden>
+      <div class="timeline-fullscreen-header">
+        <strong>Timeline</strong>
+        <button id="closeFullscreenBtn" class="mobile-fullscreen-btn" type="button">Close</button>
+      </div>
+      <div id="timelineFullscreenWrap" class="timeline-wrap empty-state"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
