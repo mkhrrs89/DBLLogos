@@ -330,6 +330,7 @@ function renderTimelineInto(timeline, targetWrap) {
     for (const year of years) {
       const td = document.createElement('td');
       const seasonEntry = row.entriesByYear.get(year);
+      const isActiveYear = row.entriesByYear.has(year);
 
       if (seasonEntry?.logoURL) {
         carryForwardLogo = seasonEntry.logoURL;
@@ -337,7 +338,7 @@ function renderTimelineInto(timeline, targetWrap) {
 
       const withinFranchiseSpan = year >= row.firstSeason && year <= row.lastSeason;
 
-      if (!withinFranchiseSpan) {
+      if (!withinFranchiseSpan || !isActiveYear) {
         td.className = 'empty-cell';
         td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
       } else {
