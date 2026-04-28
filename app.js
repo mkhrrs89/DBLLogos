@@ -7,6 +7,7 @@ const timelineWrap = document.getElementById('timelineWrap');
 const mobileFullscreenBtn = document.getElementById('mobileFullscreenBtn');
 const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
 const activeTeamsOnlyToggle = document.getElementById('activeTeamsOnlyToggle');
+const activeTeamsOnlyToggleFullscreen = document.getElementById('activeTeamsOnlyToggleFullscreen');
 const timelineFullscreen = document.getElementById('timelineFullscreen');
 const timelineFullscreenWrap = document.getElementById('timelineFullscreenWrap');
 const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
@@ -52,8 +53,11 @@ mobileFullscreenBtn.addEventListener('click', () => {
 });
 
 activeTeamsOnlyToggle.addEventListener('change', () => {
-  if (!fullTimeline) return;
-  setTimeline(fullTimeline);
+  setActiveTeamsOnlyEnabled(activeTeamsOnlyToggle.checked);
+});
+
+activeTeamsOnlyToggleFullscreen?.addEventListener('change', () => {
+  setActiveTeamsOnlyEnabled(activeTeamsOnlyToggleFullscreen.checked);
 });
 
 closeFullscreenBtn.addEventListener('click', closeFullscreenTimeline);
@@ -276,6 +280,15 @@ function getVisibleTimeline(timeline) {
     minYear: timeline.minYear,
     maxYear: timeline.maxYear,
   };
+}
+
+function setActiveTeamsOnlyEnabled(enabled) {
+  activeTeamsOnlyToggle.checked = enabled;
+  if (activeTeamsOnlyToggleFullscreen) {
+    activeTeamsOnlyToggleFullscreen.checked = enabled;
+  }
+  if (!fullTimeline) return;
+  setTimeline(fullTimeline);
 }
 
 function renderTimelineInto(timeline, targetWrap) {

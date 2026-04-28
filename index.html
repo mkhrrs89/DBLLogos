@@ -81,7 +81,14 @@
     <div id="timelineFullscreen" class="timeline-fullscreen" hidden>
       <div class="timeline-fullscreen-header">
         <strong>Timeline</strong>
-        <button id="closeFullscreenBtn" class="mobile-fullscreen-btn" type="button">Close</button>
+        <div class="timeline-fullscreen-controls">
+          <label class="toggle-switch" for="activeTeamsOnlyToggleFullscreen">
+            <input id="activeTeamsOnlyToggleFullscreen" type="checkbox" />
+            <span class="toggle-slider" aria-hidden="true"></span>
+            <span class="toggle-label">Active teams only</span>
+          </label>
+          <button id="closeFullscreenBtn" class="mobile-fullscreen-btn" type="button">Close</button>
+        </div>
       </div>
       <div id="timelineFullscreenWrap" class="timeline-wrap empty-state"></div>
     </div>

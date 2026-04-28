@@ -392,6 +392,14 @@ h2 {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+  gap: 10px;
+}
+
+.timeline-fullscreen-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .timeline-fullscreen .timeline-wrap {
