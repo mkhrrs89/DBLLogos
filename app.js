@@ -8,11 +8,13 @@ const mobileFullscreenBtn = document.getElementById('mobileFullscreenBtn');
 const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
 const activeTeamsOnlyToggle = document.getElementById('activeTeamsOnlyToggle');
 const activeTeamsOnlyToggleFullscreen = document.getElementById('activeTeamsOnlyToggleFullscreen');
+const teamSortModeSelect = document.getElementById('teamSortMode');
 const timelineFullscreen = document.getElementById('timelineFullscreen');
 const timelineFullscreenWrap = document.getElementById('timelineFullscreenWrap');
 const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
 let fullTimeline = null;
 let currentTimeline = null;
+let teamSortMode = 'alpha';
 
 restoreSavedTimeline();
 
@@ -54,6 +56,12 @@ mobileFullscreenBtn.addEventListener('click', () => {
 
 activeTeamsOnlyToggle.addEventListener('change', () => {
   setActiveTeamsOnlyEnabled(activeTeamsOnlyToggle.checked);
+});
+
+teamSortModeSelect?.addEventListener('change', () => {
+  teamSortMode = teamSortModeSelect.value === 'tid' ? 'tid' : 'alpha';
+  if (!fullTimeline) return;
+  setTimeline(fullTimeline);
 });
 
 activeTeamsOnlyToggleFullscreen?.addEventListener('change', () => {
@@ -182,12 +190,7 @@ function buildTimelineData(league) {
   const rows = league.teams
     .map((team) => normalizeTeamTimeline(team))
     .filter((row) => row.years.length > 0)
-    .sort((a, b) => {
-      if (a.latestLocation !== b.latestLocation) {
-        return a.latestLocation.localeCompare(b.latestLocation);
-      }
-      return a.firstSeason - b.firstSeason;
-    });
+    .sort((a, b) => a.firstSeason - b.firstSeason);
 
   if (!rows.length) {
     throw new Error('No team season history was found in this file.');
@@ -263,23 +266,35 @@ function setTimeline(timeline) {
 }
 
 function getVisibleTimeline(timeline) {
-  if (!activeTeamsOnlyToggle?.checked) {
-    return {
-      years: timeline.years,
-      rows: timeline.rows,
-      minYear: timeline.minYear,
-      maxYear: timeline.maxYear,
-    };
-  }
+  const baseRows = activeTeamsOnlyToggle?.checked
+    ? timeline.rows.filter((row) => row.lastSeason === timeline.maxYear)
+    : timeline.rows;
 
-  const activeRows = timeline.rows.filter((row) => row.lastSeason === timeline.maxYear);
+  const rows = sortRows(baseRows, teamSortMode);
 
   return {
     years: timeline.years,
-    rows: activeRows,
+    rows,
     minYear: timeline.minYear,
     maxYear: timeline.maxYear,
   };
+}
+
+function sortRows(rows, mode) {
+  const sorted = [...rows];
+
+  if (mode === 'tid') {
+    sorted.sort((a, b) => (a.tid ?? Number.MAX_SAFE_INTEGER) - (b.tid ?? Number.MAX_SAFE_INTEGER));
+    return sorted;
+  }
+
+  sorted.sort((a, b) => {
+    if (a.latestLocation !== b.latestLocation) {
+      return a.latestLocation.localeCompare(b.latestLocation);
+    }
+    return (a.tid ?? Number.MAX_SAFE_INTEGER) - (b.tid ?? Number.MAX_SAFE_INTEGER);
+  });
+  return sorted;
 }
 
 function setActiveTeamsOnlyEnabled(enabled) {
