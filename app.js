@@ -12,11 +12,23 @@ const teamSortModeSelect = document.getElementById('teamSortMode');
 const timelineFullscreen = document.getElementById('timelineFullscreen');
 const timelineFullscreenWrap = document.getElementById('timelineFullscreenWrap');
 const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
+const SAVED_BANNERS_KEY = 'dbl-logo-banners:v1';
+const logosTabBtn = document.getElementById('logosTabBtn');
+const bannersTabBtn = document.getElementById('bannersTabBtn');
+const logosPanel = document.getElementById('logosPanel');
+const bannersPanel = document.getElementById('bannersPanel');
+const bannersWrap = document.getElementById('bannersWrap');
 let fullTimeline = null;
 let currentTimeline = null;
 let teamSortMode = 'alpha';
+let savedBannersByYear = loadSavedBanners();
 
 restoreSavedTimeline();
+setActiveTab('logos');
+renderBanners(fullTimeline);
+
+logosTabBtn?.addEventListener('click', () => setActiveTab('logos'));
+bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
 
 fileInput.addEventListener('change', async (event) => {
   const [file] = event.target.files || [];
@@ -259,9 +271,105 @@ function setTimeline(timeline) {
   fullTimeline = timeline;
   currentTimeline = getVisibleTimeline(timeline);
   renderTimeline(currentTimeline);
+  renderBanners(fullTimeline);
   updateStats(currentTimeline);
   if (!timelineFullscreen.hidden) {
     renderTimelineInto(currentTimeline, timelineFullscreenWrap);
+  }
+}
+
+function setActiveTab(tabName) {
+  const isLogos = tabName !== 'banners';
+  logosTabBtn?.classList.toggle('active', isLogos);
+  bannersTabBtn?.classList.toggle('active', !isLogos);
+  logosTabBtn?.setAttribute('aria-selected', String(isLogos));
+  bannersTabBtn?.setAttribute('aria-selected', String(!isLogos));
+  logosPanel.hidden = !isLogos;
+  bannersPanel.hidden = isLogos;
+}
+
+function loadSavedBanners() {
+  try {
+    const raw = localStorage.getItem(SAVED_BANNERS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed;
+  } catch (error) {
+    console.warn('Could not restore saved banners from localStorage.', error);
+    return {};
+  }
+}
+
+function saveBanners() {
+  try {
+    localStorage.setItem(SAVED_BANNERS_KEY, JSON.stringify(savedBannersByYear));
+  } catch (error) {
+    console.warn('Could not save banners to localStorage.', error);
+  }
+}
+
+function renderBanners(timeline) {
+  bannersWrap.innerHTML = '';
+  if (!timeline || !Array.isArray(timeline.years) || timeline.years.length === 0) {
+    bannersWrap.className = 'banners-wrap empty-state';
+    const empty = document.createElement('div');
+    empty.className = 'empty-copy';
+    empty.innerHTML = '<p>Load a league file to create banner slots.</p>';
+    bannersWrap.appendChild(empty);
+    return;
+  }
+
+  bannersWrap.className = 'banners-wrap banner-grid';
+
+  for (const year of timeline.years) {
+    const yearKey = String(year);
+    const savedUrl = typeof savedBannersByYear[yearKey] === 'string' ? savedBannersByYear[yearKey].trim() : '';
+    const card = document.createElement('article');
+    card.className = 'banner-card';
+
+    const label = document.createElement('h3');
+    label.className = 'banner-year';
+    label.textContent = yearKey;
+
+    const frame = document.createElement('div');
+    frame.className = 'banner-square';
+
+    const input = document.createElement('input');
+    input.className = 'banner-url-input';
+    input.type = 'url';
+    input.placeholder = 'https://example.com/banner.png';
+    input.value = savedUrl;
+
+    const applyUrl = (url) => {
+      frame.textContent = '';
+      if (!url) {
+        frame.classList.add('is-empty');
+        return;
+      }
+      frame.classList.remove('is-empty');
+      const image = document.createElement('img');
+      image.src = url;
+      image.loading = 'lazy';
+      image.referrerPolicy = 'no-referrer';
+      image.alt = `DBL banner, ${yearKey}`;
+      frame.appendChild(image);
+    };
+
+    input.addEventListener('input', () => {
+      const value = input.value.trim();
+      if (value) {
+        savedBannersByYear[yearKey] = value;
+      } else {
+        delete savedBannersByYear[yearKey];
+      }
+      saveBanners();
+      applyUrl(value);
+    });
+
+    applyUrl(savedUrl);
+    card.append(label, frame, input);
+    bannersWrap.appendChild(card);
   }
 }
 

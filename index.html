@@ -19,6 +19,11 @@
       </header>
 
       <main class="page">
+        <nav class="tab-bar panel" aria-label="Main views">
+          <button id="logosTabBtn" class="tab-btn active" type="button" aria-selected="true">Logos</button>
+          <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
+        </nav>
+
         <section class="panel controls-panel">
           <div class="upload-block">
             <label class="upload-label" for="leagueFile">League file</label>
@@ -51,7 +56,7 @@
           </div>
         </section>
 
-        <section class="panel timeline-panel">
+        <section id="logosPanel" class="panel timeline-panel">
           <div class="timeline-toolbar">
             <div class="timeline-heading">
               <h2>Timeline</h2>
@@ -79,6 +84,18 @@
           <div id="timelineWrap" class="timeline-wrap empty-state">
             <div class="empty-copy">
               <p>No league file loaded yet.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="bannersPanel" class="panel banners-panel" hidden>
+          <div class="banners-header">
+            <h2>Banners</h2>
+            <p class="subtle">One banner slot is generated for every season/year in the loaded league file.</p>
+          </div>
+          <div id="bannersWrap" class="banners-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to create banner slots.</p>
             </div>
           </div>
         </section>
