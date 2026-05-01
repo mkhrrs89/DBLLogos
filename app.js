@@ -18,6 +18,9 @@ const bannersTabBtn = document.getElementById('bannersTabBtn');
 const logosPanel = document.getElementById('logosPanel');
 const bannersPanel = document.getElementById('bannersPanel');
 const bannersWrap = document.getElementById('bannersWrap');
+const importBannersBtn = document.getElementById('importBannersBtn');
+const exportBannersBtn = document.getElementById('exportBannersBtn');
+const bannerImportFile = document.getElementById('bannerImportFile');
 let fullTimeline = null;
 let currentTimeline = null;
 let teamSortMode = 'alpha';
@@ -29,6 +32,9 @@ renderBanners(fullTimeline);
 
 logosTabBtn?.addEventListener('click', () => setActiveTab('logos'));
 bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
+importBannersBtn?.addEventListener('click', () => bannerImportFile?.click());
+bannerImportFile?.addEventListener('change', importBannerLinksFromFile);
+exportBannersBtn?.addEventListener('click', exportBannerLinksToFile);
 
 fileInput.addEventListener('change', async (event) => {
   const [file] = event.target.files || [];
@@ -307,6 +313,69 @@ function saveBanners() {
   } catch (error) {
     console.warn('Could not save banners to localStorage.', error);
   }
+}
+
+function buildBannerExportPayload() {
+  const linksByYear = Object.fromEntries(
+    Object.entries(savedBannersByYear)
+      .map(([year, value]) => [String(year), typeof value === 'string' ? value.trim() : ''])
+      .filter(([, value]) => Boolean(value)),
+  );
+
+  return {
+    exportedAt: new Date().toISOString(),
+    linksByYear,
+  };
+}
+
+async function importBannerLinksFromFile(event) {
+  const [file] = event.target.files || [];
+  bannerImportFile.value = '';
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const links = parsed?.linksByYear;
+
+    if (!links || typeof links !== 'object' || Array.isArray(links)) {
+      throw new Error('Banner import file is missing a valid "linksByYear" object.');
+    }
+
+    const cleanedLinks = {};
+    for (const [year, url] of Object.entries(links)) {
+      if (typeof url !== 'string') continue;
+      const trimmed = url.trim();
+      if (!trimmed) continue;
+      cleanedLinks[String(year)] = trimmed;
+    }
+
+    savedBannersByYear = cleanedLinks;
+    saveBanners();
+    renderBanners(fullTimeline);
+    setStatus(`Imported ${Object.keys(cleanedLinks).length} banner links from ${file.name}.`, 'info');
+  } catch (error) {
+    console.error(error);
+    setStatus(error?.message || `Could not import banner links from ${file.name}.`, 'error');
+  }
+}
+
+function exportBannerLinksToFile() {
+  const payload = buildBannerExportPayload();
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `dbl-banner-links-${stamp}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+
+  setStatus(`Exported ${Object.keys(payload.linksByYear).length} banner links.`, 'info');
 }
 
 function renderBanners(timeline) {
