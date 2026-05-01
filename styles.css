@@ -215,6 +215,25 @@ h2 {
   margin-bottom: 12px;
 }
 
+.banner-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.visually-hidden-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .banners-wrap.empty-state {
   border: 1px solid var(--line);
   border-radius: 16px;

@@ -92,6 +92,16 @@
           <div class="banners-header">
             <h2>Banners</h2>
             <p class="subtle">One banner slot is generated for every season/year in the loaded league file.</p>
+            <div class="banner-actions">
+              <input
+                id="bannerImportFile"
+                class="visually-hidden-file-input"
+                type="file"
+                accept=".json,application/json"
+              />
+              <button id="importBannersBtn" class="mobile-fullscreen-btn" type="button">Import links</button>
+              <button id="exportBannersBtn" class="mobile-fullscreen-btn" type="button">Export links</button>
+            </div>
           </div>
           <div id="bannersWrap" class="banners-wrap empty-state">
             <div class="empty-copy">
