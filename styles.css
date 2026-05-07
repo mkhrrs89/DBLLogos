@@ -265,13 +265,13 @@ h2 {
 }
 
 .banner-square {
-  aspect-ratio: 1 / 1;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.02);
   display: grid;
   place-items: center;
   overflow: hidden;
+  min-height: 120px;
 }
 
 .banner-square.is-empty {
@@ -280,9 +280,9 @@ h2 {
 }
 
 .banner-square img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  height: auto;
 }
 
 .banner-url-input {
