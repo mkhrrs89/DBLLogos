@@ -22,6 +22,7 @@
         <nav class="tab-bar panel" aria-label="Main views">
           <button id="logosTabBtn" class="tab-btn active" type="button" aria-selected="true">Logos</button>
           <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
+          <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
         </nav>
 
         <section class="panel controls-panel">
@@ -106,6 +107,22 @@
           <div id="bannersWrap" class="banners-wrap empty-state">
             <div class="empty-copy">
               <p>Load a league file to create banner slots.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="uniformsPanel" class="panel banners-panel" hidden>
+          <div class="banners-header">
+            <h2>Uniforms</h2>
+            <p class="subtle">Choose a year, then set one uniform image link for each active team in that season.</p>
+            <label class="sort-select-label" for="uniformYearSelect">
+              Year
+              <select id="uniformYearSelect" class="sort-select"></select>
+            </label>
+          </div>
+          <div id="uniformsWrap" class="banners-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to create uniform slots.</p>
             </div>
           </div>
         </section>

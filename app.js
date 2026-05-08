@@ -13,11 +13,16 @@ const timelineFullscreen = document.getElementById('timelineFullscreen');
 const timelineFullscreenWrap = document.getElementById('timelineFullscreenWrap');
 const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
 const SAVED_BANNERS_KEY = 'dbl-logo-banners:v1';
+const SAVED_UNIFORMS_KEY = 'dbl-logo-uniforms:v1';
 const logosTabBtn = document.getElementById('logosTabBtn');
 const bannersTabBtn = document.getElementById('bannersTabBtn');
+const uniformsTabBtn = document.getElementById('uniformsTabBtn');
 const logosPanel = document.getElementById('logosPanel');
 const bannersPanel = document.getElementById('bannersPanel');
+const uniformsPanel = document.getElementById('uniformsPanel');
 const bannersWrap = document.getElementById('bannersWrap');
+const uniformsWrap = document.getElementById('uniformsWrap');
+const uniformYearSelect = document.getElementById('uniformYearSelect');
 const importBannersBtn = document.getElementById('importBannersBtn');
 const exportBannersBtn = document.getElementById('exportBannersBtn');
 const bannerImportFile = document.getElementById('bannerImportFile');
@@ -25,16 +30,24 @@ let fullTimeline = null;
 let currentTimeline = null;
 let teamSortMode = 'alpha';
 let savedBannersByYear = loadSavedBanners();
+let savedUniformsByYear = loadSavedUniforms();
+let selectedUniformYear = null;
 
 restoreSavedTimeline();
 setActiveTab('logos');
 renderBanners(fullTimeline);
+renderUniforms(fullTimeline);
 
 logosTabBtn?.addEventListener('click', () => setActiveTab('logos'));
 bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
+uniformsTabBtn?.addEventListener('click', () => setActiveTab('uniforms'));
 importBannersBtn?.addEventListener('click', () => bannerImportFile?.click());
 bannerImportFile?.addEventListener('change', importBannerLinksFromFile);
 exportBannersBtn?.addEventListener('click', exportBannerLinksToFile);
+uniformYearSelect?.addEventListener('change', () => {
+  selectedUniformYear = Number(uniformYearSelect.value) || null;
+  renderUniforms(fullTimeline);
+});
 
 fileInput.addEventListener('change', async (event) => {
   const [file] = event.target.files || [];
@@ -278,6 +291,7 @@ function setTimeline(timeline) {
   currentTimeline = getVisibleTimeline(timeline);
   renderTimeline(currentTimeline);
   renderBanners(fullTimeline);
+  renderUniforms(fullTimeline);
   updateStats(currentTimeline);
   if (!timelineFullscreen.hidden) {
     renderTimelineInto(currentTimeline, timelineFullscreenWrap);
@@ -285,13 +299,18 @@ function setTimeline(timeline) {
 }
 
 function setActiveTab(tabName) {
-  const isLogos = tabName !== 'banners';
+  const isLogos = tabName === 'logos';
+  const isBanners = tabName === 'banners';
+  const isUniforms = tabName === 'uniforms';
   logosTabBtn?.classList.toggle('active', isLogos);
-  bannersTabBtn?.classList.toggle('active', !isLogos);
+  bannersTabBtn?.classList.toggle('active', isBanners);
+  uniformsTabBtn?.classList.toggle('active', isUniforms);
   logosTabBtn?.setAttribute('aria-selected', String(isLogos));
-  bannersTabBtn?.setAttribute('aria-selected', String(!isLogos));
+  bannersTabBtn?.setAttribute('aria-selected', String(isBanners));
+  uniformsTabBtn?.setAttribute('aria-selected', String(isUniforms));
   logosPanel.hidden = !isLogos;
-  bannersPanel.hidden = isLogos;
+  bannersPanel.hidden = !isBanners;
+  uniformsPanel.hidden = !isUniforms;
 }
 
 function loadSavedBanners() {
@@ -312,6 +331,27 @@ function saveBanners() {
     localStorage.setItem(SAVED_BANNERS_KEY, JSON.stringify(savedBannersByYear));
   } catch (error) {
     console.warn('Could not save banners to localStorage.', error);
+  }
+}
+
+function loadSavedUniforms() {
+  try {
+    const raw = localStorage.getItem(SAVED_UNIFORMS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed;
+  } catch (error) {
+    console.warn('Could not restore saved uniforms from localStorage.', error);
+    return {};
+  }
+}
+
+function saveUniforms() {
+  try {
+    localStorage.setItem(SAVED_UNIFORMS_KEY, JSON.stringify(savedUniformsByYear));
+  } catch (error) {
+    console.warn('Could not save uniforms to localStorage.', error);
   }
 }
 
@@ -439,6 +479,86 @@ function renderBanners(timeline) {
     applyUrl(savedUrl);
     card.append(label, frame, input);
     bannersWrap.appendChild(card);
+  }
+}
+
+function renderUniforms(timeline) {
+  uniformsWrap.innerHTML = '';
+  if (!timeline || !Array.isArray(timeline.years) || timeline.years.length === 0) {
+    uniformsWrap.className = 'banners-wrap empty-state';
+    uniformYearSelect.innerHTML = '';
+    selectedUniformYear = null;
+    const empty = document.createElement('div');
+    empty.className = 'empty-copy';
+    empty.innerHTML = '<p>Load a league file to create uniform slots.</p>';
+    uniformsWrap.appendChild(empty);
+    return;
+  }
+
+  uniformYearSelect.innerHTML = '';
+  for (const year of timeline.years) {
+    const option = document.createElement('option');
+    option.value = String(year);
+    option.textContent = String(year);
+    uniformYearSelect.appendChild(option);
+  }
+
+  if (!selectedUniformYear || !timeline.years.includes(selectedUniformYear)) {
+    selectedUniformYear = timeline.maxYear;
+  }
+  uniformYearSelect.value = String(selectedUniformYear);
+
+  const activeRows = timeline.rows.filter((row) => row.entriesByYear.has(selectedUniformYear));
+  uniformsWrap.className = 'banners-wrap banner-grid';
+
+  for (const row of activeRows) {
+    const yearKey = String(selectedUniformYear);
+    const teamKey = String(row.tid ?? row.latestLocation);
+    const storageKey = `${yearKey}:${teamKey}`;
+    const savedUrl = typeof savedUniformsByYear[storageKey] === 'string' ? savedUniformsByYear[storageKey].trim() : '';
+
+    const card = document.createElement('article');
+    card.className = 'banner-card';
+    const label = document.createElement('h3');
+    label.className = 'banner-year';
+    label.textContent = row.latestLocation;
+    const frame = document.createElement('div');
+    frame.className = 'banner-square';
+    const input = document.createElement('input');
+    input.className = 'banner-url-input';
+    input.type = 'url';
+    input.placeholder = 'https://example.com/uniform.png';
+    input.value = savedUrl;
+
+    const applyUrl = (url) => {
+      frame.textContent = '';
+      if (!url) {
+        frame.classList.add('is-empty');
+        return;
+      }
+      frame.classList.remove('is-empty');
+      const image = document.createElement('img');
+      image.src = url;
+      image.loading = 'lazy';
+      image.referrerPolicy = 'no-referrer';
+      image.alt = `${row.latestLocation} uniform, ${yearKey}`;
+      frame.appendChild(image);
+    };
+
+    input.addEventListener('input', () => {
+      const value = input.value.trim();
+      if (value) {
+        savedUniformsByYear[storageKey] = value;
+      } else {
+        delete savedUniformsByYear[storageKey];
+      }
+      saveUniforms();
+      applyUrl(value);
+    });
+
+    applyUrl(savedUrl);
+    card.append(label, frame, input);
+    uniformsWrap.appendChild(card);
   }
 }
 
