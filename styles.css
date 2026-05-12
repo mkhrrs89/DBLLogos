@@ -321,7 +321,18 @@ h2 {
   cursor: pointer;
 }
 
-.mobile-fullscreen-btn:hover {
+.action-btn {
+  border: 1px solid rgba(109, 194, 255, 0.45);
+  background: rgba(109, 194, 255, 0.12);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.mobile-fullscreen-btn:hover,
+.action-btn:hover {
   background: rgba(109, 194, 255, 0.2);
 }
 
@@ -593,7 +604,8 @@ body.fullscreen-open {
 }
 
 @media (min-width: 821px) {
-  .mobile-fullscreen-btn {
+  #mobileFullscreenBtn,
+  #closeFullscreenBtn {
     display: none;
   }
 }

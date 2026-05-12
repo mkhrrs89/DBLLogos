@@ -26,6 +26,9 @@ const uniformYearSelect = document.getElementById('uniformYearSelect');
 const importBannersBtn = document.getElementById('importBannersBtn');
 const exportBannersBtn = document.getElementById('exportBannersBtn');
 const bannerImportFile = document.getElementById('bannerImportFile');
+const importUniformsBtn = document.getElementById('importUniformsBtn');
+const exportUniformsBtn = document.getElementById('exportUniformsBtn');
+const uniformImportFile = document.getElementById('uniformImportFile');
 let fullTimeline = null;
 let currentTimeline = null;
 let teamSortMode = 'alpha';
@@ -44,6 +47,9 @@ uniformsTabBtn?.addEventListener('click', () => setActiveTab('uniforms'));
 importBannersBtn?.addEventListener('click', () => bannerImportFile?.click());
 bannerImportFile?.addEventListener('change', importBannerLinksFromFile);
 exportBannersBtn?.addEventListener('click', exportBannerLinksToFile);
+importUniformsBtn?.addEventListener('click', () => uniformImportFile?.click());
+uniformImportFile?.addEventListener('change', importUniformLinksFromFile);
+exportUniformsBtn?.addEventListener('click', exportUniformLinksToFile);
 uniformYearSelect?.addEventListener('change', () => {
   selectedUniformYear = Number(uniformYearSelect.value) || null;
   renderUniforms(fullTimeline);
@@ -416,6 +422,69 @@ function exportBannerLinksToFile() {
   URL.revokeObjectURL(url);
 
   setStatus(`Exported ${Object.keys(payload.linksByYear).length} banner links.`, 'info');
+}
+
+function buildUniformExportPayload() {
+  const linksByYearTeam = Object.fromEntries(
+    Object.entries(savedUniformsByYear)
+      .map(([key, value]) => [String(key), typeof value === 'string' ? value.trim() : ''])
+      .filter(([, value]) => Boolean(value)),
+  );
+
+  return {
+    exportedAt: new Date().toISOString(),
+    linksByYearTeam,
+  };
+}
+
+async function importUniformLinksFromFile(event) {
+  const [file] = event.target.files || [];
+  uniformImportFile.value = '';
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const links = parsed?.linksByYearTeam;
+
+    if (!links || typeof links !== 'object' || Array.isArray(links)) {
+      throw new Error('Uniform import file is missing a valid "linksByYearTeam" object.');
+    }
+
+    const cleanedLinks = {};
+    for (const [key, url] of Object.entries(links)) {
+      if (typeof url !== 'string') continue;
+      const trimmed = url.trim();
+      if (!trimmed) continue;
+      cleanedLinks[String(key)] = trimmed;
+    }
+
+    savedUniformsByYear = cleanedLinks;
+    saveUniforms();
+    renderUniforms(fullTimeline);
+    setStatus(`Imported ${Object.keys(cleanedLinks).length} uniform links from ${file.name}.`, 'info');
+  } catch (error) {
+    console.error(error);
+    setStatus(error?.message || `Could not import uniform links from ${file.name}.`, 'error');
+  }
+}
+
+function exportUniformLinksToFile() {
+  const payload = buildUniformExportPayload();
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `dbl-uniform-links-${stamp}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+
+  setStatus(`Exported ${Object.keys(payload.linksByYearTeam).length} uniform links.`, 'info');
 }
 
 function renderBanners(timeline) {
