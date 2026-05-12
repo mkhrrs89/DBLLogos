@@ -146,6 +146,10 @@ h2 {
   gap: 8px;
 }
 
+#clearLeagueFileBtn {
+  justify-self: start;
+}
+
 .upload-label,
 .stat-label {
   color: var(--muted);
