@@ -29,12 +29,14 @@ const bannerImportFile = document.getElementById('bannerImportFile');
 const importUniformsBtn = document.getElementById('importUniformsBtn');
 const exportUniformsBtn = document.getElementById('exportUniformsBtn');
 const uniformImportFile = document.getElementById('uniformImportFile');
+const clearLeagueFileBtn = document.getElementById('clearLeagueFileBtn');
 let fullTimeline = null;
 let currentTimeline = null;
 let teamSortMode = 'alpha';
 let savedBannersByYear = loadSavedBanners();
 let savedUniformsByYear = loadSavedUniforms();
 let selectedUniformYear = null;
+let isLeagueFileCleared = false;
 
 restoreSavedTimeline();
 setActiveTab('logos');
@@ -50,6 +52,7 @@ exportBannersBtn?.addEventListener('click', exportBannerLinksToFile);
 importUniformsBtn?.addEventListener('click', () => uniformImportFile?.click());
 uniformImportFile?.addEventListener('change', importUniformLinksFromFile);
 exportUniformsBtn?.addEventListener('click', exportUniformLinksToFile);
+clearLeagueFileBtn?.addEventListener('click', clearLoadedLeagueFile);
 uniformYearSelect?.addEventListener('change', () => {
   selectedUniformYear = Number(uniformYearSelect.value) || null;
   renderUniforms(fullTimeline);
@@ -65,6 +68,7 @@ fileInput.addEventListener('change', async (event) => {
     const text = await readLeagueFile(file);
     const league = JSON.parse(text);
     const timeline = buildTimelineData(league);
+    isLeagueFileCleared = false;
     setTimeline(timeline);
     persistTimeline(file.name, timeline);
     setStatus(`Loaded ${file.name}.`, 'info');
@@ -85,7 +89,7 @@ fileInput.addEventListener('change', async (event) => {
 });
 
 mobileFullscreenBtn.addEventListener('click', () => {
-  if (!currentTimeline) return;
+  if (!currentTimeline || isLeagueFileCleared) return;
   timelineFullscreen.hidden = false;
   document.body.classList.add('fullscreen-open');
   renderTimelineInto(currentTimeline, timelineFullscreenWrap);
@@ -97,7 +101,7 @@ activeTeamsOnlyToggle.addEventListener('change', () => {
 
 teamSortModeSelect?.addEventListener('change', () => {
   teamSortMode = teamSortModeSelect.value === 'tid' ? 'tid' : 'alpha';
-  if (!fullTimeline) return;
+  if (!fullTimeline || isLeagueFileCleared) return;
   setTimeline(fullTimeline);
 });
 
@@ -117,6 +121,21 @@ document.addEventListener('keydown', (event) => {
     closeFullscreenTimeline();
   }
 });
+
+
+function clearLoadedLeagueFile() {
+  localStorage.removeItem(SAVED_TIMELINE_KEY);
+  isLeagueFileCleared = true;
+  currentTimeline = null;
+  closeFullscreenTimeline();
+  timelineWrap.className = 'timeline-wrap empty-state';
+  timelineWrap.innerHTML = '<div class="empty-copy"><p>No league file loaded yet.</p></div>';
+  resetStats();
+  if (fileInput) {
+    fileInput.value = '';
+  }
+  setStatus('Cleared loaded league file and logos timeline. Banner and uniform links were not changed.', 'info');
+}
 
 function setStatus(message, type = 'info') {
   statusMessage.textContent = message;
@@ -668,7 +687,7 @@ function setActiveTeamsOnlyEnabled(enabled) {
   if (activeTeamsOnlyToggleFullscreen) {
     activeTeamsOnlyToggleFullscreen.checked = enabled;
   }
-  if (!fullTimeline) return;
+  if (!fullTimeline || isLeagueFileCleared) return;
   setTimeline(fullTimeline);
 }
 
