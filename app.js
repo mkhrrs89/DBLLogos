@@ -124,7 +124,11 @@ document.addEventListener('keydown', (event) => {
 
 
 function clearLoadedLeagueFile() {
-  localStorage.removeItem(SAVED_TIMELINE_KEY);
+  try {
+    localStorage.removeItem(SAVED_TIMELINE_KEY);
+  } catch (error) {
+    console.warn('Could not clear saved timeline from localStorage.', error);
+  }
   isLeagueFileCleared = true;
   currentTimeline = null;
   closeFullscreenTimeline();
@@ -162,7 +166,12 @@ function persistTimeline(fileName, timeline) {
 }
 
 function hasSavedTimeline() {
-  return Boolean(localStorage.getItem(SAVED_TIMELINE_KEY));
+  try {
+    return Boolean(localStorage.getItem(SAVED_TIMELINE_KEY));
+  } catch (error) {
+    console.warn('Could not check saved timeline in localStorage.', error);
+    return false;
+  }
 }
 
 function restoreSavedTimeline() {
@@ -183,7 +192,12 @@ function restoreSavedTimeline() {
     setStatus(`${fileText} Upload a new league file to replace it.${savedStamp}`, 'info');
   } catch (error) {
     console.warn('Could not restore saved timeline from localStorage.', error);
-    localStorage.removeItem(SAVED_TIMELINE_KEY);
+
+    try {
+      localStorage.removeItem(SAVED_TIMELINE_KEY);
+    } catch (removeError) {
+      console.warn('Could not clear saved timeline from localStorage.', removeError);
+    }
   }
 }
 
