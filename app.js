@@ -444,7 +444,7 @@ function exportBannerLinksToFile() {
   const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = buildExportFileTimestamp();
 
   const link = document.createElement('a');
   link.href = url;
@@ -507,7 +507,7 @@ function exportUniformLinksToFile() {
   const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = buildExportFileTimestamp();
 
   const link = document.createElement('a');
   link.href = url;
@@ -518,6 +518,11 @@ function exportUniformLinksToFile() {
   URL.revokeObjectURL(url);
 
   setStatus(`Exported ${Object.keys(payload.linksByYearTeam).length} uniform links.`, 'info');
+}
+
+
+function buildExportFileTimestamp(date = new Date()) {
+  return date.toISOString().replace(/[:]/g, '-').replace(/\..+$/, '');
 }
 
 function renderBanners(timeline) {
