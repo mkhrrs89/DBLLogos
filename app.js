@@ -8,6 +8,8 @@ const mobileFullscreenBtn = document.getElementById('mobileFullscreenBtn');
 const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
 const activeTeamsOnlyToggle = document.getElementById('activeTeamsOnlyToggle');
 const activeTeamsOnlyToggleFullscreen = document.getElementById('activeTeamsOnlyToggleFullscreen');
+const smallLogosToggle = document.getElementById('smallLogosToggle');
+const smallLogosToggleFullscreen = document.getElementById('smallLogosToggleFullscreen');
 const teamSortModeSelect = document.getElementById('teamSortMode');
 const timelineFullscreen = document.getElementById('timelineFullscreen');
 const timelineFullscreenWrap = document.getElementById('timelineFullscreenWrap');
@@ -37,6 +39,7 @@ let savedBannersByYear = loadSavedBanners();
 let savedUniformsByYear = loadSavedUniforms();
 let selectedUniformYear = null;
 let isLeagueFileCleared = false;
+let useSmallLogos = false;
 
 restoreSavedTimeline();
 setActiveTab('logos');
@@ -107,6 +110,12 @@ teamSortModeSelect?.addEventListener('change', () => {
 
 activeTeamsOnlyToggleFullscreen?.addEventListener('change', () => {
   setActiveTeamsOnlyEnabled(activeTeamsOnlyToggleFullscreen.checked);
+});
+smallLogosToggle?.addEventListener('change', () => {
+  setUseSmallLogosEnabled(smallLogosToggle.checked);
+});
+smallLogosToggleFullscreen?.addEventListener('change', () => {
+  setUseSmallLogosEnabled(smallLogosToggleFullscreen.checked);
 });
 
 closeFullscreenBtn.addEventListener('click', closeFullscreenTimeline);
@@ -232,7 +241,19 @@ function deserializeTimeline(snapshot) {
       firstSeason: row.firstSeason,
       lastSeason: row.lastSeason,
       years: Array.isArray(row.years) ? row.years : [],
-      entriesByYear: new Map(Array.isArray(row.entriesByYear) ? row.entriesByYear : []),
+      entriesByYear: new Map(
+        (Array.isArray(row.entriesByYear) ? row.entriesByYear : []).map(([year, entry]) => {
+          const normalizedPrimary = normalizeLogoUrl(entry?.primaryLogoURL || entry?.logoURL || '');
+          const normalizedSmall = normalizeLogoUrl(entry?.smallLogoURL || '');
+          const normalizedFallback = normalizeLogoUrl(entry?.fallbackLogoURL || normalizedPrimary || normalizedSmall || '');
+          return [year, {
+            year,
+            primaryLogoURL: normalizedPrimary,
+            smallLogoURL: normalizedSmall,
+            fallbackLogoURL: normalizedFallback,
+          }];
+        }),
+      ),
     })),
   };
 }
@@ -295,13 +316,17 @@ function normalizeTeamTimeline(team) {
   let lastKnownLogo = null;
 
   for (const season of seasons) {
-    const logoURL = normalizeLogoUrl(season.imgURL || season.imgURLSmall || team.imgURL || team.imgURLSmall || '');
-    if (logoURL) {
-      lastKnownLogo = logoURL;
+    const primaryLogoURL = normalizeLogoUrl(season.imgURL || team.imgURL || '');
+    const smallLogoURL = normalizeLogoUrl(season.imgURLSmall || team.imgURLSmall || '');
+    const fallbackLogo = primaryLogoURL || smallLogoURL;
+    if (fallbackLogo) {
+      lastKnownLogo = fallbackLogo;
     }
     entriesByYear.set(season.season, {
       year: season.season,
-      logoURL: logoURL || lastKnownLogo || '',
+      primaryLogoURL: primaryLogoURL || '',
+      smallLogoURL: smallLogoURL || '',
+      fallbackLogoURL: fallbackLogo || lastKnownLogo || '',
     });
   }
 
@@ -710,6 +735,18 @@ function setActiveTeamsOnlyEnabled(enabled) {
   setTimeline(fullTimeline);
 }
 
+function setUseSmallLogosEnabled(enabled) {
+  useSmallLogos = enabled;
+  if (smallLogosToggle) {
+    smallLogosToggle.checked = enabled;
+  }
+  if (smallLogosToggleFullscreen) {
+    smallLogosToggleFullscreen.checked = enabled;
+  }
+  if (!fullTimeline || isLeagueFileCleared) return;
+  setTimeline(fullTimeline);
+}
+
 function renderTimelineInto(timeline, targetWrap) {
   const { years, rows } = timeline;
   if (!rows.length) {
@@ -757,15 +794,23 @@ function renderTimelineInto(timeline, targetWrap) {
     `;
     tr.appendChild(rowHeader);
 
-    let carryForwardLogo = '';
+    let carryForwardPrimaryLogo = '';
+    let carryForwardSmallLogo = '';
+    let carryForwardFallbackLogo = '';
 
     for (const year of years) {
       const td = document.createElement('td');
       const seasonEntry = row.entriesByYear.get(year);
       const isActiveYear = row.entriesByYear.has(year);
 
-      if (seasonEntry?.logoURL) {
-        carryForwardLogo = seasonEntry.logoURL;
+      if (seasonEntry?.primaryLogoURL) {
+        carryForwardPrimaryLogo = seasonEntry.primaryLogoURL;
+      }
+      if (seasonEntry?.smallLogoURL) {
+        carryForwardSmallLogo = seasonEntry.smallLogoURL;
+      }
+      if (seasonEntry?.fallbackLogoURL) {
+        carryForwardFallbackLogo = seasonEntry.fallbackLogoURL;
       }
 
       const withinFranchiseSpan = year >= row.firstSeason && year <= row.lastSeason;
@@ -774,7 +819,9 @@ function renderTimelineInto(timeline, targetWrap) {
         td.className = 'empty-cell';
         td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
       } else {
-        const logoToShow = seasonEntry?.logoURL || carryForwardLogo;
+        const logoToShow = useSmallLogos
+          ? seasonEntry?.smallLogoURL || carryForwardSmallLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo
+          : seasonEntry?.primaryLogoURL || carryForwardPrimaryLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo;
         if (logoToShow) {
           td.className = 'logo-cell';
           td.innerHTML = `
