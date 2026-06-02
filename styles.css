@@ -474,9 +474,29 @@ h2 {
   gap: 4px;
 }
 
+.row-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .row-label strong {
   font-size: 0.92rem;
   line-height: 1.1;
+}
+
+.row-tid {
+  border: 1px solid rgba(109, 194, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(109, 194, 255, 0.12);
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 3px 5px;
+  white-space: nowrap;
 }
 
 .row-years {
