@@ -786,9 +786,13 @@ function renderTimelineInto(timeline, targetWrap) {
     const rowHeader = document.createElement('th');
     rowHeader.className = 'row-header';
     rowHeader.scope = 'row';
+    const tidLabel = row.tid === null || row.tid === undefined ? '' : `
+          <span class="row-tid">TID ${escapeHtml(row.tid)}</span>`;
     rowHeader.innerHTML = `
       <div class="row-label">
-        <strong>${escapeHtml(row.latestLocation)}</strong>
+        <div class="row-title">
+          <strong>${escapeHtml(row.latestLocation)}</strong>${tidLabel}
+        </div>
         <span class="row-years">${row.firstSeason}–${row.lastSeason}</span>
       </div>
     `;
