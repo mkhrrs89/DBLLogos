@@ -19,11 +19,14 @@ const SAVED_UNIFORMS_KEY = 'dbl-logo-uniforms:v1';
 const logosTabBtn = document.getElementById('logosTabBtn');
 const bannersTabBtn = document.getElementById('bannersTabBtn');
 const uniformsTabBtn = document.getElementById('uniformsTabBtn');
+const rankingsTabBtn = document.getElementById('rankingsTabBtn');
 const logosPanel = document.getElementById('logosPanel');
 const bannersPanel = document.getElementById('bannersPanel');
 const uniformsPanel = document.getElementById('uniformsPanel');
+const rankingsPanel = document.getElementById('rankingsPanel');
 const bannersWrap = document.getElementById('bannersWrap');
 const uniformsWrap = document.getElementById('uniformsWrap');
+const rankingsWrap = document.getElementById('rankingsWrap');
 const uniformYearSelect = document.getElementById('uniformYearSelect');
 const importBannersBtn = document.getElementById('importBannersBtn');
 const exportBannersBtn = document.getElementById('exportBannersBtn');
@@ -45,10 +48,12 @@ restoreSavedTimeline();
 setActiveTab('logos');
 renderBanners(fullTimeline);
 renderUniforms(fullTimeline);
+renderRankings(fullTimeline);
 
 logosTabBtn?.addEventListener('click', () => setActiveTab('logos'));
 bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
 uniformsTabBtn?.addEventListener('click', () => setActiveTab('uniforms'));
+rankingsTabBtn?.addEventListener('click', () => setActiveTab('rankings'));
 importBannersBtn?.addEventListener('click', () => bannerImportFile?.click());
 bannerImportFile?.addEventListener('change', importBannerLinksFromFile);
 exportBannersBtn?.addEventListener('click', exportBannerLinksToFile);
@@ -140,14 +145,18 @@ function clearLoadedLeagueFile() {
   }
   isLeagueFileCleared = true;
   currentTimeline = null;
+  fullTimeline = null;
   closeFullscreenTimeline();
   timelineWrap.className = 'timeline-wrap empty-state';
   timelineWrap.innerHTML = '<div class="empty-copy"><p>No league file loaded yet.</p></div>';
   resetStats();
+  renderBanners(null);
+  renderUniforms(null);
+  renderRankings(null);
   if (fileInput) {
     fileInput.value = '';
   }
-  setStatus('Cleared loaded league file and logos timeline. Banner and uniform links were not changed.', 'info');
+  setStatus('Cleared loaded league file and generated views. Banner and uniform links were not changed.', 'info');
 }
 
 function setStatus(message, type = 'info') {
@@ -221,8 +230,17 @@ function serializeTimeline(timeline) {
       firstSeason: row.firstSeason,
       lastSeason: row.lastSeason,
       years: row.years,
-      entriesByYear: Array.from(row.entriesByYear.entries()),
+      entriesByYear: Array.from(row.entriesByYear.entries()).map(([year, entry]) => [year, {
+        year: entry.year,
+        teamName: entry.teamName,
+        region: entry.region,
+        name: entry.name,
+        primaryLogoURL: entry.primaryLogoURL,
+        smallLogoURL: entry.smallLogoURL,
+        fallbackLogoURL: entry.fallbackLogoURL,
+      }]),
     })),
+    rankings: Array.isArray(timeline.rankings) ? timeline.rankings : [],
   };
 }
 
@@ -235,6 +253,7 @@ function deserializeTimeline(snapshot) {
     years: snapshot.years,
     minYear: snapshot.minYear,
     maxYear: snapshot.maxYear,
+    rankings: Array.isArray(snapshot.rankings) ? snapshot.rankings : [],
     rows: snapshot.rows.map((row) => ({
       tid: row.tid,
       latestLocation: row.latestLocation,
@@ -248,6 +267,9 @@ function deserializeTimeline(snapshot) {
           const normalizedFallback = normalizeLogoUrl(entry?.fallbackLogoURL || normalizedPrimary || normalizedSmall || '');
           return [year, {
             year,
+            teamName: entry?.teamName || buildTeamSeasonName(entry?.region, entry?.name),
+            region: entry?.region || '',
+            name: entry?.name || '',
             primaryLogoURL: normalizedPrimary,
             smallLogoURL: normalizedSmall,
             fallbackLogoURL: normalizedFallback,
@@ -278,8 +300,9 @@ function buildTimelineData(league) {
     throw new Error('This file does not look like a valid league export.');
   }
 
+  const statsByTidSeason = buildStatsByTidSeason(league.teamStats);
   const rows = league.teams
-    .map((team) => normalizeTeamTimeline(team))
+    .map((team) => normalizeTeamTimeline(team, statsByTidSeason))
     .filter((row) => row.years.length > 0)
     .sort((a, b) => a.firstSeason - b.firstSeason);
 
@@ -290,16 +313,41 @@ function buildTimelineData(league) {
   const minYear = Math.min(...rows.map((row) => row.firstSeason));
   const maxYear = Math.max(...rows.map((row) => row.lastSeason));
   const years = range(minYear, maxYear);
+  const rankings = buildAllTimeTeamRankings(rows, statsByTidSeason);
 
   return {
     years,
     rows,
     minYear,
     maxYear,
+    rankings,
   };
 }
 
-function normalizeTeamTimeline(team) {
+function buildStatsByTidSeason(teamStats) {
+  const statsByTidSeason = new Map();
+  if (!Array.isArray(teamStats)) return statsByTidSeason;
+
+  for (const stat of teamStats) {
+    if (!Number.isFinite(stat?.tid) || !Number.isFinite(stat?.season)) continue;
+    const key = buildTidSeasonKey(stat.tid, stat.season);
+    const groupedStats = statsByTidSeason.get(key) || { regular: null, playoffs: null };
+    if (stat.playoffs) {
+      groupedStats.playoffs = stat;
+    } else {
+      groupedStats.regular = stat;
+    }
+    statsByTidSeason.set(key, groupedStats);
+  }
+
+  return statsByTidSeason;
+}
+
+function buildTidSeasonKey(tid, season) {
+  return `${tid}:${season}`;
+}
+
+function normalizeTeamTimeline(team, statsByTidSeason = new Map()) {
   const seasons = Array.isArray(team.seasons)
     ? team.seasons
         .filter((season) => Number.isFinite(season?.season))
@@ -319,11 +367,21 @@ function normalizeTeamTimeline(team) {
     const primaryLogoURL = normalizeLogoUrl(season.imgURL || team.imgURL || '');
     const smallLogoURL = normalizeLogoUrl(season.imgURLSmall || team.imgURLSmall || '');
     const fallbackLogo = primaryLogoURL || smallLogoURL;
+    const seasonRegion = season.region || team.region || latestLocation;
+    const seasonName = season.name || team.name || '';
+    const teamName = buildTeamSeasonName(seasonRegion, seasonName);
+    const stats = statsByTidSeason.get(buildTidSeasonKey(team.tid, season.season)) || {};
     if (fallbackLogo) {
       lastKnownLogo = fallbackLogo;
     }
     entriesByYear.set(season.season, {
       year: season.season,
+      teamName,
+      region: seasonRegion,
+      name: seasonName,
+      season,
+      regularStats: stats.regular || null,
+      playoffStats: stats.playoffs || null,
       primaryLogoURL: primaryLogoURL || '',
       smallLogoURL: smallLogoURL || '',
       fallbackLogoURL: fallbackLogo || lastKnownLogo || '',
@@ -346,6 +404,142 @@ function normalizeLogoUrl(url) {
   return trimmed;
 }
 
+
+function buildAllTimeTeamRankings(rows) {
+  const rankings = [];
+  const maxRoundsWonByYear = getMaxRoundsWonByYear(rows);
+  for (const row of rows) {
+    for (const [year, entry] of row.entriesByYear.entries()) {
+      rankings.push(calculateTeamSeasonRanking(row, year, entry, maxRoundsWonByYear.get(year) || 0));
+    }
+  }
+
+  return rankings.sort((a, b) => {
+    if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
+    if (b.regularSeasonScore !== a.regularSeasonScore) return b.regularSeasonScore - a.regularSeasonScore;
+    if (b.playoffScore !== a.playoffScore) return b.playoffScore - a.playoffScore;
+    return a.label.localeCompare(b.label);
+  });
+}
+
+function getMaxRoundsWonByYear(rows) {
+  const maxRoundsWonByYear = new Map();
+  for (const row of rows) {
+    for (const [year, entry] of row.entriesByYear.entries()) {
+      const roundsWon = Number(entry?.season?.playoffRoundsWon ?? entry?.season?.roundsWon);
+      if (!Number.isFinite(roundsWon) || roundsWon < 0) continue;
+      maxRoundsWonByYear.set(year, Math.max(maxRoundsWonByYear.get(year) || 0, roundsWon));
+    }
+  }
+  return maxRoundsWonByYear;
+}
+
+function calculateTeamSeasonRanking(row, year, entry, maxRoundsWon) {
+  const season = entry.season || {};
+  const regularStats = entry.regularStats || {};
+  const playoffStats = entry.playoffStats || {};
+  const regularWins = readNumber(season.won, regularStats.won, regularStats.wins);
+  const regularLosses = readNumber(season.lost, regularStats.lost, regularStats.losses);
+  const regularWinPct = calculateWinPct(regularWins, regularLosses);
+  const regularNetRating = readNumber(
+    regularStats.nrtg,
+    regularStats.netRating,
+    regularStats.netRtg,
+    calculateRatingDiff(regularStats),
+    season.nrtg,
+    season.netRating,
+  );
+  const srs = readNumber(regularStats.srs, season.srs);
+  const playoffWins = readNumber(playoffStats.won, playoffStats.wins, season.playoffWins, season.playoffWon);
+  const playoffLosses = readNumber(playoffStats.lost, playoffStats.losses, season.playoffLosses, season.playoffLost);
+  const playoffWinPct = calculateWinPct(playoffWins, playoffLosses);
+  const playoffRoundsWon = Number(season.playoffRoundsWon ?? season.roundsWon);
+  const hasKnownPlayoffRounds = Number.isFinite(playoffRoundsWon);
+  const hasPlayoffAppearance = (hasKnownPlayoffRounds && playoffRoundsWon >= 0) || playoffWins + playoffLosses > 0;
+  const playoffNetRating = readNumber(
+    playoffStats.nrtg,
+    playoffStats.netRating,
+    playoffStats.netRtg,
+    calculateRatingDiff(playoffStats),
+    season.playoffNetRating,
+  );
+  const roundAdvancementScore = calculateRoundAdvancementScore(season, maxRoundsWon);
+  const championshipBonus = isChampionSeason(season, maxRoundsWon) ? 100 : 0;
+  const contextBonus = readNumber(season.contextBonus, season.hype, season.playoffHype) || 0;
+  const regularSeasonScore = (regularWinPct * 100 * 0.45)
+    + ((50 + regularNetRating * 4) * 0.35)
+    + ((50 + srs * 4) * 0.20);
+  const playoffScore = hasPlayoffAppearance
+    ? (playoffWinPct * 100 * 0.35)
+      + ((50 + playoffNetRating * 4) * 0.35)
+      + (roundAdvancementScore * 0.30)
+    : 0;
+  const finalScore = (regularSeasonScore * 0.45)
+    + (playoffScore * 0.40)
+    + (championshipBonus * 0.10)
+    + (contextBonus * 0.05);
+  const logoURL = entry.primaryLogoURL || entry.smallLogoURL || entry.fallbackLogoURL || '';
+  const teamName = entry.teamName || row.latestLocation || 'Unknown Team';
+
+  return {
+    tid: row.tid,
+    year,
+    teamName,
+    label: `${year} ${teamName}`,
+    logoURL,
+    finalScore: clampScore(finalScore),
+    regularSeasonScore: clampScore(regularSeasonScore),
+    playoffScore: clampScore(playoffScore),
+  };
+}
+
+function buildTeamSeasonName(region, name) {
+  const cleanRegion = typeof region === 'string' ? region.trim() : '';
+  const cleanName = typeof name === 'string' ? name.trim() : '';
+  if (cleanRegion && cleanName) return `${cleanRegion} ${cleanName}`;
+  return cleanRegion || cleanName || 'Unknown Team';
+}
+
+function readNumber(...values) {
+  for (const value of values) {
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue)) return numberValue;
+  }
+  return 0;
+}
+
+function calculateWinPct(wins, losses) {
+  const games = wins + losses;
+  if (!games) return 0;
+  return wins / games;
+}
+
+function calculateRatingDiff(stats = {}) {
+  const offensiveRating = Number(stats.ortg ?? stats.offRating ?? stats.offRtg);
+  const defensiveRating = Number(stats.drtg ?? stats.defRating ?? stats.defRtg);
+  if (!Number.isFinite(offensiveRating) || !Number.isFinite(defensiveRating)) return undefined;
+  return offensiveRating - defensiveRating;
+}
+
+function calculateRoundAdvancementScore(season = {}, maxRoundsWon = 0) {
+  const roundsWon = readNumber(season.playoffRoundsWon, season.roundsWon);
+  if (roundsWon < 0 || maxRoundsWon <= 0) return 0;
+  return Math.min(100, (roundsWon / maxRoundsWon) * 100);
+}
+
+function isChampionSeason(season = {}, maxRoundsWon = 0) {
+  const roundsWon = readNumber(season.playoffRoundsWon, season.roundsWon);
+  return season.champ === true
+    || season.champion === true
+    || season.playoffFinish === 'champion'
+    || (maxRoundsWon > 0 && roundsWon === maxRoundsWon);
+}
+
+function clampScore(score) {
+  if (!Number.isFinite(score)) return 0;
+  return Math.max(0, Number(score.toFixed(2)));
+}
+
 function renderTimeline(timeline) {
   return renderTimelineInto(timeline, timelineWrap);
 }
@@ -356,6 +550,7 @@ function setTimeline(timeline) {
   renderTimeline(currentTimeline);
   renderBanners(fullTimeline);
   renderUniforms(fullTimeline);
+  renderRankings(fullTimeline);
   updateStats(currentTimeline);
   if (!timelineFullscreen.hidden) {
     renderTimelineInto(currentTimeline, timelineFullscreenWrap);
@@ -366,15 +561,19 @@ function setActiveTab(tabName) {
   const isLogos = tabName === 'logos';
   const isBanners = tabName === 'banners';
   const isUniforms = tabName === 'uniforms';
+  const isRankings = tabName === 'rankings';
   logosTabBtn?.classList.toggle('active', isLogos);
   bannersTabBtn?.classList.toggle('active', isBanners);
   uniformsTabBtn?.classList.toggle('active', isUniforms);
+  rankingsTabBtn?.classList.toggle('active', isRankings);
   logosTabBtn?.setAttribute('aria-selected', String(isLogos));
   bannersTabBtn?.setAttribute('aria-selected', String(isBanners));
   uniformsTabBtn?.setAttribute('aria-selected', String(isUniforms));
+  rankingsTabBtn?.setAttribute('aria-selected', String(isRankings));
   logosPanel.hidden = !isLogos;
   bannersPanel.hidden = !isBanners;
   uniformsPanel.hidden = !isUniforms;
+  rankingsPanel.hidden = !isRankings;
 }
 
 function loadSavedBanners() {
@@ -692,6 +891,58 @@ function renderUniforms(timeline) {
     card.append(label, frame, input);
     uniformsWrap.appendChild(card);
   }
+}
+
+
+function renderRankings(timeline) {
+  rankingsWrap.innerHTML = '';
+  const rankings = Array.isArray(timeline?.rankings) ? timeline.rankings : [];
+  if (!rankings.length) {
+    rankingsWrap.className = 'rankings-wrap empty-state';
+    const empty = document.createElement('div');
+    empty.className = 'empty-copy';
+    empty.innerHTML = '<p>Load a league file to rank every team season.</p>';
+    rankingsWrap.appendChild(empty);
+    return;
+  }
+
+  rankingsWrap.className = 'rankings-wrap';
+  const list = document.createElement('ol');
+  list.className = 'rankings-list';
+
+  rankings.forEach((ranking) => {
+    const item = document.createElement('li');
+    item.className = 'ranking-item';
+
+    const logo = document.createElement('div');
+    logo.className = 'ranking-logo';
+    if (ranking.logoURL) {
+      const image = document.createElement('img');
+      image.src = ranking.logoURL;
+      image.loading = 'lazy';
+      image.referrerPolicy = 'no-referrer';
+      image.alt = `${ranking.label} logo`;
+      logo.appendChild(image);
+    }
+
+    const details = document.createElement('div');
+    details.className = 'ranking-details';
+    const name = document.createElement('strong');
+    name.textContent = ranking.label;
+    details.appendChild(name);
+
+    const score = document.createElement('span');
+    score.className = 'ranking-score';
+    score.textContent = ranking.finalScore.toFixed(2);
+
+    const row = document.createElement('div');
+    row.className = 'ranking-row';
+    row.append(logo, details, score);
+    item.appendChild(row);
+    list.appendChild(item);
+  });
+
+  rankingsWrap.appendChild(list);
 }
 
 function getVisibleTimeline(timeline) {

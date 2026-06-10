@@ -23,6 +23,7 @@
           <button id="logosTabBtn" class="tab-btn active" type="button" aria-selected="true">Logos</button>
           <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
           <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
+          <button id="rankingsTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Teams</button>
         </nav>
 
         <section class="panel controls-panel">
@@ -139,6 +140,18 @@
           <div id="uniformsWrap" class="banners-wrap empty-state">
             <div class="empty-copy">
               <p>Load a league file to create uniform slots.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="rankingsPanel" class="panel rankings-panel" hidden>
+          <div class="rankings-header">
+            <h2>All-Time Teams</h2>
+            <p class="subtle">Every franchise season ranked by the regular season, playoff, championship, and context score formula.</p>
+          </div>
+          <div id="rankingsWrap" class="rankings-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to rank every team season.</p>
             </div>
           </div>
         </section>
