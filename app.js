@@ -16,6 +16,7 @@ const timelineFullscreenWrap = document.getElementById('timelineFullscreenWrap')
 const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
 const SAVED_BANNERS_KEY = 'dbl-logo-banners:v1';
 const SAVED_UNIFORMS_KEY = 'dbl-logo-uniforms:v1';
+const SCORING_RECORD_LIMIT = 100;
 const logosTabBtn = document.getElementById('logosTabBtn');
 const bannersTabBtn = document.getElementById('bannersTabBtn');
 const uniformsTabBtn = document.getElementById('uniformsTabBtn');
@@ -247,7 +248,7 @@ function serializeTimeline(timeline) {
       }]),
     })),
     rankings: Array.isArray(timeline.rankings) ? timeline.rankings : [],
-    scoringRecords: Array.isArray(timeline.scoringRecords) ? timeline.scoringRecords : [],
+    scoringRecords: normalizeScoringRecords(timeline.scoringRecords),
   };
 }
 
@@ -261,7 +262,7 @@ function deserializeTimeline(snapshot) {
     minYear: snapshot.minYear,
     maxYear: snapshot.maxYear,
     rankings: Array.isArray(snapshot.rankings) ? snapshot.rankings : [],
-    scoringRecords: Array.isArray(snapshot.scoringRecords) ? snapshot.scoringRecords : [],
+    scoringRecords: normalizeScoringRecords(snapshot.scoringRecords),
     rows: snapshot.rows.map((row) => ({
       tid: row.tid,
       latestLocation: row.latestLocation,
@@ -570,7 +571,7 @@ function buildScoringRecords(league, rows) {
       for (const player of players) {
         const points = readPlayerPoints(player);
         if (!Number.isFinite(points)) continue;
-        records.push({
+        addScoringRecord(records, {
           points,
           playerName: getPlayerGameName(player, playerNameByPid),
           pid: Number.isFinite(player?.pid) ? player.pid : null,
@@ -585,11 +586,39 @@ function buildScoringRecords(league, rows) {
     }
   }
 
-  return records.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if ((b.season || 0) !== (a.season || 0)) return (b.season || 0) - (a.season || 0);
-    return a.playerName.localeCompare(b.playerName);
-  });
+  return records;
+}
+
+function addScoringRecord(records, record) {
+  if (records.length >= SCORING_RECORD_LIMIT && compareScoringRecords(record, records[records.length - 1]) >= 0) {
+    return;
+  }
+
+  const insertIndex = records.findIndex((existingRecord) => compareScoringRecords(record, existingRecord) < 0);
+  if (insertIndex === -1) {
+    records.push(record);
+  } else {
+    records.splice(insertIndex, 0, record);
+  }
+
+  if (records.length > SCORING_RECORD_LIMIT) {
+    records.length = SCORING_RECORD_LIMIT;
+  }
+}
+
+function normalizeScoringRecords(records) {
+  if (!Array.isArray(records)) return [];
+  return records.slice().sort(compareScoringRecords).slice(0, SCORING_RECORD_LIMIT);
+}
+
+function compareScoringRecords(a = {}, b = {}) {
+  const pointsDifference = (b.points || 0) - (a.points || 0);
+  if (pointsDifference !== 0) return pointsDifference;
+
+  const seasonDifference = (b.season || 0) - (a.season || 0);
+  if (seasonDifference !== 0) return seasonDifference;
+
+  return String(a.playerName || '').localeCompare(String(b.playerName || ''));
 }
 
 function buildPlayerNameByPid(players) {
@@ -670,7 +699,7 @@ function readGameId(game = {}) {
 
 function renderRecords(timeline) {
   recordsWrap.innerHTML = '';
-  const records = Array.isArray(timeline?.scoringRecords) ? timeline.scoringRecords : [];
+  const records = normalizeScoringRecords(timeline?.scoringRecords);
   if (!records.length) {
     recordsWrap.className = 'records-wrap empty-state';
     const empty = document.createElement('div');
