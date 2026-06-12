@@ -24,6 +24,7 @@
           <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
           <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
           <button id="rankingsTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Teams</button>
+          <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
         </nav>
 
         <section class="panel controls-panel">
@@ -152,6 +153,18 @@
           <div id="rankingsWrap" class="rankings-wrap empty-state">
             <div class="empty-copy">
               <p>Load a league file to rank every team season.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="recordsPanel" class="panel rankings-panel" hidden>
+          <div class="rankings-header">
+            <h2>Records</h2>
+            <p class="subtle">Highest single-game scoring totals by any player in the loaded league file, including every qualifying game from the same player and season.</p>
+          </div>
+          <div id="recordsWrap" class="records-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to show single-game scoring records.</p>
             </div>
           </div>
         </section>
