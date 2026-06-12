@@ -559,7 +559,7 @@ function clampScore(score) {
 
 function buildScoringRecords(league, rows) {
   const records = [];
-  const playerNameByPid = buildPlayerNameByPid(league.players);
+  const playerNameByPid = buildPlayerNameByPid(league);
   const teamNameByTidSeason = buildTeamNameByTidSeason(rows);
 
   if (!Array.isArray(league.games)) return records;
@@ -574,7 +574,7 @@ function buildScoringRecords(league, rows) {
         addScoringRecord(records, {
           points,
           playerName: getPlayerGameName(player, playerNameByPid),
-          pid: Number.isFinite(player?.pid) ? player.pid : null,
+          pid: readOptionalNumber(player?.pid),
           tid: Number.isFinite(teamEntry?.tid) ? teamEntry.tid : readOptionalNumber(player?.tid),
           teamName: getTeamGameName(teamEntry, game, teamNameByTidSeason),
           opponentName: getOpponentGameName(teamEntry, teamEntries, game, teamNameByTidSeason),
@@ -621,15 +621,37 @@ function compareScoringRecords(a = {}, b = {}) {
   return String(a.playerName || '').localeCompare(String(b.playerName || ''));
 }
 
-function buildPlayerNameByPid(players) {
+function buildPlayerNameByPid(leagueOrPlayers) {
   const playerNameByPid = new Map();
-  if (!Array.isArray(players)) return playerNameByPid;
+  const playerCollections = Array.isArray(leagueOrPlayers)
+    ? [leagueOrPlayers]
+    : getLeaguePlayerCollections(leagueOrPlayers);
 
-  for (const player of players) {
-    if (!Number.isFinite(player?.pid)) continue;
-    playerNameByPid.set(player.pid, getRosterPlayerName(player));
+  for (const players of playerCollections) {
+    for (const player of players) {
+      const pid = readOptionalNumber(player?.pid);
+      if (pid === null) continue;
+      const playerName = getRosterPlayerName(player);
+      const existingName = playerNameByPid.get(pid);
+      if (!existingName || existingName === 'Unknown Player' || playerName !== 'Unknown Player') {
+        playerNameByPid.set(pid, playerName);
+      }
+    }
   }
   return playerNameByPid;
+}
+
+function getLeaguePlayerCollections(league = {}) {
+  const playerCollectionKeys = [
+    'players',
+    'retiredPlayers',
+    'releasedPlayers',
+    'freeAgents',
+  ];
+
+  return playerCollectionKeys
+    .map((key) => league?.[key])
+    .filter(Array.isArray);
 }
 
 function getRosterPlayerName(player = {}) {
@@ -667,7 +689,8 @@ function readPlayerPoints(player = {}) {
 function getPlayerGameName(player = {}, playerNameByPid = new Map()) {
   const directName = getRosterPlayerName(player);
   if (directName !== 'Unknown Player') return directName;
-  return playerNameByPid.get(player.pid) || 'Unknown Player';
+  const pid = readOptionalNumber(player.pid);
+  return pid === null ? 'Unknown Player' : playerNameByPid.get(pid) || 'Unknown Player';
 }
 
 function getTeamGameName(teamEntry = {}, game = {}, teamNameByTidSeason = new Map()) {
