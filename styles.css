@@ -712,3 +712,64 @@ body.fullscreen-open {
     grid-column: 2;
   }
 }
+
+.records-wrap.empty-state {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.02);
+}
+
+.records-list {
+  list-style: decimal;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 2.2rem;
+}
+
+.record-item {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.035);
+}
+
+.record-item::marker {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.record-points {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.record-details {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.record-details strong {
+  overflow-wrap: anywhere;
+}
+
+.record-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .record-item {
+    grid-template-columns: 1fr;
+  }
+}

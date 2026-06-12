@@ -20,13 +20,16 @@ const logosTabBtn = document.getElementById('logosTabBtn');
 const bannersTabBtn = document.getElementById('bannersTabBtn');
 const uniformsTabBtn = document.getElementById('uniformsTabBtn');
 const rankingsTabBtn = document.getElementById('rankingsTabBtn');
+const recordsTabBtn = document.getElementById('recordsTabBtn');
 const logosPanel = document.getElementById('logosPanel');
 const bannersPanel = document.getElementById('bannersPanel');
 const uniformsPanel = document.getElementById('uniformsPanel');
 const rankingsPanel = document.getElementById('rankingsPanel');
+const recordsPanel = document.getElementById('recordsPanel');
 const bannersWrap = document.getElementById('bannersWrap');
 const uniformsWrap = document.getElementById('uniformsWrap');
 const rankingsWrap = document.getElementById('rankingsWrap');
+const recordsWrap = document.getElementById('recordsWrap');
 const uniformYearSelect = document.getElementById('uniformYearSelect');
 const importBannersBtn = document.getElementById('importBannersBtn');
 const exportBannersBtn = document.getElementById('exportBannersBtn');
@@ -49,11 +52,13 @@ setActiveTab('logos');
 renderBanners(fullTimeline);
 renderUniforms(fullTimeline);
 renderRankings(fullTimeline);
+renderRecords(fullTimeline);
 
 logosTabBtn?.addEventListener('click', () => setActiveTab('logos'));
 bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
 uniformsTabBtn?.addEventListener('click', () => setActiveTab('uniforms'));
 rankingsTabBtn?.addEventListener('click', () => setActiveTab('rankings'));
+recordsTabBtn?.addEventListener('click', () => setActiveTab('records'));
 importBannersBtn?.addEventListener('click', () => bannerImportFile?.click());
 bannerImportFile?.addEventListener('change', importBannerLinksFromFile);
 exportBannersBtn?.addEventListener('click', exportBannerLinksToFile);
@@ -153,6 +158,7 @@ function clearLoadedLeagueFile() {
   renderBanners(null);
   renderUniforms(null);
   renderRankings(null);
+  renderRecords(null);
   if (fileInput) {
     fileInput.value = '';
   }
@@ -241,6 +247,7 @@ function serializeTimeline(timeline) {
       }]),
     })),
     rankings: Array.isArray(timeline.rankings) ? timeline.rankings : [],
+    scoringRecords: Array.isArray(timeline.scoringRecords) ? timeline.scoringRecords : [],
   };
 }
 
@@ -254,6 +261,7 @@ function deserializeTimeline(snapshot) {
     minYear: snapshot.minYear,
     maxYear: snapshot.maxYear,
     rankings: Array.isArray(snapshot.rankings) ? snapshot.rankings : [],
+    scoringRecords: Array.isArray(snapshot.scoringRecords) ? snapshot.scoringRecords : [],
     rows: snapshot.rows.map((row) => ({
       tid: row.tid,
       latestLocation: row.latestLocation,
@@ -314,6 +322,7 @@ function buildTimelineData(league) {
   const maxYear = Math.max(...rows.map((row) => row.lastSeason));
   const years = range(minYear, maxYear);
   const rankings = buildAllTimeTeamRankings(rows, statsByTidSeason);
+  const scoringRecords = buildScoringRecords(league, rows);
 
   return {
     years,
@@ -321,6 +330,7 @@ function buildTimelineData(league) {
     minYear,
     maxYear,
     rankings,
+    scoringRecords,
   };
 }
 
@@ -500,6 +510,11 @@ function buildTeamSeasonName(region, name) {
   return cleanRegion || cleanName || 'Unknown Team';
 }
 
+function readOptionalNumber(value) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
+
 function readNumber(...values) {
   for (const value of values) {
     const numberValue = Number(value);
@@ -540,6 +555,163 @@ function clampScore(score) {
   return Math.max(0, Number(score.toFixed(2)));
 }
 
+
+function buildScoringRecords(league, rows) {
+  const records = [];
+  const playerNameByPid = buildPlayerNameByPid(league.players);
+  const teamNameByTidSeason = buildTeamNameByTidSeason(rows);
+
+  if (!Array.isArray(league.games)) return records;
+
+  for (const game of league.games) {
+    const teamEntries = getGameTeamEntries(game);
+    for (const teamEntry of teamEntries) {
+      const players = Array.isArray(teamEntry?.players) ? teamEntry.players : [];
+      for (const player of players) {
+        const points = readPlayerPoints(player);
+        if (!Number.isFinite(points)) continue;
+        records.push({
+          points,
+          playerName: getPlayerGameName(player, playerNameByPid),
+          pid: Number.isFinite(player?.pid) ? player.pid : null,
+          tid: Number.isFinite(teamEntry?.tid) ? teamEntry.tid : readOptionalNumber(player?.tid),
+          teamName: getTeamGameName(teamEntry, game, teamNameByTidSeason),
+          opponentName: getOpponentGameName(teamEntry, teamEntries, game, teamNameByTidSeason),
+          season: readGameSeason(game),
+          gameType: game?.playoffs ? 'Playoffs' : 'Regular season',
+          gid: readGameId(game),
+        });
+      }
+    }
+  }
+
+  return records.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if ((b.season || 0) !== (a.season || 0)) return (b.season || 0) - (a.season || 0);
+    return a.playerName.localeCompare(b.playerName);
+  });
+}
+
+function buildPlayerNameByPid(players) {
+  const playerNameByPid = new Map();
+  if (!Array.isArray(players)) return playerNameByPid;
+
+  for (const player of players) {
+    if (!Number.isFinite(player?.pid)) continue;
+    playerNameByPid.set(player.pid, getRosterPlayerName(player));
+  }
+  return playerNameByPid;
+}
+
+function getRosterPlayerName(player = {}) {
+  const directName = typeof player.name === 'string' ? player.name.trim() : '';
+  if (directName) return directName;
+  const firstName = typeof player.firstName === 'string' ? player.firstName.trim() : '';
+  const lastName = typeof player.lastName === 'string' ? player.lastName.trim() : '';
+  return [firstName, lastName].filter(Boolean).join(' ') || 'Unknown Player';
+}
+
+function buildTeamNameByTidSeason(rows) {
+  const teamNameByTidSeason = new Map();
+  for (const row of rows) {
+    for (const [year, entry] of row.entriesByYear.entries()) {
+      teamNameByTidSeason.set(buildTidSeasonKey(row.tid, year), entry.teamName || row.latestLocation || 'Unknown Team');
+    }
+  }
+  return teamNameByTidSeason;
+}
+
+function getGameTeamEntries(game = {}) {
+  if (Array.isArray(game.teams)) return game.teams;
+
+  const teams = [];
+  if (game.won && typeof game.won === 'object') teams.push(game.won);
+  if (game.lost && typeof game.lost === 'object') teams.push(game.lost);
+  return teams;
+}
+
+function readPlayerPoints(player = {}) {
+  const points = Number(player.pts ?? player.points ?? player.stat?.pts ?? player.stats?.pts);
+  return Number.isFinite(points) ? points : undefined;
+}
+
+function getPlayerGameName(player = {}, playerNameByPid = new Map()) {
+  const directName = getRosterPlayerName(player);
+  if (directName !== 'Unknown Player') return directName;
+  return playerNameByPid.get(player.pid) || 'Unknown Player';
+}
+
+function getTeamGameName(teamEntry = {}, game = {}, teamNameByTidSeason = new Map()) {
+  const directName = buildTeamSeasonName(teamEntry.region || teamEntry.name || '', teamEntry.name && teamEntry.region ? teamEntry.name : '');
+  if (directName !== 'Unknown Team') return directName;
+
+  const tid = Number.isFinite(teamEntry.tid) ? teamEntry.tid : null;
+  const season = readGameSeason(game);
+  if (tid !== null && season !== null) {
+    return teamNameByTidSeason.get(buildTidSeasonKey(tid, season)) || `TID ${tid}`;
+  }
+  return 'Unknown Team';
+}
+
+function getOpponentGameName(teamEntry = {}, teamEntries = [], game = {}, teamNameByTidSeason = new Map()) {
+  const opponent = teamEntries.find((candidate) => candidate !== teamEntry);
+  return opponent ? getTeamGameName(opponent, game, teamNameByTidSeason) : '';
+}
+
+function readGameSeason(game = {}) {
+  const season = Number(game.season ?? game.year);
+  return Number.isFinite(season) ? season : null;
+}
+
+function readGameId(game = {}) {
+  const gid = game.gid ?? game.id;
+  return gid === null || gid === undefined ? '' : String(gid);
+}
+
+function renderRecords(timeline) {
+  recordsWrap.innerHTML = '';
+  const records = Array.isArray(timeline?.scoringRecords) ? timeline.scoringRecords : [];
+  if (!records.length) {
+    recordsWrap.className = 'records-wrap empty-state';
+    const empty = document.createElement('div');
+    empty.className = 'empty-copy';
+    empty.innerHTML = '<p>Load a league file with game box scores to show single-game scoring records.</p>';
+    recordsWrap.appendChild(empty);
+    return;
+  }
+
+  recordsWrap.className = 'records-wrap';
+  const list = document.createElement('ol');
+  list.className = 'records-list';
+
+  records.forEach((record) => {
+    const item = document.createElement('li');
+    item.className = 'record-item';
+
+    const points = document.createElement('strong');
+    points.className = 'record-points';
+    points.textContent = `${record.points} pts`;
+
+    const details = document.createElement('div');
+    details.className = 'record-details';
+
+    const player = document.createElement('strong');
+    player.textContent = record.playerName;
+
+    const meta = document.createElement('span');
+    meta.className = 'record-meta';
+    const opponentText = record.opponentName ? ` vs ${record.opponentName}` : '';
+    const gidText = record.gid ? ` · Game ${record.gid}` : '';
+    meta.textContent = `${record.season || 'Unknown season'} · ${record.teamName}${opponentText} · ${record.gameType}${gidText}`;
+
+    details.append(player, meta);
+    item.append(points, details);
+    list.appendChild(item);
+  });
+
+  recordsWrap.appendChild(list);
+}
+
 function renderTimeline(timeline) {
   return renderTimelineInto(timeline, timelineWrap);
 }
@@ -551,6 +723,7 @@ function setTimeline(timeline) {
   renderBanners(fullTimeline);
   renderUniforms(fullTimeline);
   renderRankings(fullTimeline);
+  renderRecords(fullTimeline);
   updateStats(currentTimeline);
   if (!timelineFullscreen.hidden) {
     renderTimelineInto(currentTimeline, timelineFullscreenWrap);
@@ -562,18 +735,22 @@ function setActiveTab(tabName) {
   const isBanners = tabName === 'banners';
   const isUniforms = tabName === 'uniforms';
   const isRankings = tabName === 'rankings';
+  const isRecords = tabName === 'records';
   logosTabBtn?.classList.toggle('active', isLogos);
   bannersTabBtn?.classList.toggle('active', isBanners);
   uniformsTabBtn?.classList.toggle('active', isUniforms);
   rankingsTabBtn?.classList.toggle('active', isRankings);
+  recordsTabBtn?.classList.toggle('active', isRecords);
   logosTabBtn?.setAttribute('aria-selected', String(isLogos));
   bannersTabBtn?.setAttribute('aria-selected', String(isBanners));
   uniformsTabBtn?.setAttribute('aria-selected', String(isUniforms));
   rankingsTabBtn?.setAttribute('aria-selected', String(isRankings));
+  recordsTabBtn?.setAttribute('aria-selected', String(isRecords));
   logosPanel.hidden = !isLogos;
   bannersPanel.hidden = !isBanners;
   uniformsPanel.hidden = !isUniforms;
   rankingsPanel.hidden = !isRankings;
+  recordsPanel.hidden = !isRecords;
 }
 
 function loadSavedBanners() {
