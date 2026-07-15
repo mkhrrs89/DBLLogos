@@ -809,7 +809,6 @@ body.fullscreen-open {
 
 .hof-portrait {
   width: 118px;
-  aspect-ratio: 1;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -821,11 +820,14 @@ body.fullscreen-open {
   font-weight: 900;
 }
 
+.hof-portrait:has(span) {
+  aspect-ratio: 1;
+}
+
 .hof-portrait img {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
 }
 
 .hof-content {
