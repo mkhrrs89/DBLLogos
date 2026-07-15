@@ -10,6 +10,7 @@
   --muted-2: #9a7862;
   --accent: #d97732;
   --accent-rgb: 217, 119, 50;
+  --photo-gold: #d4af37;
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
   --radius-lg: 18px;
   --radius-md: 12px;
@@ -796,9 +797,12 @@ body.fullscreen-open {
 
 .hof-gallery-item {
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border: 3px solid var(--photo-gold);
+  border-radius: 0;
   background: rgba(255,255,255,0.025);
+  box-shadow:
+    0 0 0 1px rgba(255, 239, 166, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .hof-gallery-item img {
@@ -845,12 +849,15 @@ body.fullscreen-open {
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0;
+  border: 3px solid var(--photo-gold);
   background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.16), rgba(255,255,255,0.03));
   color: var(--accent);
   font-size: 1.75rem;
   font-weight: 900;
+  box-shadow:
+    0 0 0 1px rgba(255, 239, 166, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .hof-portrait.is-placeholder {
