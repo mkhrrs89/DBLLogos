@@ -773,3 +773,198 @@ body.fullscreen-open {
     grid-template-columns: 1fr;
   }
 }
+
+.hof-wrap.empty-state {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.02);
+}
+
+.hof-list {
+  list-style: decimal;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 2.2rem;
+}
+
+.hof-card {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.035);
+}
+
+.hof-card::marker {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.hof-portrait {
+  width: 118px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: linear-gradient(180deg, rgba(109,194,255,0.16), rgba(255,255,255,0.03));
+  color: var(--accent);
+  font-size: 1.75rem;
+  font-weight: 900;
+}
+
+.hof-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hof-content {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hof-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.hof-heading h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.hof-career {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.hof-goat {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.hof-goat span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.hof-goat strong {
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hof-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(72px, 1fr));
+  gap: 8px;
+}
+
+.hof-stat {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.025);
+}
+
+.hof-stat span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.hof-stat strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.hof-awards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hof-award-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(109,194,255,0.24);
+  background: rgba(109,194,255,0.09);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.hof-no-awards {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 820px) {
+  .tab-bar {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .hof-card {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .hof-portrait {
+    width: 82px;
+  }
+
+  .hof-heading {
+    display: grid;
+  }
+
+  .hof-goat {
+    text-align: left;
+  }
+
+  .hof-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .hof-list {
+    padding-left: 1.7rem;
+  }
+
+  .hof-card {
+    grid-template-columns: 1fr;
+  }
+
+  .hof-portrait {
+    width: 100%;
+    max-width: 160px;
+  }
+}

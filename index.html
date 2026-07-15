@@ -24,6 +24,7 @@
           <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
           <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
           <button id="rankingsTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Teams</button>
+          <button id="hallOfFameTabBtn" class="tab-btn" type="button" aria-selected="false">Hall of Fame</button>
           <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
         </nav>
 
@@ -153,6 +154,18 @@
           <div id="rankingsWrap" class="rankings-wrap empty-state">
             <div class="empty-copy">
               <p>Load a league file to rank every team season.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="hallOfFamePanel" class="panel rankings-panel" hidden>
+          <div class="rankings-header">
+            <h2>Hall of Fame</h2>
+            <p class="subtle">All inducted players, ranked by the GOAT formula stored in the uploaded league file.</p>
+          </div>
+          <div id="hallOfFameWrap" class="hof-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to show Hall of Fame players.</p>
             </div>
           </div>
         </section>

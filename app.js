@@ -21,15 +21,18 @@ const logosTabBtn = document.getElementById('logosTabBtn');
 const bannersTabBtn = document.getElementById('bannersTabBtn');
 const uniformsTabBtn = document.getElementById('uniformsTabBtn');
 const rankingsTabBtn = document.getElementById('rankingsTabBtn');
+const hallOfFameTabBtn = document.getElementById('hallOfFameTabBtn');
 const recordsTabBtn = document.getElementById('recordsTabBtn');
 const logosPanel = document.getElementById('logosPanel');
 const bannersPanel = document.getElementById('bannersPanel');
 const uniformsPanel = document.getElementById('uniformsPanel');
 const rankingsPanel = document.getElementById('rankingsPanel');
+const hallOfFamePanel = document.getElementById('hallOfFamePanel');
 const recordsPanel = document.getElementById('recordsPanel');
 const bannersWrap = document.getElementById('bannersWrap');
 const uniformsWrap = document.getElementById('uniformsWrap');
 const rankingsWrap = document.getElementById('rankingsWrap');
+const hallOfFameWrap = document.getElementById('hallOfFameWrap');
 const recordsWrap = document.getElementById('recordsWrap');
 const uniformYearSelect = document.getElementById('uniformYearSelect');
 const importBannersBtn = document.getElementById('importBannersBtn');
@@ -53,12 +56,14 @@ setActiveTab('logos');
 renderBanners(fullTimeline);
 renderUniforms(fullTimeline);
 renderRankings(fullTimeline);
+renderHallOfFame(fullTimeline);
 renderRecords(fullTimeline);
 
 logosTabBtn?.addEventListener('click', () => setActiveTab('logos'));
 bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
 uniformsTabBtn?.addEventListener('click', () => setActiveTab('uniforms'));
 rankingsTabBtn?.addEventListener('click', () => setActiveTab('rankings'));
+hallOfFameTabBtn?.addEventListener('click', () => setActiveTab('hallOfFame'));
 recordsTabBtn?.addEventListener('click', () => setActiveTab('records'));
 importBannersBtn?.addEventListener('click', () => bannerImportFile?.click());
 bannerImportFile?.addEventListener('change', importBannerLinksFromFile);
@@ -159,6 +164,7 @@ function clearLoadedLeagueFile() {
   renderBanners(null);
   renderUniforms(null);
   renderRankings(null);
+  renderHallOfFame(null);
   renderRecords(null);
   if (fileInput) {
     fileInput.value = '';
@@ -248,6 +254,7 @@ function serializeTimeline(timeline) {
       }]),
     })),
     rankings: Array.isArray(timeline.rankings) ? timeline.rankings : [],
+    hallOfFamePlayers: Array.isArray(timeline.hallOfFamePlayers) ? timeline.hallOfFamePlayers : [],
     scoringRecords: normalizeScoringRecords(timeline.scoringRecords),
   };
 }
@@ -262,6 +269,7 @@ function deserializeTimeline(snapshot) {
     minYear: snapshot.minYear,
     maxYear: snapshot.maxYear,
     rankings: Array.isArray(snapshot.rankings) ? snapshot.rankings : [],
+    hallOfFamePlayers: Array.isArray(snapshot.hallOfFamePlayers) ? snapshot.hallOfFamePlayers : [],
     scoringRecords: normalizeScoringRecords(snapshot.scoringRecords),
     rows: snapshot.rows.map((row) => ({
       tid: row.tid,
@@ -324,6 +332,7 @@ function buildTimelineData(league) {
   const years = range(minYear, maxYear);
   const rankings = buildAllTimeTeamRankings(rows, statsByTidSeason);
   const scoringRecords = buildScoringRecords(league, rows);
+  const hallOfFamePlayers = buildHallOfFamePlayers(league);
 
   return {
     years,
@@ -331,6 +340,7 @@ function buildTimelineData(league) {
     minYear,
     maxYear,
     rankings,
+    hallOfFamePlayers,
     scoringRecords,
   };
 }
@@ -557,6 +567,406 @@ function clampScore(score) {
 }
 
 
+
+const GOAT_WEIGHTED_BY_MINUTES = new Set([
+  'per',
+  'ws48',
+  'astp',
+  'blkp',
+  'drbp',
+  'orbp',
+  'stlp',
+  'trbp',
+  'usgp',
+  'drtg',
+  'ortg',
+  'obpm',
+  'dbpm',
+  'bpm',
+  'pm100',
+  'onOff100',
+]);
+
+const GOAT_AWARD_VARIABLES = {
+  champ: 'Won Championship',
+  allStar: 'All-Star',
+  allStarMvp: 'All-Star MVP',
+  mvp: 'Most Valuable Player',
+  roy: 'Rookie of the Year',
+  smoy: 'Sixth Man of the Year',
+  dpoy: 'Defensive Player of the Year',
+  mip: 'Most Improved Player',
+  finalsMvp: 'Finals MVP',
+  sfmvp: 'Semifinals MVP',
+  allLeague1: 'First Team All-League',
+  allLeague2: 'Second Team All-League',
+  allLeague3: 'Third Team All-League',
+  allDefensive1: 'First Team All-Defensive',
+  allDefensive2: 'Second Team All-Defensive',
+  allDefensive3: 'Third Team All-Defensive',
+  allRookie: 'All-Rookie Team',
+};
+
+const HOF_AWARD_PRIORITY = [
+  'Most Valuable Player',
+  'Won Championship',
+  'Finals MVP',
+  'Semifinals MVP',
+  'Defensive Player of the Year',
+  'Rookie of the Year',
+  'Sixth Man of the Year',
+  'Most Improved Player',
+  'All-Star MVP',
+  'All-Star',
+  'First Team All-League',
+  'Second Team All-League',
+  'Third Team All-League',
+  'First Team All-Defensive',
+  'Second Team All-Defensive',
+  'Third Team All-Defensive',
+  'All-Rookie Team',
+  'Inducted into the Hall of Fame',
+];
+
+function buildHallOfFamePlayers(league = {}) {
+  const playersByPid = new Map();
+
+  for (const players of getLeaguePlayerCollections(league)) {
+    for (const player of players) {
+      if (!player?.hof) continue;
+      const pid = readOptionalNumber(player.pid);
+      const key = pid === null
+        ? `${getRosterPlayerName(player)}:${player?.born?.year ?? ''}`
+        : String(pid);
+      if (!playersByPid.has(key)) {
+        playersByPid.set(key, player);
+      }
+    }
+  }
+
+  const goatFormula = typeof league?.gameAttributes?.goatFormula === 'string'
+    ? league.gameAttributes.goatFormula.trim()
+    : '';
+
+  return Array.from(playersByPid.values())
+    .map((player) => buildHallOfFamePlayerSummary(player, goatFormula))
+    .sort((a, b) => {
+      const aScore = Number.isFinite(a.goatScore) ? a.goatScore : -Infinity;
+      const bScore = Number.isFinite(b.goatScore) ? b.goatScore : -Infinity;
+      if (bScore !== aScore) return bScore - aScore;
+      return a.name.localeCompare(b.name);
+    });
+}
+
+function buildHallOfFamePlayerSummary(player, goatFormula) {
+  const regularStats = (Array.isArray(player?.stats) ? player.stats : [])
+    .filter((row) => !row?.playoffs && Number(row?.gp) > 0);
+  const seasons = regularStats
+    .map((row) => Number(row.season))
+    .filter(Number.isFinite);
+  const gp = sumHallOfFameStat(regularStats, 'gp');
+  const pts = sumHallOfFameStat(regularStats, 'pts');
+
+  let goatScore = null;
+  if (goatFormula) {
+    try {
+      goatScore = calculateCareerGoatScore(player, goatFormula);
+    } catch (error) {
+      console.warn(`Could not calculate GOAT score for ${getRosterPlayerName(player)}.`, error);
+    }
+  }
+
+  return {
+    pid: readOptionalNumber(player?.pid),
+    name: getRosterPlayerName(player),
+    pos: typeof player?.pos === 'string' ? player.pos : '',
+    imgURL: normalizeLogoUrl(player?.imgURL || ''),
+    careerStart: seasons.length ? Math.min(...seasons) : null,
+    careerEnd: seasons.length ? Math.max(...seasons) : null,
+    ppg: gp > 0 ? pts / gp : 0,
+    bpm: weightedHallOfFameAverage(regularStats, 'bpm'),
+    vorp: sumHallOfFameStat(regularStats, 'vorp'),
+    ewa: sumHallOfFameStat(regularStats, 'ewa'),
+    ws: sumHallOfFameStat(regularStats, 'ws'),
+    goatScore,
+    awards: summarizeHallOfFameAwards(player?.awards),
+  };
+}
+
+function sumHallOfFameStat(rows, stat) {
+  return rows.reduce((total, row) => {
+    const value = readGoatStatValue(row, stat);
+    return total + (Number.isFinite(value) ? value : 0);
+  }, 0);
+}
+
+function weightedHallOfFameAverage(rows, stat) {
+  let weightedTotal = 0;
+  let minutes = 0;
+
+  for (const row of rows) {
+    const value = readGoatStatValue(row, stat);
+    const rowMinutes = Number(row?.min);
+    if (!Number.isFinite(value) || !Number.isFinite(rowMinutes) || rowMinutes <= 0) continue;
+    weightedTotal += value * rowMinutes;
+    minutes += rowMinutes;
+  }
+
+  return minutes > 0 ? weightedTotal / minutes : 0;
+}
+
+function summarizeHallOfFameAwards(awards) {
+  const grouped = new Map();
+  for (const award of Array.isArray(awards) ? awards : []) {
+    const type = typeof award?.type === 'string' ? award.type.trim() : '';
+    if (!type) continue;
+    const seasons = grouped.get(type) || [];
+    const season = Number(award.season);
+    if (Number.isFinite(season)) seasons.push(season);
+    grouped.set(type, seasons);
+  }
+
+  const priority = new Map(HOF_AWARD_PRIORITY.map((type, index) => [type, index]));
+  return Array.from(grouped.entries())
+    .map(([type, seasons]) => ({
+      type,
+      count: seasons.length || 1,
+      seasons: seasons.sort((a, b) => a - b),
+    }))
+    .sort((a, b) => {
+      const aPriority = priority.has(a.type) ? priority.get(a.type) : Number.MAX_SAFE_INTEGER;
+      const bPriority = priority.has(b.type) ? priority.get(b.type) : Number.MAX_SAFE_INTEGER;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      if (b.count !== a.count) return b.count - a.count;
+      return a.type.localeCompare(b.type);
+    });
+}
+
+function calculateCareerGoatScore(player, formula) {
+  const variables = buildCareerGoatVariables(player, formula);
+  return evaluateSafeArithmeticFormula(formula, variables);
+}
+
+function buildCareerGoatVariables(player, formula) {
+  const statsRows = (Array.isArray(player?.stats) ? player.stats : [])
+    .filter((row) => Number(row?.gp) !== 0);
+  if (!statsRows.length) return {};
+
+  const statNames = collectGoatStatNames(statsRows, formula);
+  const variables = {};
+
+  for (const stat of statNames) {
+    const peak = `${stat}Peak`;
+    const peakPerGame = `${stat}PeakPerGame`;
+    const playoffs = `${stat}Playoffs`;
+    variables[peak] = -Infinity;
+    variables[peakPerGame] = -Infinity;
+    variables[stat] = 0;
+    variables[playoffs] = 0;
+
+    const weightByMinutes = GOAT_WEIGHTED_BY_MINUTES.has(stat);
+    let regularMinutes = 0;
+    let playoffMinutes = 0;
+
+    for (const row of statsRows) {
+      const value = readGoatStatValue(row, stat);
+      if (!Number.isFinite(value)) continue;
+      const rowMinutes = Number.isFinite(Number(row.min)) ? Number(row.min) : 0;
+
+      if (row.playoffs) {
+        if (weightByMinutes) {
+          variables[playoffs] += value * rowMinutes;
+          playoffMinutes += rowMinutes;
+        } else {
+          variables[playoffs] += value;
+        }
+      } else {
+        variables[peak] = Math.max(variables[peak], value);
+        const rowGp = Number(row.gp);
+        if (Number.isFinite(rowGp) && rowGp > 0) {
+          variables[peakPerGame] = Math.max(variables[peakPerGame], value / rowGp);
+        }
+
+        if (weightByMinutes) {
+          variables[stat] += value * rowMinutes;
+          regularMinutes += rowMinutes;
+        } else {
+          variables[stat] += value;
+        }
+      }
+    }
+
+    if (weightByMinutes) {
+      variables[stat] = regularMinutes > 0 ? variables[stat] / regularMinutes : 0;
+      variables[playoffs] = playoffMinutes > 0 ? variables[playoffs] / playoffMinutes : 0;
+    }
+  }
+
+  for (const stat of statNames) {
+    const regularGp = Number(variables.gp) || 0;
+    const playoffGp = Number(variables.gpPlayoffs) || 0;
+    variables[`${stat}PerGame`] = regularGp > 0 ? variables[stat] / regularGp : 0;
+    variables[`${stat}PlayoffsPerGame`] = playoffGp > 0
+      ? variables[`${stat}Playoffs`] / playoffGp
+      : 0;
+  }
+
+  const awards = Array.isArray(player?.awards) ? player.awards : [];
+  for (const [shortName, fullName] of Object.entries(GOAT_AWARD_VARIABLES)) {
+    variables[shortName] = awards.filter((award) => award?.type === fullName).length;
+  }
+
+  const seasons = new Set();
+  for (const row of Array.isArray(player?.stats) ? player.stats : []) {
+    if (Number(row?.min) > 0 || Number(row?.gp) > 0) {
+      seasons.add(row.season);
+    }
+  }
+  variables.numSeasons = seasons.size;
+
+  if ((Number(variables.gp) || 0) < 30) {
+    for (const stat of statNames) {
+      variables[stat] = 0;
+      variables[`${stat}PerGame`] = 0;
+    }
+  }
+  if ((Number(variables.gpPlayoffs) || 0) < 15) {
+    for (const stat of statNames) {
+      variables[`${stat}Playoffs`] = 0;
+      variables[`${stat}PlayoffsPerGame`] = 0;
+    }
+  }
+
+  return variables;
+}
+
+function collectGoatStatNames(statsRows, formula) {
+  const statNames = new Set(['gp', 'min', 'bpm', 'ws', 'trb']);
+  const ignoredKeys = new Set(['season', 'tid', 'yearsWithTeam', 'playoffs', 'jerseyNumber']);
+
+  for (const row of statsRows) {
+    for (const [key, value] of Object.entries(row || {})) {
+      if (!ignoredKeys.has(key) && Number.isFinite(value)) {
+        statNames.add(key);
+      }
+    }
+  }
+
+  const awardVariables = new Set([...Object.keys(GOAT_AWARD_VARIABLES), 'numSeasons']);
+  for (const identifier of collectFormulaIdentifiers(formula)) {
+    if (awardVariables.has(identifier)) continue;
+    let base = identifier;
+    for (const suffix of ['PlayoffsPerGame', 'PeakPerGame', 'Playoffs', 'PerGame', 'Peak']) {
+      if (base.endsWith(suffix)) {
+        base = base.slice(0, -suffix.length);
+        break;
+      }
+    }
+    if (base) statNames.add(base);
+  }
+
+  return statNames;
+}
+
+function collectFormulaIdentifiers(formula) {
+  return String(formula || '').match(/[A-Za-z_][A-Za-z0-9_]*/g) || [];
+}
+
+function readGoatStatValue(row, stat) {
+  const direct = Number(row?.[stat]);
+  if (Number.isFinite(direct)) return direct;
+
+  if (stat === 'bpm') {
+    const obpm = Number(row?.obpm);
+    const dbpm = Number(row?.dbpm);
+    if (Number.isFinite(obpm) || Number.isFinite(dbpm)) {
+      return (Number.isFinite(obpm) ? obpm : 0) + (Number.isFinite(dbpm) ? dbpm : 0);
+    }
+  }
+
+  if (stat === 'ws') {
+    const ows = Number(row?.ows);
+    const dws = Number(row?.dws);
+    if (Number.isFinite(ows) || Number.isFinite(dws)) {
+      return (Number.isFinite(ows) ? ows : 0) + (Number.isFinite(dws) ? dws : 0);
+    }
+  }
+
+  if (stat === 'trb') {
+    const orb = Number(row?.orb);
+    const drb = Number(row?.drb);
+    if (Number.isFinite(orb) || Number.isFinite(drb)) {
+      return (Number.isFinite(orb) ? orb : 0) + (Number.isFinite(drb) ? drb : 0);
+    }
+  }
+
+  return undefined;
+}
+
+function evaluateSafeArithmeticFormula(formula, variables = {}) {
+  const source = String(formula || '').replace(/\s+/g, '');
+  const tokens = source.match(/\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z0-9_]*|[()+\-*/]/g) || [];
+  if (!source || tokens.join('') !== source) {
+    throw new Error('The GOAT formula contains unsupported syntax.');
+  }
+
+  let index = 0;
+  const peek = () => tokens[index];
+  const take = () => tokens[index++];
+
+  const parsePrimary = () => {
+    const token = take();
+    if (token === '(') {
+      const value = parseExpression();
+      if (take() !== ')') throw new Error('Unbalanced parentheses in GOAT formula.');
+      return value;
+    }
+    if (/^\d/.test(token)) return Number(token);
+    if (/^[A-Za-z_]/.test(token)) {
+      const value = Number(variables[token]);
+      return Number.isFinite(value) ? value : 0;
+    }
+    throw new Error(`Unexpected token in GOAT formula: ${token || 'end of formula'}`);
+  };
+
+  const parseUnary = () => {
+    if (peek() === '+') {
+      take();
+      return parseUnary();
+    }
+    if (peek() === '-') {
+      take();
+      return -parseUnary();
+    }
+    return parsePrimary();
+  };
+
+  const parseTerm = () => {
+    let value = parseUnary();
+    while (peek() === '*' || peek() === '/') {
+      const operator = take();
+      const right = parseUnary();
+      value = operator === '*' ? value * right : value / right;
+    }
+    return value;
+  };
+
+  const parseExpression = () => {
+    let value = parseTerm();
+    while (peek() === '+' || peek() === '-') {
+      const operator = take();
+      const right = parseTerm();
+      value = operator === '+' ? value + right : value - right;
+    }
+    return value;
+  };
+
+  const result = parseExpression();
+  if (index !== tokens.length) throw new Error('Could not fully parse the GOAT formula.');
+  if (!Number.isFinite(result)) throw new Error('The GOAT formula did not return a finite number.');
+  return result;
+}
+
 function buildScoringRecords(league, rows) {
   const records = [];
   const playerNameByPid = buildPlayerNameByPid(league);
@@ -775,6 +1185,7 @@ function setTimeline(timeline) {
   renderBanners(fullTimeline);
   renderUniforms(fullTimeline);
   renderRankings(fullTimeline);
+  renderHallOfFame(fullTimeline);
   renderRecords(fullTimeline);
   updateStats(currentTimeline);
   if (!timelineFullscreen.hidden) {
@@ -787,21 +1198,25 @@ function setActiveTab(tabName) {
   const isBanners = tabName === 'banners';
   const isUniforms = tabName === 'uniforms';
   const isRankings = tabName === 'rankings';
+  const isHallOfFame = tabName === 'hallOfFame';
   const isRecords = tabName === 'records';
   logosTabBtn?.classList.toggle('active', isLogos);
   bannersTabBtn?.classList.toggle('active', isBanners);
   uniformsTabBtn?.classList.toggle('active', isUniforms);
   rankingsTabBtn?.classList.toggle('active', isRankings);
+  hallOfFameTabBtn?.classList.toggle('active', isHallOfFame);
   recordsTabBtn?.classList.toggle('active', isRecords);
   logosTabBtn?.setAttribute('aria-selected', String(isLogos));
   bannersTabBtn?.setAttribute('aria-selected', String(isBanners));
   uniformsTabBtn?.setAttribute('aria-selected', String(isUniforms));
   rankingsTabBtn?.setAttribute('aria-selected', String(isRankings));
+  hallOfFameTabBtn?.setAttribute('aria-selected', String(isHallOfFame));
   recordsTabBtn?.setAttribute('aria-selected', String(isRecords));
   logosPanel.hidden = !isLogos;
   bannersPanel.hidden = !isBanners;
   uniformsPanel.hidden = !isUniforms;
   rankingsPanel.hidden = !isRankings;
+  hallOfFamePanel.hidden = !isHallOfFame;
   recordsPanel.hidden = !isRecords;
 }
 
@@ -1122,6 +1537,130 @@ function renderUniforms(timeline) {
   }
 }
 
+
+
+function renderHallOfFame(timeline) {
+  hallOfFameWrap.innerHTML = '';
+  const players = Array.isArray(timeline?.hallOfFamePlayers) ? timeline.hallOfFamePlayers : [];
+
+  if (!players.length) {
+    hallOfFameWrap.className = 'hof-wrap empty-state';
+    const empty = document.createElement('div');
+    empty.className = 'empty-copy';
+    empty.innerHTML = '<p>Load or re-upload a league file containing Hall of Fame players.</p>';
+    hallOfFameWrap.appendChild(empty);
+    return;
+  }
+
+  hallOfFameWrap.className = 'hof-wrap';
+  const list = document.createElement('ol');
+  list.className = 'hof-list';
+
+  players.forEach((player) => {
+    const item = document.createElement('li');
+    item.className = 'hof-card';
+
+    const portrait = document.createElement('div');
+    portrait.className = 'hof-portrait';
+    if (player.imgURL) {
+      const image = document.createElement('img');
+      image.src = player.imgURL;
+      image.loading = 'lazy';
+      image.referrerPolicy = 'no-referrer';
+      image.alt = `${player.name} portrait`;
+      portrait.appendChild(image);
+    } else {
+      const initials = document.createElement('span');
+      initials.textContent = getPlayerInitials(player.name);
+      portrait.appendChild(initials);
+    }
+
+    const content = document.createElement('div');
+    content.className = 'hof-content';
+
+    const heading = document.createElement('div');
+    heading.className = 'hof-heading';
+    const titleBlock = document.createElement('div');
+    const name = document.createElement('h3');
+    name.textContent = player.name;
+    const career = document.createElement('p');
+    career.className = 'hof-career';
+    const range = Number.isFinite(player.careerStart) && Number.isFinite(player.careerEnd)
+      ? `${player.careerStart}–${player.careerEnd}`
+      : 'Career years unavailable';
+    career.textContent = player.pos ? `${range} · ${player.pos}` : range;
+    titleBlock.append(name, career);
+
+    const goat = document.createElement('div');
+    goat.className = 'hof-goat';
+    const goatLabel = document.createElement('span');
+    goatLabel.textContent = 'GOAT score';
+    const goatValue = document.createElement('strong');
+    goatValue.textContent = Number.isFinite(player.goatScore)
+      ? formatHallOfFameNumber(player.goatScore, 1)
+      : '—';
+    goat.append(goatLabel, goatValue);
+    heading.append(titleBlock, goat);
+
+    const stats = document.createElement('div');
+    stats.className = 'hof-stats';
+    [
+      ['PPG', player.ppg],
+      ['BPM', player.bpm],
+      ['VORP', player.vorp],
+      ['EWA', player.ewa],
+      ['WS', player.ws],
+    ].forEach(([label, value]) => {
+      const stat = document.createElement('div');
+      stat.className = 'hof-stat';
+      const statLabel = document.createElement('span');
+      statLabel.textContent = label;
+      const statValue = document.createElement('strong');
+      statValue.textContent = formatHallOfFameNumber(value, 1);
+      stat.append(statLabel, statValue);
+      stats.appendChild(stat);
+    });
+
+    const awards = document.createElement('div');
+    awards.className = 'hof-awards';
+    if (Array.isArray(player.awards) && player.awards.length) {
+      player.awards.forEach((award) => {
+        const chip = document.createElement('span');
+        chip.className = 'hof-award-chip';
+        chip.textContent = `${award.type} ×${award.count}`;
+        if (award.seasons?.length) {
+          chip.title = award.seasons.join(', ');
+        }
+        awards.appendChild(chip);
+      });
+    } else {
+      const none = document.createElement('span');
+      none.className = 'hof-no-awards';
+      none.textContent = 'No awards listed in this export.';
+      awards.appendChild(none);
+    }
+
+    content.append(heading, stats, awards);
+    item.append(portrait, content);
+    list.appendChild(item);
+  });
+
+  hallOfFameWrap.appendChild(list);
+}
+
+function getPlayerInitials(name) {
+  return String(name || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || '?';
+}
+
+function formatHallOfFameNumber(value, digits = 1) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(digits) : '—';
+}
 
 function renderRankings(timeline) {
   rankingsWrap.innerHTML = '';
