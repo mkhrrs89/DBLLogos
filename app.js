@@ -33,6 +33,8 @@ const bannersWrap = document.getElementById('bannersWrap');
 const uniformsWrap = document.getElementById('uniformsWrap');
 const rankingsWrap = document.getElementById('rankingsWrap');
 const hallOfFameWrap = document.getElementById('hallOfFameWrap');
+const hofDetailsViewBtn = document.getElementById('hofDetailsViewBtn');
+const hofGalleryViewBtn = document.getElementById('hofGalleryViewBtn');
 const recordsWrap = document.getElementById('recordsWrap');
 const uniformYearSelect = document.getElementById('uniformYearSelect');
 const importBannersBtn = document.getElementById('importBannersBtn');
@@ -50,6 +52,7 @@ let savedUniformsByYear = loadSavedUniforms();
 let selectedUniformYear = null;
 let isLeagueFileCleared = false;
 let useSmallLogos = false;
+let hallOfFameView = 'details';
 
 restoreSavedTimeline();
 setActiveTab('logos');
@@ -64,6 +67,8 @@ bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
 uniformsTabBtn?.addEventListener('click', () => setActiveTab('uniforms'));
 rankingsTabBtn?.addEventListener('click', () => setActiveTab('rankings'));
 hallOfFameTabBtn?.addEventListener('click', () => setActiveTab('hallOfFame'));
+hofDetailsViewBtn?.addEventListener('click', () => setHallOfFameView('details'));
+hofGalleryViewBtn?.addEventListener('click', () => setHallOfFameView('gallery'));
 recordsTabBtn?.addEventListener('click', () => setActiveTab('records'));
 importBannersBtn?.addEventListener('click', () => bannerImportFile?.click());
 bannerImportFile?.addEventListener('change', importBannerLinksFromFile);
@@ -1553,6 +1558,12 @@ function renderHallOfFame(timeline) {
   }
 
   hallOfFameWrap.className = 'hof-wrap';
+
+  if (hallOfFameView === 'gallery') {
+    renderHallOfFameGallery(players);
+    return;
+  }
+
   const list = document.createElement('ol');
   list.className = 'hof-list';
 
@@ -1570,6 +1581,7 @@ function renderHallOfFame(timeline) {
       image.alt = `${player.name} portrait`;
       portrait.appendChild(image);
     } else {
+      portrait.classList.add('is-placeholder');
       const initials = document.createElement('span');
       initials.textContent = getPlayerInitials(player.name);
       portrait.appendChild(initials);
@@ -1646,6 +1658,52 @@ function renderHallOfFame(timeline) {
   });
 
   hallOfFameWrap.appendChild(list);
+}
+
+function renderHallOfFameGallery(players) {
+  const gallery = document.createElement('div');
+  gallery.className = 'hof-gallery';
+
+  let photoCount = 0;
+  players.forEach((player) => {
+    if (!player.imgURL) return;
+
+    const item = document.createElement('div');
+    item.className = 'hof-gallery-item';
+
+    const image = document.createElement('img');
+    image.src = player.imgURL;
+    image.loading = 'lazy';
+    image.referrerPolicy = 'no-referrer';
+    image.alt = `${player.name} portrait`;
+
+    item.appendChild(image);
+    gallery.appendChild(item);
+    photoCount += 1;
+  });
+
+  if (!photoCount) {
+    hallOfFameWrap.className = 'hof-wrap empty-state';
+    const empty = document.createElement('div');
+    empty.className = 'empty-copy';
+    empty.innerHTML = '<p>No Hall of Fame player image links were found in this league file.</p>';
+    hallOfFameWrap.appendChild(empty);
+    return;
+  }
+
+  hallOfFameWrap.appendChild(gallery);
+}
+
+function setHallOfFameView(view) {
+  hallOfFameView = view === 'gallery' ? 'gallery' : 'details';
+  const showingDetails = hallOfFameView === 'details';
+
+  hofDetailsViewBtn?.classList.toggle('active', showingDetails);
+  hofGalleryViewBtn?.classList.toggle('active', !showingDetails);
+  hofDetailsViewBtn?.setAttribute('aria-pressed', String(showingDetails));
+  hofGalleryViewBtn?.setAttribute('aria-pressed', String(!showingDetails));
+
+  renderHallOfFame(fullTimeline);
 }
 
 function getPlayerInitials(name) {
