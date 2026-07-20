@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>DBL Logo Timeline</title>
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      #recordsWrap .record-item:nth-child(n + 51) {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <div class="app-shell">
@@ -181,7 +186,7 @@
         <section id="recordsPanel" class="panel rankings-panel" hidden>
           <div class="rankings-header">
             <h2>Records</h2>
-            <p class="subtle">Top 100 single-game scoring totals by any player in the loaded league file.</p>
+            <p class="subtle">Top 50 single-game scoring totals by any player in the loaded league file.</p>
           </div>
           <div id="recordsWrap" class="records-wrap empty-state">
             <div class="empty-copy">
