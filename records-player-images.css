@@ -1,0 +1,68 @@
+.record-item.has-player-photo {
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.record-item.has-player-photo .record-points {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+.record-details.has-player-photo {
+  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 3px;
+  align-self: stretch;
+  align-items: center;
+  min-height: 82px;
+}
+
+.record-player-photo {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 82px;
+  height: 82px;
+  align-self: stretch;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.record-player-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.record-details.has-player-photo > strong,
+.record-details.has-player-photo > .record-meta {
+  grid-column: 2;
+}
+
+.record-details.has-player-photo > strong {
+  align-self: end;
+}
+
+.record-details.has-player-photo > .record-meta {
+  align-self: start;
+}
+
+@media (max-width: 520px) {
+  .record-item.has-player-photo {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .record-details.has-player-photo {
+    grid-template-columns: 72px minmax(0, 1fr);
+    min-height: 72px;
+  }
+
+  .record-player-photo {
+    width: 72px;
+    height: 72px;
+  }
+}
