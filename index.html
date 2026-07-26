@@ -10,6 +10,27 @@
       #recordsWrap .record-item:nth-child(n + 51) {
         display: none;
       }
+
+      /* Keep the fullscreen timeline inside the usable mobile viewport, even
+         when the controls wrap to multiple lines or the iOS safe area changes. */
+      .timeline-fullscreen {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      .timeline-fullscreen-header {
+        flex: 0 0 auto;
+      }
+
+      .timeline-fullscreen .timeline-wrap {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        -webkit-overflow-scrolling: touch;
+      }
     </style>
   </head>
   <body>
