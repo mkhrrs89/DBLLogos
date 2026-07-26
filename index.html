@@ -21,6 +21,12 @@
         overflow: hidden;
       }
 
+      /* Author-level display rules override the browser's default [hidden]
+         behavior, so explicitly preserve the overlay's closed state. */
+      .timeline-fullscreen[hidden] {
+        display: none !important;
+      }
+
       .timeline-fullscreen-header {
         flex: 0 0 auto;
       }
