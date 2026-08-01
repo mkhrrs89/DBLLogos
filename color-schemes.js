@@ -206,7 +206,7 @@
 
     if (h >= 15 && h < 50 && l < 0.42) return 'Brown';
     if (h < 15 || h >= 345) return 'Red';
-    if (h < 40) return 'Orange';
+    if (h < 32) return 'Orange';
     if (h < 70) return 'Yellow/Gold';
     if (h < 195) return 'Green';
     if (h < 255) return 'Blue';
