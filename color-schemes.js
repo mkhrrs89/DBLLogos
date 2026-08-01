@@ -208,7 +208,7 @@
     if (h < 15 || h >= 345) return 'Red';
     if (h < 40) return 'Orange';
     if (h < 70) return 'Yellow/Gold';
-    if (h < 170) return 'Green';
+    if (h < 195) return 'Green';
     if (h < 255) return 'Blue';
     if (h < 315) return 'Purple';
     return 'Pink';
@@ -307,8 +307,12 @@
     const groups = new Map();
 
     for (const team of teams) {
-      const families = Array.isArray(team.groupingFamilies) && team.groupingFamilies.length
-        ? uniqueFamilies(team.groupingFamilies)
+      // Always rebuild the family labels from the saved hex colors. This lets
+      // classifier improvements take effect immediately without a new upload.
+      const currentColors = normalizeHexColors(Array.isArray(team.colors) ? team.colors : []);
+      const currentFamilies = uniqueFamilies(currentColors.map(classifyColorFamily));
+      const families = currentFamilies.length
+        ? buildGroupingFamilies(currentFamilies)
         : ['Unassigned'];
       const key = families.join('|');
       if (!groups.has(key)) groups.set(key, { families, teams: [] });
