@@ -28,6 +28,20 @@
     'White/Cream': '#f1eadf',
     Unassigned: 'transparent',
   };
+  const EXACT_FAMILY_OVERRIDES = {
+    '#B9AA9B': 'White/Cream',
+    '#E9DEBB': 'White/Cream',
+    '#E4DAC0': 'White/Cream',
+    '#F0DFBB': 'White/Cream',
+    '#657A85': 'Blue',
+    '#953917': 'Red',
+    '#973B03': 'Red',
+    '#D38301': 'Yellow/Gold',
+    '#D19D01': 'Yellow/Gold',
+    '#A86D16': 'Yellow/Gold',
+    '#53B6D5': 'Blue',
+    '#28697A': 'Blue',
+  };
 
   const colorSchemesTabBtn = document.getElementById('colorSchemesTabBtn');
   const colorSchemesPanel = document.getElementById('colorSchemesPanel');
@@ -196,6 +210,9 @@
   }
 
   function classifyColorFamily(hex) {
+    const normalizedHex = typeof hex === 'string' ? hex.toUpperCase() : '';
+    if (EXACT_FAMILY_OVERRIDES[normalizedHex]) return EXACT_FAMILY_OVERRIDES[normalizedHex];
+
     const rgb = hexToRgb(hex);
     if (!rgb) return 'Unassigned';
     const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
