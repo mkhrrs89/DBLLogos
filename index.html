@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>DBL Logo Timeline</title>
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./color-schemes.css" />
     <link rel="stylesheet" href="./records-player-images.css" />
     <style>
       #recordsWrap .record-item:nth-child(n + 51) {
@@ -54,6 +55,7 @@
       <main class="page">
         <nav class="tab-bar panel" aria-label="Main views">
           <button id="logosTabBtn" class="tab-btn active" type="button" aria-selected="true">Logos</button>
+          <button id="colorSchemesTabBtn" class="tab-btn" type="button" aria-selected="false">Color Schemes</button>
           <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
           <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
           <button id="rankingsTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Teams</button>
@@ -127,6 +129,22 @@
           <div id="timelineWrap" class="timeline-wrap empty-state">
             <div class="empty-copy">
               <p>No league file loaded yet.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="colorSchemesPanel" class="panel color-schemes-panel" hidden>
+          <div class="color-schemes-header">
+            <h2>Color Schemes</h2>
+            <p class="subtle">Teams grouped by the generic color families in their latest identity.</p>
+            <p class="color-schemes-note">
+              White/cream and gray are left out of a group name when a team already has at least two stronger color families.
+              The original hex colors are always shown on each team card.
+            </p>
+          </div>
+          <div id="colorSchemesWrap" class="color-schemes-wrap empty-state">
+            <div class="empty-copy">
+              <p>Upload or re-upload a league file to group its teams by color scheme.</p>
             </div>
           </div>
         </section>
@@ -247,6 +265,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script src="./app.js"></script>
+    <script src="./color-schemes.js"></script>
     <script src="./records-player-images.js"></script>
   </body>
 </html>
