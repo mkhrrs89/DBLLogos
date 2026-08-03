@@ -19,7 +19,7 @@
 
 .career-leaders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 14px;
   align-items: start;
 }
@@ -69,6 +69,13 @@
   border-bottom: 1px solid var(--line);
 }
 
+.career-leader-item.has-player-photo {
+  min-height: 82px;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
 .career-leader-item:last-child {
   border-bottom: 0;
 }
@@ -89,6 +96,34 @@
   display: grid;
   min-width: 0;
   gap: 2px;
+}
+
+.career-leader-details.has-player-photo {
+  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 3px;
+  align-self: stretch;
+  align-items: center;
+  min-height: 82px;
+}
+
+.career-leader-details.has-player-photo > .record-player-photo {
+  grid-column: 1;
+  grid-row: 1 / -1;
+}
+
+.career-leader-details.has-player-photo > strong,
+.career-leader-details.has-player-photo > span {
+  grid-column: 2;
+}
+
+.career-leader-details.has-player-photo > strong {
+  align-self: end;
+}
+
+.career-leader-details.has-player-photo > span {
+  align-self: start;
 }
 
 .career-leader-details strong,
@@ -114,7 +149,18 @@
   padding: 16px 13px;
 }
 
-@media (min-width: 1180px) {
+@media (max-width: 520px) {
+  .career-leader-item.has-player-photo {
+    min-height: 72px;
+  }
+
+  .career-leader-details.has-player-photo {
+    grid-template-columns: 72px minmax(0, 1fr);
+    min-height: 72px;
+  }
+}
+
+@media (min-width: 1720px) {
   .career-leaders-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
