@@ -6,6 +6,7 @@
     <title>DBL Logo Timeline</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./color-schemes.css" />
+    <link rel="stylesheet" href="./all-time-leaders.css" />
     <link rel="stylesheet" href="./records-player-images.css" />
     <style>
       #recordsWrap .record-item:nth-child(n + 51) {
@@ -59,6 +60,7 @@
           <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
           <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
           <button id="rankingsTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Teams</button>
+          <button id="allTimeLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Leaders</button>
           <button id="hallOfFameTabBtn" class="tab-btn" type="button" aria-selected="false">Hall of Fame</button>
           <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
         </nav>
@@ -209,6 +211,18 @@
           </div>
         </section>
 
+        <section id="allTimeLeadersPanel" class="panel all-time-leaders-panel" hidden>
+          <div class="all-time-leaders-header">
+            <h2>All-Time Leaders</h2>
+            <p class="subtle">Top 10 regular-season career totals in points, rebounds, assists, steals, and blocks.</p>
+          </div>
+          <div id="allTimeLeadersWrap" class="all-time-leaders-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load or re-upload a league file to calculate career statistical leaders.</p>
+            </div>
+          </div>
+        </section>
+
         <section id="hallOfFamePanel" class="panel rankings-panel" hidden>
           <div class="rankings-header">
             <h2>Hall of Fame</h2>
@@ -266,6 +280,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script src="./app.js"></script>
     <script src="./color-schemes.js"></script>
+    <script src="./all-time-leaders.js"></script>
     <script src="./records-player-images.js"></script>
   </body>
 </html>
