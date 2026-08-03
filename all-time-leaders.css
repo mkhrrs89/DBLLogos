@@ -1,0 +1,121 @@
+.all-time-leaders-panel {
+  min-width: 0;
+}
+
+.all-time-leaders-header {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.all-time-leaders-header h2,
+.career-leader-heading h3 {
+  margin: 0;
+}
+
+.all-time-leaders-wrap {
+  min-width: 0;
+}
+
+.career-leaders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.career-leader-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.career-leader-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 13px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.career-leader-heading h3 {
+  font-size: 1rem;
+}
+
+.career-leader-heading span,
+.career-leader-details span,
+.career-leader-empty {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.career-leader-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.career-leader-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 50px;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.career-leader-item:last-child {
+  border-bottom: 0;
+}
+
+.career-leader-rank {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.career-leader-details {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.career-leader-details strong,
+.career-leader-details span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.career-leader-details strong {
+  font-size: 0.88rem;
+}
+
+.career-leader-value {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.career-leader-empty {
+  margin: 0;
+  padding: 16px 13px;
+}
+
+@media (min-width: 1180px) {
+  .career-leaders-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
