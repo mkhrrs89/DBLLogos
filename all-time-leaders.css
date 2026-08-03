@@ -165,3 +165,22 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
+
+/* Keep the page gradient visually identical when switching between tabs with
+   different content heights. The original percentage-based gradient stretched
+   with the document, which made each tab appear to use a different shade. */
+html {
+  background: var(--bg);
+}
+
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(circle at 50% 0, #3a1e10 0, var(--bg) 520px);
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 100% 520px;
+}
+
+.page > .panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
