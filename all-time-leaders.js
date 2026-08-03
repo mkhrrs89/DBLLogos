@@ -252,7 +252,7 @@
     return {
       pid: readOptionalNumber(player?.pid),
       name: getPlayerName(player),
-      pos: getPlayerPosition(player, regularStats),
+      pos: getPlayerPosition(player),
       imgURL: normalizeImageUrl(player?.imgURL),
       careerStart: seasons.length ? Math.min(...seasons) : null,
       careerEnd: seasons.length ? Math.max(...seasons) : null,
@@ -266,34 +266,59 @@
     };
   }
 
-  function getPlayerPosition(player = {}, regularStats = []) {
+  function getPlayerPosition(player = {}) {
+    const counts = new Map();
+    const latestByPosition = new Map();
+    const ratings = Array.isArray(player?.ratings) ? player.ratings : [];
+
+    ratings.forEach((rating, index) => {
+      const position = normalizePlayerPosition(rating?.pos || rating?.position);
+      if (!position) return;
+
+      counts.set(position, (counts.get(position) || 0) + 1);
+
+      const season = Number(rating?.season);
+      const normalizedSeason = Number.isFinite(season) ? season : -Infinity;
+      const previous = latestByPosition.get(position);
+      if (
+        !previous
+        || normalizedSeason > previous.season
+        || (normalizedSeason === previous.season && index > previous.index)
+      ) {
+        latestByPosition.set(position, { season: normalizedSeason, index });
+      }
+    });
+
+    let mostFrequentPosition = '';
+    let mostFrequentCount = -1;
+    let mostRecentSeason = -Infinity;
+    let mostRecentIndex = -1;
+
+    for (const [position, count] of counts.entries()) {
+      const latest = latestByPosition.get(position) || { season: -Infinity, index: -1 };
+      if (
+        count > mostFrequentCount
+        || (count === mostFrequentCount && latest.season > mostRecentSeason)
+        || (
+          count === mostFrequentCount
+          && latest.season === mostRecentSeason
+          && latest.index > mostRecentIndex
+        )
+      ) {
+        mostFrequentPosition = position;
+        mostFrequentCount = count;
+        mostRecentSeason = latest.season;
+        mostRecentIndex = latest.index;
+      }
+    }
+
+    if (mostFrequentPosition) return mostFrequentPosition;
+
     const directPosition = normalizePlayerPosition(player?.pos || player?.position);
     if (directPosition) return directPosition;
 
     const draftPosition = normalizePlayerPosition(player?.draft?.pos || player?.draft?.position);
-    if (draftPosition) return draftPosition;
-
-    const historicalRows = [];
-    for (const collection of [player?.ratings, player?.stats, player?.seasons, regularStats]) {
-      if (!Array.isArray(collection)) continue;
-      for (const row of collection) {
-        if (row && typeof row === 'object') historicalRows.push(row);
-      }
-    }
-
-    historicalRows.sort((a, b) => {
-      const aSeason = Number(a?.season);
-      const bSeason = Number(b?.season);
-      return (Number.isFinite(bSeason) ? bSeason : -Infinity)
-        - (Number.isFinite(aSeason) ? aSeason : -Infinity);
-    });
-
-    for (const row of historicalRows) {
-      const position = normalizePlayerPosition(row?.pos || row?.position);
-      if (position) return position;
-    }
-
-    return UNKNOWN_POSITION;
+    return draftPosition || UNKNOWN_POSITION;
   }
 
   function choosePlayerPosition(primary, secondary) {
