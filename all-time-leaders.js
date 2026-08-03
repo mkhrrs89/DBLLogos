@@ -1,6 +1,7 @@
 (() => {
   const SAVED_LEADERS_KEY = 'dbl-logo-all-time-leaders:v1';
   const LEADER_LIMIT = 10;
+  const UNKNOWN_POSITION = 'UNK';
   const STAT_DEFINITIONS = [
     { key: 'pts', title: 'Points', valueLabel: 'PTS' },
     { key: 'trb', title: 'Rebounds', valueLabel: 'REB' },
@@ -191,9 +192,18 @@
 
         const key = getPlayerKey(player, summary.name);
         const existing = playersByKey.get(key);
-        if (!existing || comparePlayerVersions(summary, existing) < 0) {
+        if (!existing) {
           playersByKey.set(key, summary);
+          continue;
         }
+
+        const preferred = comparePlayerVersions(summary, existing) < 0 ? summary : existing;
+        const alternate = preferred === summary ? existing : summary;
+        playersByKey.set(key, {
+          ...preferred,
+          pos: choosePlayerPosition(preferred.pos, alternate.pos),
+          imgURL: preferred.imgURL || alternate.imgURL || '',
+        });
       }
     }
 
@@ -208,7 +218,7 @@
         .map((player) => ({
           pid: player.pid,
           name: player.name,
-          pos: player.pos,
+          pos: normalizePlayerPosition(player.pos) || UNKNOWN_POSITION,
           imgURL: player.imgURL,
           careerStart: player.careerStart,
           careerEnd: player.careerEnd,
@@ -242,7 +252,7 @@
     return {
       pid: readOptionalNumber(player?.pid),
       name: getPlayerName(player),
-      pos: typeof player?.pos === 'string' ? player.pos.trim() : '',
+      pos: getPlayerPosition(player, regularStats),
       imgURL: normalizeImageUrl(player?.imgURL),
       careerStart: seasons.length ? Math.min(...seasons) : null,
       careerEnd: seasons.length ? Math.max(...seasons) : null,
@@ -254,6 +264,50 @@
       blk: sumStat(regularStats, 'blk'),
       sourceRows: regularStats.length,
     };
+  }
+
+  function getPlayerPosition(player = {}, regularStats = []) {
+    const directPosition = normalizePlayerPosition(player?.pos || player?.position);
+    if (directPosition) return directPosition;
+
+    const draftPosition = normalizePlayerPosition(player?.draft?.pos || player?.draft?.position);
+    if (draftPosition) return draftPosition;
+
+    const historicalRows = [];
+    for (const collection of [player?.ratings, player?.stats, player?.seasons, regularStats]) {
+      if (!Array.isArray(collection)) continue;
+      for (const row of collection) {
+        if (row && typeof row === 'object') historicalRows.push(row);
+      }
+    }
+
+    historicalRows.sort((a, b) => {
+      const aSeason = Number(a?.season);
+      const bSeason = Number(b?.season);
+      return (Number.isFinite(bSeason) ? bSeason : -Infinity)
+        - (Number.isFinite(aSeason) ? aSeason : -Infinity);
+    });
+
+    for (const row of historicalRows) {
+      const position = normalizePlayerPosition(row?.pos || row?.position);
+      if (position) return position;
+    }
+
+    return UNKNOWN_POSITION;
+  }
+
+  function choosePlayerPosition(primary, secondary) {
+    const first = normalizePlayerPosition(primary);
+    if (first && first !== UNKNOWN_POSITION) return first;
+    const second = normalizePlayerPosition(secondary);
+    if (second && second !== UNKNOWN_POSITION) return second;
+    return first || second || UNKNOWN_POSITION;
+  }
+
+  function normalizePlayerPosition(value) {
+    if (typeof value !== 'string') return '';
+    const position = value.trim().toUpperCase();
+    return position || '';
   }
 
   function sumStat(rows, stat) {
@@ -345,6 +399,7 @@
       normalized[stat.key] = Array.isArray(saved[stat.key])
         ? saved[stat.key].slice(0, LEADER_LIMIT).map((entry) => ({
             ...entry,
+            pos: normalizePlayerPosition(entry?.pos) || UNKNOWN_POSITION,
             imgURL: normalizeImageUrl(entry?.imgURL),
           }))
         : [];
@@ -457,8 +512,7 @@
   }
 
   function buildCareerMeta(entry) {
-    const parts = [];
-    if (entry.pos) parts.push(entry.pos);
+    const parts = [normalizePlayerPosition(entry?.pos) || UNKNOWN_POSITION];
     if (Number.isFinite(entry.careerStart) && Number.isFinite(entry.careerEnd)) {
       parts.push(entry.careerStart === entry.careerEnd
         ? String(entry.careerStart)
