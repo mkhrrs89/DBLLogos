@@ -209,6 +209,7 @@
           pid: player.pid,
           name: player.name,
           pos: player.pos,
+          imgURL: player.imgURL,
           careerStart: player.careerStart,
           careerEnd: player.careerEnd,
           gp: player.gp,
@@ -242,6 +243,7 @@
       pid: readOptionalNumber(player?.pid),
       name: getPlayerName(player),
       pos: typeof player?.pos === 'string' ? player.pos.trim() : '',
+      imgURL: normalizeImageUrl(player?.imgURL),
       careerStart: seasons.length ? Math.min(...seasons) : null,
       careerEnd: seasons.length ? Math.max(...seasons) : null,
       gp: sumStat(regularStats, 'gp'),
@@ -301,6 +303,10 @@
     return `${firstName} ${lastName}`.trim() || 'Unknown Player';
   }
 
+  function normalizeImageUrl(value) {
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
   function readOptionalNumber(value) {
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
@@ -337,7 +343,10 @@
 
     for (const stat of STAT_DEFINITIONS) {
       normalized[stat.key] = Array.isArray(saved[stat.key])
-        ? saved[stat.key].slice(0, LEADER_LIMIT)
+        ? saved[stat.key].slice(0, LEADER_LIMIT).map((entry) => ({
+            ...entry,
+            imgURL: normalizeImageUrl(entry?.imgURL),
+          }))
         : [];
       if (normalized[stat.key].length) hasAny = true;
     }
@@ -404,6 +413,30 @@
 
       const details = document.createElement('div');
       details.className = 'career-leader-details';
+
+      const imageURL = normalizeImageUrl(entry?.imgURL);
+      if (imageURL) {
+        const photo = document.createElement('div');
+        photo.className = 'record-player-photo';
+
+        const image = document.createElement('img');
+        image.src = imageURL;
+        image.alt = '';
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        image.setAttribute('aria-hidden', 'true');
+        image.addEventListener('error', () => {
+          photo.remove();
+          details.classList.remove('has-player-photo');
+          item.classList.remove('has-player-photo');
+        });
+
+        photo.appendChild(image);
+        details.appendChild(photo);
+        details.classList.add('has-player-photo');
+        item.classList.add('has-player-photo');
+      }
+
       const name = document.createElement('strong');
       name.textContent = entry.name || 'Unknown Player';
       const meta = document.createElement('span');
