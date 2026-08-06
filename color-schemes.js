@@ -71,8 +71,10 @@
   };
 
   const EXACT_FAMILY_OVERRIDES = {
+    '#B15615': 'Orange',
     '#B9AA9B': 'White/Cream',
     '#D5C497': 'White/Cream',
+    '#E5CB95': 'White/Cream',
     '#E9DEBB': 'White/Cream',
     '#E4DAC0': 'White/Cream',
     '#F0DFBB': 'White/Cream',
