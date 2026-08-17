@@ -50,6 +50,39 @@
     renderSelectedYear();
   });
 
+  document.addEventListener('keydown', (event) => {
+    if (panel.hidden || !window.matchMedia('(min-width: 681px)').matches) return;
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement
+      || target instanceof HTMLSelectElement
+      || target instanceof HTMLTextAreaElement
+      || target?.isContentEditable
+    ) {
+      return;
+    }
+
+    const timeline = getTimeline();
+    const years = Array.isArray(timeline?.years)
+      ? timeline.years.filter(Number.isFinite).slice().sort((a, b) => a - b)
+      : [];
+    const currentIndex = years.indexOf(selectedYear);
+    if (currentIndex < 0) return;
+
+    const nextIndex = event.key === 'ArrowLeft'
+      ? currentIndex - 1
+      : currentIndex + 1;
+    if (nextIndex < 0 || nextIndex >= years.length) return;
+
+    event.preventDefault();
+    selectedYear = years[nextIndex];
+    yearSelect.value = String(selectedYear);
+    renderSelectedYear();
+  });
+
   fileInput?.addEventListener('change', () => {
     if (!panel.hidden) logoBox.replaceChildren();
   });
