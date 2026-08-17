@@ -1,0 +1,105 @@
+.logos-by-team-panel {
+  padding: 14px;
+  min-width: 0;
+}
+
+.logos-by-team-controls {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.logos-by-team-select {
+  min-width: 210px;
+  max-width: min(100%, 420px);
+}
+
+.logos-by-team-box {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  align-items: center;
+  justify-items: center;
+  column-gap: 14px;
+  row-gap: 2px;
+  min-height: 260px;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.018);
+}
+
+.logos-by-team-logo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 165px;
+  height: 150px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.logos-by-team-logo img {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.logos-by-team-logo.is-selected img {
+  opacity: 0.34;
+  transform: scale(0.97);
+}
+
+.logos-by-team-hide-action {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 2;
+  padding: 7px 13px;
+  border: 1px solid rgba(var(--accent-rgb), 0.8);
+  border-radius: 999px;
+  background: rgba(22, 14, 9, 0.94);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 5px 18px rgba(0,0,0,0.32);
+}
+
+.logos-by-team-logo.is-selected .logos-by-team-hide-action {
+  display: block;
+}
+
+@media (max-width: 680px) {
+  .logos-by-team-panel {
+    padding: 12px;
+  }
+
+  .logos-by-team-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .logos-by-team-box {
+    grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+    column-gap: 10px;
+    row-gap: 0;
+    padding: 14px 10px;
+  }
+
+  .logos-by-team-logo,
+  .logos-by-team-logo img {
+    max-width: 125px;
+    height: 112px;
+  }
+}
