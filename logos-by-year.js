@@ -9,6 +9,21 @@
 
   if (!tabBtn || !panel || !yearSelect || !logoBox) return;
 
+  const previousYearBtn = document.createElement('button');
+  previousYearBtn.type = 'button';
+  previousYearBtn.className = 'logos-by-year-nav';
+  previousYearBtn.setAttribute('aria-label', 'Previous year');
+  previousYearBtn.textContent = '‹';
+
+  const nextYearBtn = document.createElement('button');
+  nextYearBtn.type = 'button';
+  nextYearBtn.className = 'logos-by-year-nav';
+  nextYearBtn.setAttribute('aria-label', 'Next year');
+  nextYearBtn.textContent = '›';
+
+  yearSelect.before(previousYearBtn);
+  yearSelect.after(nextYearBtn);
+
   const otherPanelIds = [
     'logosPanel',
     'colorSchemesPanel',
@@ -48,7 +63,11 @@
     const year = Number(yearSelect.value);
     selectedYear = Number.isFinite(year) ? year : null;
     renderSelectedYear();
+    updateYearNavigation();
   });
+
+  previousYearBtn.addEventListener('click', () => stepYear(-1));
+  nextYearBtn.addEventListener('click', () => stepYear(1));
 
   document.addEventListener('keydown', (event) => {
     if (panel.hidden || !window.matchMedia('(min-width: 681px)').matches) return;
@@ -65,22 +84,8 @@
       return;
     }
 
-    const timeline = getTimeline();
-    const years = Array.isArray(timeline?.years)
-      ? timeline.years.filter(Number.isFinite).slice().sort((a, b) => a - b)
-      : [];
-    const currentIndex = years.indexOf(selectedYear);
-    if (currentIndex < 0) return;
-
-    const nextIndex = event.key === 'ArrowLeft'
-      ? currentIndex - 1
-      : currentIndex + 1;
-    if (nextIndex < 0 || nextIndex >= years.length) return;
-
-    event.preventDefault();
-    selectedYear = years[nextIndex];
-    yearSelect.value = String(selectedYear);
-    renderSelectedYear();
+    const changed = stepYear(event.key === 'ArrowLeft' ? -1 : 1);
+    if (changed) event.preventDefault();
   });
 
   fileInput?.addEventListener('change', () => {
@@ -92,6 +97,7 @@
     yearSelect.replaceChildren();
     yearSelect.disabled = true;
     logoBox.replaceChildren();
+    updateYearNavigation();
   });
 
   if (statusMessage) {
@@ -104,6 +110,7 @@
         yearSelect.replaceChildren();
         yearSelect.disabled = true;
         logoBox.replaceChildren();
+        updateYearNavigation();
       }
     });
 
@@ -144,6 +151,35 @@
     }
   }
 
+  function getSortedYears() {
+    const timeline = getTimeline();
+    return Array.isArray(timeline?.years)
+      ? timeline.years.filter(Number.isFinite).slice().sort((a, b) => a - b)
+      : [];
+  }
+
+  function stepYear(direction) {
+    const years = getSortedYears();
+    const currentIndex = years.indexOf(selectedYear);
+    if (currentIndex < 0) return false;
+
+    const nextIndex = currentIndex + direction;
+    if (nextIndex < 0 || nextIndex >= years.length) return false;
+
+    selectedYear = years[nextIndex];
+    yearSelect.value = String(selectedYear);
+    renderSelectedYear();
+    updateYearNavigation();
+    return true;
+  }
+
+  function updateYearNavigation() {
+    const years = getSortedYears();
+    const currentIndex = years.indexOf(selectedYear);
+    previousYearBtn.disabled = currentIndex <= 0;
+    nextYearBtn.disabled = currentIndex < 0 || currentIndex >= years.length - 1;
+  }
+
   function syncFromTimeline() {
     const timeline = getTimeline();
     const years = Array.isArray(timeline?.years)
@@ -155,6 +191,7 @@
       yearSelect.replaceChildren();
       yearSelect.disabled = true;
       logoBox.replaceChildren();
+      updateYearNavigation();
       return;
     }
 
@@ -174,6 +211,7 @@
     yearSelect.disabled = false;
 
     renderSelectedYear();
+    updateYearNavigation();
   }
 
   function renderSelectedYear() {
