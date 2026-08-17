@@ -18,7 +18,8 @@
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   align-items: center;
   justify-items: center;
-  gap: 14px;
+  column-gap: 14px;
+  row-gap: 4px;
   min-height: 260px;
   padding: 18px;
   overflow: hidden;
@@ -47,7 +48,8 @@
 
   .logos-by-year-box {
     grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
-    gap: 10px;
+    column-gap: 10px;
+    row-gap: 2px;
     padding: 14px 10px;
   }
 
