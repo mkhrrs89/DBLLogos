@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./color-schemes.css" />
     <link rel="stylesheet" href="./logos-by-year.css" />
+    <link rel="stylesheet" href="./logos-by-team.css" />
     <link rel="stylesheet" href="./all-time-leaders.css" />
     <link rel="stylesheet" href="./records-player-images.css" />
     <style>
@@ -58,6 +59,7 @@
         <nav class="tab-bar panel" aria-label="Main views">
           <button id="logosTabBtn" class="tab-btn active" type="button" aria-selected="true">Logos</button>
           <button id="logosByYearTabBtn" class="tab-btn" type="button" aria-selected="false">Logos by Year</button>
+          <button id="logosByTeamTabBtn" class="tab-btn" type="button" aria-selected="false">Logos by Team</button>
           <button id="colorSchemesTabBtn" class="tab-btn" type="button" aria-selected="false">Color Schemes</button>
           <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
           <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
@@ -142,6 +144,13 @@
             <select id="logosByYearSelect" class="sort-select logos-by-year-select" aria-label="Year" disabled></select>
           </div>
           <div id="logosByYearBox" class="logos-by-year-box"></div>
+        </section>
+
+        <section id="logosByTeamPanel" class="panel logos-by-team-panel" hidden>
+          <div class="logos-by-team-controls">
+            <select id="logosByTeamSelect" class="sort-select logos-by-team-select" aria-label="Team" disabled></select>
+          </div>
+          <div id="logosByTeamBox" class="logos-by-team-box"></div>
         </section>
 
         <section id="colorSchemesPanel" class="panel color-schemes-panel" hidden>
@@ -289,6 +298,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script src="./app.js"></script>
     <script src="./logos-by-year.js"></script>
+    <script src="./logos-by-team.js"></script>
     <script src="./color-schemes.js"></script>
     <script src="./all-time-leaders.js"></script>
     <script src="./records-player-images.js"></script>
