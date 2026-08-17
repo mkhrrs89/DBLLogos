@@ -1,0 +1,58 @@
+.logos-by-year-panel {
+  padding: 14px;
+  min-width: 0;
+}
+
+.logos-by-year-controls {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.logos-by-year-select {
+  min-width: 118px;
+}
+
+.logos-by-year-box {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  align-items: center;
+  justify-items: center;
+  gap: 28px;
+  min-height: 260px;
+  padding: 28px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.018);
+}
+
+.logos-by-year-box img {
+  display: block;
+  width: 100%;
+  max-width: 165px;
+  height: 150px;
+  object-fit: contain;
+}
+
+.logos-by-year-box.empty-state {
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 680px) {
+  .logos-by-year-panel {
+    padding: 12px;
+  }
+
+  .logos-by-year-box {
+    grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+    gap: 20px;
+    padding: 20px 14px;
+  }
+
+  .logos-by-year-box img {
+    max-width: 125px;
+    height: 112px;
+  }
+}
