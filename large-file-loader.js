@@ -74,43 +74,115 @@
     yield window.pako.ungzip(bytes, { to: 'string' });
   }
 
-  function findValueStart(text, pattern, startIndex = 0) {
-    let searchIndex = startIndex;
-    while (searchIndex < text.length) {
-      const matchIndex = text.indexOf(pattern, searchIndex);
-      if (matchIndex < 0) return { index: -1, incompleteAt: -1, matchIndex: -1 };
+  // Yield the requested top-level object's value beginning with its first
+  // non-whitespace character. This deliberately tracks the root JSON depth so
+  // nested properties with the same name cannot be mistaken for top-level data.
+  async function* topLevelValueChunks(file, key) {
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    let expectingTopLevelKey = false;
+    let capturingKey = false;
+    let keyBuffer = '';
+    let keyMatched = false;
+    let awaitingColon = false;
+    let awaitingValue = false;
+    let found = false;
 
-      let cursor = matchIndex + pattern.length;
-      while (cursor < text.length && /\s/.test(text[cursor])) cursor += 1;
-      if (cursor >= text.length) return { index: -1, incompleteAt: matchIndex, matchIndex };
-      if (text[cursor] !== ':') {
-        searchIndex = matchIndex + pattern.length;
+    for await (const chunk of decodedChunks(file)) {
+      if (found) {
+        yield chunk;
         continue;
       }
 
-      cursor += 1;
-      while (cursor < text.length && /\s/.test(text[cursor])) cursor += 1;
-      if (cursor >= text.length) return { index: -1, incompleteAt: matchIndex, matchIndex };
-      return { index: cursor, incompleteAt: -1, matchIndex };
-    }
+      for (let i = 0; i < chunk.length; i += 1) {
+        const char = chunk[i];
 
-    return { index: -1, incompleteAt: -1, matchIndex: -1 };
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+            if (capturingKey) keyBuffer += char;
+          } else if (char === '\\') {
+            escaped = true;
+            if (capturingKey) keyBuffer += char;
+          } else if (char === '"') {
+            inString = false;
+            if (capturingKey) {
+              capturingKey = false;
+              keyMatched = keyBuffer === key;
+              awaitingColon = true;
+            }
+          } else if (capturingKey) {
+            keyBuffer += char;
+          }
+          continue;
+        }
+
+        if (awaitingColon) {
+          if (/\s/.test(char)) continue;
+          if (char === ':') {
+            awaitingColon = false;
+            if (keyMatched) awaitingValue = true;
+            keyMatched = false;
+            continue;
+          }
+          awaitingColon = false;
+          keyMatched = false;
+        }
+
+        if (awaitingValue) {
+          if (/\s/.test(char)) continue;
+          awaitingValue = false;
+          found = true;
+          yield chunk.slice(i);
+          break;
+        }
+
+        if (char === '"') {
+          inString = true;
+          if (depth === 1 && expectingTopLevelKey) {
+            capturingKey = true;
+            keyBuffer = '';
+            expectingTopLevelKey = false;
+          }
+          continue;
+        }
+
+        if (char === '{') {
+          depth += 1;
+          if (depth === 1) expectingTopLevelKey = true;
+          continue;
+        }
+
+        if (char === '[') {
+          depth += 1;
+          continue;
+        }
+
+        if (char === '}' || char === ']') {
+          depth -= 1;
+          continue;
+        }
+
+        if (char === ',' && depth === 1) {
+          expectingTopLevelKey = true;
+        }
+      }
+    }
   }
 
   async function forEachTopLevelArrayItem(file, key, onItem) {
     if (!file || typeof onItem !== 'function') return 0;
 
-    const pattern = `"${key}"`;
-    let searching = true;
-    let carry = '';
     let count = 0;
+    let arrayStarted = false;
+    let arrayFinished = false;
     let itemStarted = false;
     let itemParts = [];
     let itemSegmentStart = 0;
     let nesting = 0;
     let inString = false;
     let escaped = false;
-    let arrayFinished = false;
 
     const finishItem = async (text, endIndex) => {
       const tail = text.slice(itemSegmentStart, endIndex);
@@ -205,42 +277,24 @@
       }
     };
 
-    for await (const chunk of decodedChunks(file)) {
+    for await (const chunk of topLevelValueChunks(file, key)) {
       if (arrayFinished) break;
 
-      if (searching) {
-        const text = carry + chunk;
-        let searchFrom = 0;
-        let found = findValueStart(text, pattern, searchFrom);
-
-        while (found.index >= 0 && text[found.index] !== '[') {
-          searchFrom = Math.max(found.index + 1, found.matchIndex + pattern.length);
-          found = findValueStart(text, pattern, searchFrom);
+      let startIndex = 0;
+      if (!arrayStarted) {
+        while (startIndex < chunk.length && /\s/.test(chunk[startIndex])) startIndex += 1;
+        if (startIndex >= chunk.length) continue;
+        if (chunk[startIndex] !== '[') {
+          throw new Error(`The top-level ${key} value is not an array.`);
         }
-
-        if (found.index < 0) {
-          if (found.incompleteAt >= 0) {
-            carry = text.slice(found.incompleteAt);
-          } else {
-            const keep = Math.max(pattern.length + 32, 96);
-            carry = text.slice(-keep);
-          }
-          continue;
-        }
-
-        searching = false;
-        carry = '';
-        await processArrayText(text, found.index + 1);
-        continue;
+        arrayStarted = true;
+        startIndex += 1;
       }
 
-      await processArrayText(chunk, 0);
+      await processArrayText(chunk, startIndex);
     }
 
-    if (searching) {
-      return 0;
-    }
-
+    if (!arrayStarted) return 0;
     if (!arrayFinished) {
       throw new Error(`The ${key} array ended unexpectedly.`);
     }
@@ -259,52 +313,40 @@
   async function readTopLevelValue(file, key) {
     if (!file) return undefined;
 
-    const pattern = `"${key}"`;
-    let searching = true;
-    let carry = '';
     let started = false;
+    let mode = '';
     let parts = [];
     let segmentStart = 0;
     let nesting = 0;
     let inString = false;
     let escaped = false;
-    let primitiveOrString = false;
 
     const finish = (text, endIndex) => {
       const raw = `${parts.join('')}${text.slice(segmentStart, endIndex)}`.trim();
       return raw ? JSON.parse(raw) : undefined;
     };
 
-    for await (const chunk of decodedChunks(file)) {
-      let text = chunk;
+    for await (const chunk of topLevelValueChunks(file, key)) {
       let index = 0;
 
-      if (searching) {
-        text = carry + chunk;
-        const found = findValueStart(text, pattern);
-        if (found.index < 0) {
-          if (found.incompleteAt >= 0) {
-            carry = text.slice(found.incompleteAt);
-          } else {
-            const keep = Math.max(pattern.length + 32, 96);
-            carry = text.slice(-keep);
-          }
-          continue;
-        }
+      if (!started) {
+        while (index < chunk.length && /\s/.test(chunk[index])) index += 1;
+        if (index >= chunk.length) continue;
 
-        searching = false;
-        carry = '';
-        index = found.index;
-        segmentStart = index;
         started = true;
-        const first = text[index];
-        primitiveOrString = first !== '{' && first !== '[';
+        segmentStart = index;
+        const first = chunk[index];
+        mode = first === '{' || first === '['
+          ? 'container'
+          : first === '"'
+            ? 'string'
+            : 'primitive';
       } else {
         segmentStart = 0;
       }
 
-      for (let i = index; i < text.length; i += 1) {
-        const char = text[i];
+      for (let i = index; i < chunk.length; i += 1) {
+        const char = chunk[i];
 
         if (inString) {
           if (escaped) {
@@ -313,6 +355,9 @@
             escaped = true;
           } else if (char === '"') {
             inString = false;
+            if (mode === 'string' && nesting === 0) {
+              return finish(chunk, i + 1);
+            }
           }
           continue;
         }
@@ -322,30 +367,22 @@
           continue;
         }
 
-        if (char === '{' || char === '[') {
-          nesting += 1;
-          continue;
-        }
-
-        if (char === '}' || char === ']') {
-          if (nesting > 0) {
+        if (mode === 'container') {
+          if (char === '{' || char === '[') {
+            nesting += 1;
+          } else if (char === '}' || char === ']') {
             nesting -= 1;
-            if (!primitiveOrString && nesting === 0) {
-              return finish(text, i + 1);
+            if (nesting === 0) {
+              return finish(chunk, i + 1);
             }
-            continue;
           }
-        }
-
-        if (primitiveOrString && nesting === 0 && (char === ',' || char === '}')) {
-          return finish(text, i);
+        } else if (mode === 'primitive' && (char === ',' || char === '}')) {
+          return finish(chunk, i);
         }
       }
 
-      if (started) {
-        parts.push(text.slice(segmentStart));
-        segmentStart = 0;
-      }
+      parts.push(chunk.slice(segmentStart));
+      segmentStart = 0;
     }
 
     return undefined;
