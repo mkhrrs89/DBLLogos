@@ -9,6 +9,13 @@
 
   if (!stream || !fileInput) return;
 
+  const PLAYER_COLLECTION_KEYS = [
+    'players',
+    'retiredPlayers',
+    'releasedPlayers',
+    'freeAgents',
+  ];
+
   let pendingFile = null;
   let fileVersion = 0;
   let hallLoadedVersion = 0;
@@ -54,15 +61,12 @@
     try {
       const hofPlayers = [];
 
-      await stream.forEachTopLevelArrayItem(pendingFile, 'players', (player) => {
-        if (player?.hof) hofPlayers.push(player);
-      });
-      if (!isCurrent(version)) return;
-
-      await stream.forEachTopLevelArrayItem(pendingFile, 'releasedPlayers', (player) => {
-        if (player?.hof) hofPlayers.push(player);
-      });
-      if (!isCurrent(version)) return;
+      for (const collectionKey of PLAYER_COLLECTION_KEYS) {
+        await stream.forEachTopLevelArrayItem(pendingFile, collectionKey, (player) => {
+          if (player?.hof) hofPlayers.push(player);
+        });
+        if (!isCurrent(version)) return;
+      }
 
       const gameAttributes = await stream.readTopLevelValue(pendingFile, 'gameAttributes');
       if (!isCurrent(version)) return;
@@ -208,9 +212,11 @@
       }
     };
 
-    await stream.forEachTopLevelArrayItem(file, 'players', ingest);
-    if (!isCurrent(version)) return { imageByPid, imageByName, nameByPid };
-    await stream.forEachTopLevelArrayItem(file, 'releasedPlayers', ingest);
+    for (const collectionKey of PLAYER_COLLECTION_KEYS) {
+      await stream.forEachTopLevelArrayItem(file, collectionKey, ingest);
+      if (!isCurrent(version)) return { imageByPid, imageByName, nameByPid };
+    }
+
     return { imageByPid, imageByName, nameByPid };
   }
 
