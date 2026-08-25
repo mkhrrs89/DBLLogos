@@ -184,3 +184,25 @@ body {
 .page > .panel {
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
 }
+
+/* Give Hall of Fame portraits a clearly metallic gold frame instead of a flat
+   yellow-gold border. Both detail and gallery views keep their existing size. */
+.hof-gallery-item,
+.hof-portrait {
+  border-color: #b8861d;
+  border-image: linear-gradient(
+    135deg,
+    #6f490b 0%,
+    #b98218 14%,
+    #f7d96f 30%,
+    #fff0a6 39%,
+    #b47a13 53%,
+    #e1b63c 69%,
+    #f6d66c 81%,
+    #704a0b 100%
+  ) 1;
+  box-shadow:
+    0 0 0 1px rgba(255, 226, 121, 0.24),
+    0 0 12px rgba(190, 130, 25, 0.16),
+    0 4px 12px rgba(0, 0, 0, 0.34);
+}
