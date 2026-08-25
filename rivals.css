@@ -1,0 +1,75 @@
+.rivals-panel {
+  padding: 18px;
+  min-width: 0;
+}
+
+.rivals-header {
+  margin-bottom: 16px;
+}
+
+.rivals-header h2 {
+  margin: 0 0 6px;
+}
+
+.rivals-header p {
+  margin: 0;
+}
+
+.rivals-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.018);
+}
+
+.rivals-wrap.empty-state {
+  display: grid;
+  min-height: 260px;
+  place-items: center;
+}
+
+.rivals-list {
+  display: grid;
+  min-width: max-content;
+}
+
+.rivals-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rivals-row:last-child {
+  border-bottom: 0;
+}
+
+.rivals-team {
+  flex: 0 0 240px;
+  width: 240px;
+  font-weight: 700;
+  white-space: normal;
+}
+
+.rivals-select {
+  flex: 0 0 220px;
+  width: 220px;
+}
+
+@media (max-width: 680px) {
+  .rivals-panel {
+    padding: 12px;
+  }
+
+  .rivals-team {
+    flex-basis: 180px;
+    width: 180px;
+  }
+
+  .rivals-select {
+    flex-basis: 190px;
+    width: 190px;
+  }
+}
