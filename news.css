@@ -39,6 +39,15 @@
   background: rgba(255,255,255,0.018);
 }
 
+.news-item.news-alt-year {
+  background: linear-gradient(
+    180deg,
+    rgba(132, 55, 19, 0.14),
+    rgba(100, 39, 13, 0.11)
+  );
+  border-color: rgba(217, 119, 50, 0.16);
+}
+
 .news-season {
   font-size: 1.55rem;
   line-height: 1;
