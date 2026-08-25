@@ -30,8 +30,9 @@
 
 .news-item {
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-columns: 96px 148px minmax(0, 1fr);
   gap: 14px;
+  align-items: center;
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -39,10 +40,63 @@
 }
 
 .news-season {
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-size: 1.55rem;
+  line-height: 1;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: var(--accent);
+}
+
+.news-visuals {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.news-player-photo {
+  width: 74px;
+  height: 74px;
+  flex: 0 0 74px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  background: rgba(255,255,255,0.035);
+}
+
+.news-player-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.news-player-photo.is-placeholder {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.news-team-logo {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.news-team-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.news-team-logo.is-placeholder {
+  opacity: 0;
 }
 
 .news-content {
@@ -77,12 +131,51 @@
   }
 
   .news-item {
-    grid-template-columns: 58px minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px;
+    grid-template-columns: 68px 118px minmax(0, 1fr);
+    gap: 8px;
+    padding: 12px 10px;
   }
 
   .news-season {
-    font-size: 0.95rem;
+    font-size: 1.25rem;
+  }
+
+  .news-visuals {
+    gap: 7px;
+  }
+
+  .news-player-photo {
+    width: 62px;
+    height: 62px;
+    flex-basis: 62px;
+  }
+
+  .news-team-logo {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+
+  .news-headline {
+    font-size: 0.92rem;
+  }
+
+  .news-detail {
+    font-size: 0.84rem;
+  }
+}
+
+@media (max-width: 470px) {
+  .news-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .news-season {
+    font-size: 1.35rem;
+  }
+
+  .news-visuals {
+    margin-bottom: 2px;
   }
 }
