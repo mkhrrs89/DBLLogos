@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="./logos-by-team.css" />
     <link rel="stylesheet" href="./all-time-leaders.css" />
     <link rel="stylesheet" href="./records-player-images.css" />
+    <link rel="stylesheet" href="./news.css" />
+    <link rel="stylesheet" href="./rivals.css" />
     <style>
       #recordsWrap .record-item:nth-child(n + 51) {
         display: none;
@@ -67,6 +69,8 @@
           <button id="allTimeLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Leaders</button>
           <button id="hallOfFameTabBtn" class="tab-btn" type="button" aria-selected="false">Hall of Fame</button>
           <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
+          <button id="newsTabBtn" class="tab-btn" type="button" aria-selected="false">News</button>
+          <button id="rivalsTabBtn" class="tab-btn" type="button" aria-selected="false">Rivals</button>
         </nav>
 
         <section class="panel controls-panel">
@@ -272,6 +276,30 @@
             </div>
           </div>
         </section>
+
+        <section id="newsPanel" class="panel news-panel" hidden>
+          <div class="news-header">
+            <h2>News</h2>
+            <p class="subtle">Chronological record news for points, rebounds, assists, steals, and blocks.</p>
+          </div>
+          <div id="newsWrap" class="news-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load or re-upload a league file to generate record news.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="rivalsPanel" class="panel rivals-panel" hidden>
+          <div class="rivals-header">
+            <h2>Rivals</h2>
+            <p class="subtle">Assign one or more rivals to every franchise.</p>
+          </div>
+          <div id="rivalsWrap" class="rivals-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to assign team rivals.</p>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -305,5 +333,7 @@
     <script src="./records-player-images.js"></script>
     <script src="./deferred-heavy-views.js?v=20260825-hof-fallback"></script>
     <script src="./hall-of-fame-fallback.js?v=20260825-hof-fallback"></script>
+    <script src="./news.js?v=20260825-news-rivals"></script>
+    <script src="./rivals.js?v=20260825-news-rivals"></script>
   </body>
 </html>
