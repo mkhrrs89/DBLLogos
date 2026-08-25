@@ -33,7 +33,7 @@
   grid-template-columns: 96px 148px minmax(0, 1fr);
   gap: 14px;
   align-items: center;
-  padding: 14px 16px;
+  padding: 5px 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: rgba(255,255,255,0.018);
@@ -56,7 +56,7 @@
 
 .news-player-photo {
   width: 74px;
-  height: 74px;
+  height: 96px;
   flex: 0 0 74px;
   overflow: hidden;
   display: grid;
@@ -69,8 +69,8 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 20%;
+  object-fit: contain;
+  object-position: center;
 }
 
 .news-player-photo.is-placeholder {
@@ -80,12 +80,12 @@
 }
 
 .news-team-logo {
-  width: 58px;
-  height: 58px;
-  flex: 0 0 58px;
+  width: 64px;
+  height: 72px;
+  flex: 0 0 64px;
   display: grid;
   place-items: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .news-team-logo img {
@@ -133,7 +133,7 @@
   .news-item {
     grid-template-columns: 68px 118px minmax(0, 1fr);
     gap: 8px;
-    padding: 12px 10px;
+    padding: 5px 10px;
   }
 
   .news-season {
@@ -146,14 +146,14 @@
 
   .news-player-photo {
     width: 62px;
-    height: 62px;
+    height: 80px;
     flex-basis: 62px;
   }
 
   .news-team-logo {
-    width: 48px;
-    height: 48px;
-    flex-basis: 48px;
+    width: 50px;
+    height: 58px;
+    flex-basis: 50px;
   }
 
   .news-headline {
@@ -169,6 +169,8 @@
   .news-item {
     grid-template-columns: 1fr;
     gap: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 
   .news-season {
