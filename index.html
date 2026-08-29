@@ -43,6 +43,35 @@
         max-height: none;
         -webkit-overflow-scrolling: touch;
       }
+
+      @media (max-width: 820px) {
+        .timeline-fullscreen-header {
+          gap: 8px;
+          flex-wrap: nowrap;
+        }
+
+        .timeline-fullscreen-controls {
+          display: flex;
+          align-items: center;
+          flex-wrap: nowrap;
+          gap: 6px;
+          min-width: 0;
+        }
+
+        .timeline-fullscreen-controls .toggle-switch {
+          gap: 5px;
+          white-space: nowrap;
+          flex: 0 0 auto;
+        }
+
+        .timeline-fullscreen-controls .toggle-label {
+          font-size: 0.75rem;
+        }
+
+        .timeline-fullscreen-controls .mobile-fullscreen-btn {
+          flex: 0 0 auto;
+        }
+      }
     </style>
   </head>
   <body>
@@ -310,12 +339,12 @@
           <label class="toggle-switch" for="activeTeamsOnlyToggleFullscreen">
             <input id="activeTeamsOnlyToggleFullscreen" type="checkbox" />
             <span class="toggle-slider" aria-hidden="true"></span>
-            <span class="toggle-label">Active teams only</span>
+            <span class="toggle-label">Active</span>
           </label>
           <label class="toggle-switch" for="smallLogosToggleFullscreen">
             <input id="smallLogosToggleFullscreen" type="checkbox" />
             <span class="toggle-slider" aria-hidden="true"></span>
-            <span class="toggle-label">Use small logos</span>
+            <span class="toggle-label">Small</span>
           </label>
           <button id="closeFullscreenBtn" class="mobile-fullscreen-btn" type="button">Close</button>
         </div>
