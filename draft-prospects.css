@@ -35,7 +35,7 @@
 
 .draft-prospects-table {
   width: 100%;
-  min-width: 720px;
+  min-width: 790px;
   border-collapse: separate;
   border-spacing: 0;
   font-variant-numeric: tabular-nums;
@@ -119,6 +119,10 @@
 .draft-watch.watch-2 .draft-watch-dot { background: #198754; }
 .draft-watch.watch-3 .draft-watch-dot { background: #0d6efd; }
 .draft-watch.watch-4 .draft-watch-dot { background: #ffc107; }
+.draft-watch.watch-5 .draft-watch-dot { background: #6610f2; }
+.draft-watch.watch-6 .draft-watch-dot { background: #d63384; }
+.draft-watch.watch-7 .draft-watch-dot { background: #0dcaf0; }
+.draft-watch.watch-8 .draft-watch-dot { background: #fd7e14; }
 .draft-watch.watch-other .draft-watch-dot { background: var(--accent); }
 
 .draft-prospects-count {
@@ -133,7 +137,7 @@
   }
 
   .draft-prospects-table {
-    min-width: 650px;
+    min-width: 720px;
   }
 
   .draft-prospects-table th,
