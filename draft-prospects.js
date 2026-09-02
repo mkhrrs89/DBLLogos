@@ -14,6 +14,10 @@
     [2, 'Green'],
     [3, 'Blue'],
     [4, 'Yellow'],
+    [5, 'Purple'],
+    [6, 'Pink'],
+    [7, 'Aqua'],
+    [8, 'Orange'],
   ]);
 
   const COLUMNS = [
@@ -21,6 +25,7 @@
     { key: 'draftYear', label: 'Draft Class', type: 'number' },
     { key: 'watch', label: 'Watch List', type: 'number' },
     { key: 'position', label: 'Position', type: 'text' },
+    { key: 'age', label: 'Age', type: 'number' },
     { key: 'rating', label: 'Rating', type: 'number' },
     { key: 'potential', label: 'Potential', type: 'number' },
   ];
@@ -104,6 +109,10 @@
       await waitForMainLoad();
       if (version !== fileVersion) return;
 
+      const gameAttributes = await stream.readTopLevelValue(file, 'gameAttributes');
+      const currentSeason = finiteNumber(unwrapGameAttributeValue(gameAttributes?.season));
+      if (version !== fileVersion) return;
+
       const next = [];
       await stream.forEachTopLevelArrayItem(file, 'players', (player) => {
         if (version !== fileVersion) return;
@@ -112,6 +121,11 @@
         const ratings = getLatestRatings(player);
         const draftYear = finiteNumber(player?.draft?.year);
         const watch = finiteNumber(player?.watch) ?? 0;
+        const bornYear = finiteNumber(player?.born?.year);
+        const explicitAge = finiteNumber(player?.age);
+        const age = currentSeason !== null && bornYear !== null
+          ? currentSeason - bornYear
+          : explicitAge;
 
         next.push({
           pid: finiteNumber(player?.pid),
@@ -119,6 +133,7 @@
           draftYear,
           watch,
           position: cleanText(ratings?.pos ?? player?.pos) || '—',
+          age,
           rating: finiteNumber(ratings?.ovr),
           potential: finiteNumber(ratings?.pot),
         });
@@ -148,6 +163,15 @@
     while (/^Loading\b/i.test(statusMessage?.textContent?.trim() || '')) {
       await new Promise((resolve) => window.setTimeout(resolve, 100));
     }
+  }
+
+  function unwrapGameAttributeValue(value) {
+    if (!Array.isArray(value) || !value.length) return value;
+    const latest = value[value.length - 1];
+    if (latest && typeof latest === 'object' && Object.prototype.hasOwnProperty.call(latest, 'value')) {
+      return latest.value;
+    }
+    return value;
   }
 
   function getLatestRatings(player) {
@@ -184,6 +208,7 @@
   }
 
   function finiteNumber(value) {
+    if (value === null || value === undefined || value === '') return null;
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
   }
@@ -213,7 +238,9 @@
 
     COLUMNS.forEach((column) => {
       const th = document.createElement('th');
-      if (column.key === 'rating' || column.key === 'potential') th.className = 'draft-prospect-number';
+      if (column.key === 'age' || column.key === 'rating' || column.key === 'potential') {
+        th.className = 'draft-prospect-number';
+      }
 
       const button = document.createElement('button');
       button.type = 'button';
@@ -247,6 +274,7 @@
         makeCell(formatValue(prospect.draftYear)),
         makeWatchCell(prospect.watch),
         makeCell(prospect.position),
+        makeCell(formatValue(prospect.age), 'draft-prospect-number'),
         makeCell(formatValue(prospect.rating), 'draft-prospect-number'),
         makeCell(formatValue(prospect.potential), 'draft-prospect-number'),
       );
