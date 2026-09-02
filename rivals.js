@@ -223,7 +223,7 @@
 (() => {
   if (document.querySelector('script[data-dbl-draft-loader]')) return;
   const script = document.createElement('script');
-  script.src = './draft-prospects-loader.js?v=20260902-draft-prospects';
+  script.src = './draft-prospects-loader.js?v=20260902-draft-prospects-age-watch-colors';
   script.dataset.dblDraftLoader = 'true';
   document.body.append(script);
 })();
