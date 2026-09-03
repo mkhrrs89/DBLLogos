@@ -27,12 +27,12 @@
 
   const COLUMNS = [
     { key: 'name', label: 'Name', type: 'text' },
-    { key: 'draftYear', label: 'Draft Class', type: 'number' },
+    { key: 'draftYear', label: 'Class', type: 'number' },
+    { key: 'potential', label: 'Pot', type: 'number' },
     { key: 'watch', label: 'Watch List', type: 'number' },
-    { key: 'position', label: 'Position', type: 'text' },
+    { key: 'position', label: 'Pos', type: 'text' },
     { key: 'age', label: 'Age', type: 'number' },
     { key: 'rating', label: 'Rating', type: 'number' },
-    { key: 'potential', label: 'Potential', type: 'number' },
   ];
 
   let pendingFile = null;
@@ -359,9 +359,6 @@
 
     COLUMNS.forEach((column) => {
       const th = document.createElement('th');
-      if (column.key === 'age' || column.key === 'rating' || column.key === 'potential') {
-        th.className = 'draft-prospect-number';
-      }
 
       const button = document.createElement('button');
       button.type = 'button';
@@ -393,11 +390,11 @@
       row.append(
         makeCell(prospect.name, 'draft-prospect-name'),
         makeCell(formatValue(prospect.draftYear)),
+        makeCell(formatValue(prospect.potential), 'draft-prospect-number'),
         makeWatchCell(prospect.watch),
         makeCell(prospect.position),
         makeCell(formatValue(prospect.age), 'draft-prospect-number'),
         makeCell(formatValue(prospect.rating), 'draft-prospect-number'),
-        makeCell(formatValue(prospect.potential), 'draft-prospect-number'),
       );
 
       tbody.append(row);
