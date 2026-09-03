@@ -9,6 +9,11 @@
 
   if (!stream || !tabBtn || !panel || !wrap || !fileInput) return;
 
+  const DB_NAME = 'dbl-logo-draft-prospects-cache';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'tables';
+  const CACHE_KEY = 'latest';
+
   const WATCH_LABELS = new Map([
     [1, 'Red'],
     [2, 'Green'],
@@ -37,9 +42,13 @@
   let prospects = [];
   let sortKey = 'draftYear';
   let sortDirection = 'asc';
+  let dbPromise = null;
 
-  tabBtn.addEventListener('click', () => {
+  const restorePromise = restoreSavedProspects();
+
+  tabBtn.addEventListener('click', async () => {
     activateTab();
+    await restorePromise;
     if (prospects.length && loadedVersion === fileVersion) {
       render();
     } else {
@@ -56,13 +65,15 @@
     });
   });
 
-  fileInput.addEventListener('change', (event) => {
+  fileInput.addEventListener('change', async (event) => {
     const [file] = event.target.files || [];
     pendingFile = file || null;
     fileVersion += 1;
     loadedVersion = -1;
     loadingVersion = -1;
     prospects = [];
+
+    await clearSavedProspects();
 
     if (!panel.hidden && pendingFile) {
       buildProspects();
@@ -71,12 +82,13 @@
     }
   });
 
-  clearBtn?.addEventListener('click', () => {
+  clearBtn?.addEventListener('click', async () => {
     pendingFile = null;
     fileVersion += 1;
     loadedVersion = -1;
     loadingVersion = -1;
     prospects = [];
+    await clearSavedProspects();
     renderEmpty('Load or re-upload a league file to show draft prospects.');
   });
 
@@ -98,6 +110,10 @@
 
     const file = pendingFile || fileInput.files?.[0] || window.__dblLargeLeagueFile || null;
     if (!file) {
+      if (prospects.length && loadedVersion === fileVersion) {
+        render();
+        return;
+      }
       renderEmpty('Load or re-upload a league file to show draft prospects.');
       return;
     }
@@ -150,6 +166,7 @@
         return;
       }
 
+      await saveProspects(file);
       render();
     } catch (error) {
       if (version !== fileVersion) return;
@@ -211,6 +228,110 @@
     if (value === null || value === undefined || value === '') return null;
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
+  }
+
+  async function saveProspects(file) {
+    if (!prospects.length) return;
+
+    const payload = {
+      key: CACHE_KEY,
+      savedAt: new Date().toISOString(),
+      fileName: file?.name || loadSavedTimelineFileName() || '',
+      sortKey,
+      sortDirection,
+      prospects,
+    };
+
+    try {
+      const db = await openDatabase();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(payload);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error('Could not save Draft Prospects.'));
+        tx.onabort = () => reject(tx.error || new Error('Could not save Draft Prospects.'));
+      });
+    } catch (error) {
+      console.warn('Could not save Draft Prospects in IndexedDB.', error);
+    }
+  }
+
+  async function restoreSavedProspects() {
+    try {
+      const db = await openDatabase();
+      const saved = await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).get(CACHE_KEY);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Could not restore Draft Prospects.'));
+      });
+
+      if (!saved || !Array.isArray(saved.prospects) || !saved.prospects.length) return false;
+
+      prospects = saved.prospects;
+      if (COLUMNS.some((column) => column.key === saved.sortKey)) {
+        sortKey = saved.sortKey;
+      }
+      if (saved.sortDirection === 'asc' || saved.sortDirection === 'desc') {
+        sortDirection = saved.sortDirection;
+      }
+      loadedVersion = fileVersion;
+
+      if (!panel.hidden) render();
+      return true;
+    } catch (error) {
+      console.warn('Could not restore saved Draft Prospects from IndexedDB.', error);
+      return false;
+    }
+  }
+
+  async function clearSavedProspects() {
+    try {
+      const db = await openDatabase();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).delete(CACHE_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error('Could not clear Draft Prospects.'));
+        tx.onabort = () => reject(tx.error || new Error('Could not clear Draft Prospects.'));
+      });
+    } catch (error) {
+      console.warn('Could not clear saved Draft Prospects from IndexedDB.', error);
+    }
+  }
+
+  function openDatabase() {
+    if (dbPromise) return dbPromise;
+
+    dbPromise = new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        reject(new Error('IndexedDB is not available in this browser.'));
+        return;
+      }
+
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'key' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('Could not open the Draft Prospects cache.'));
+    });
+
+    return dbPromise;
+  }
+
+  function loadSavedTimelineFileName() {
+    try {
+      const raw = localStorage.getItem('dbl-logo-timeline:v1');
+      if (!raw) return '';
+      const parsed = JSON.parse(raw);
+      return typeof parsed?.fileName === 'string' ? parsed.fileName : '';
+    } catch (error) {
+      return '';
+    }
   }
 
   function render() {
@@ -328,6 +449,7 @@
       sortDirection = key === 'rating' || key === 'potential' ? 'desc' : 'asc';
     }
     render();
+    saveProspects(pendingFile || fileInput.files?.[0] || null);
   }
 
   function compareProspects(a, b) {
