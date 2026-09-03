@@ -42,6 +42,7 @@
   let prospects = [];
   let sortKey = 'draftYear';
   let sortDirection = 'asc';
+  let filterDraftYear = null;
   let dbPromise = null;
 
   const restorePromise = restoreSavedProspects();
@@ -72,6 +73,7 @@
     loadedVersion = -1;
     loadingVersion = -1;
     prospects = [];
+    filterDraftYear = null;
 
     await clearSavedProspects();
 
@@ -88,6 +90,7 @@
     loadedVersion = -1;
     loadingVersion = -1;
     prospects = [];
+    filterDraftYear = null;
     await clearSavedProspects();
     renderEmpty('Load or re-upload a league file to show draft prospects.');
   });
@@ -239,6 +242,7 @@
       fileName: file?.name || loadSavedTimelineFileName() || '',
       sortKey,
       sortDirection,
+      filterDraftYear,
       prospects,
     };
 
@@ -275,6 +279,12 @@
       if (saved.sortDirection === 'asc' || saved.sortDirection === 'desc') {
         sortDirection = saved.sortDirection;
       }
+
+      const savedFilter = finiteNumber(saved.filterDraftYear);
+      filterDraftYear = savedFilter !== null && prospects.some((prospect) => prospect.draftYear === savedFilter)
+        ? savedFilter
+        : null;
+
       loadedVersion = fileVersion;
 
       if (!panel.hidden) render();
@@ -338,15 +348,35 @@
     wrap.className = 'draft-prospects-wrap';
     wrap.replaceChildren();
 
-    const sorted = [...prospects].sort(compareProspects);
+    const filteredProspects = filterDraftYear === null
+      ? prospects
+      : prospects.filter((prospect) => prospect.draftYear === filterDraftYear);
+    const sorted = [...filteredProspects].sort(compareProspects);
+
+    const summary = document.createElement('div');
+    summary.className = 'draft-prospects-summary';
 
     const count = document.createElement('p');
     count.className = 'draft-prospects-count';
     const years = prospects.map((prospect) => prospect.draftYear).filter(Number.isFinite);
     const minYear = years.length ? Math.min(...years) : null;
     const maxYear = years.length ? Math.max(...years) : null;
-    count.textContent = `${prospects.length.toLocaleString()} prospect${prospects.length === 1 ? '' : 's'}${minYear !== null && maxYear !== null ? ` • Draft classes ${minYear}–${maxYear}` : ''}`;
-    wrap.append(count);
+
+    if (filterDraftYear !== null) {
+      count.textContent = `${filteredProspects.length.toLocaleString()} prospect${filteredProspects.length === 1 ? '' : 's'} • Class ${filterDraftYear} • ${prospects.length.toLocaleString()} total`;
+
+      const clearFilter = document.createElement('button');
+      clearFilter.type = 'button';
+      clearFilter.className = 'draft-prospects-clear-filter';
+      clearFilter.textContent = 'Clear class filter';
+      clearFilter.addEventListener('click', () => setDraftYearFilter(null));
+      summary.append(count, clearFilter);
+    } else {
+      count.textContent = `${prospects.length.toLocaleString()} prospect${prospects.length === 1 ? '' : 's'}${minYear !== null && maxYear !== null ? ` • Draft classes ${minYear}–${maxYear}` : ''}`;
+      summary.append(count);
+    }
+
+    wrap.append(summary);
 
     const tableWrap = document.createElement('div');
     tableWrap.className = 'draft-prospects-table-wrap';
@@ -389,7 +419,7 @@
 
       row.append(
         makeCell(prospect.name, 'draft-prospect-name'),
-        makeCell(formatValue(prospect.draftYear)),
+        makeDraftYearCell(prospect.draftYear),
         makeCell(formatValue(prospect.potential), 'draft-prospect-number'),
         makeWatchCell(prospect.watch),
         makeCell(prospect.position),
@@ -409,6 +439,27 @@
     const td = document.createElement('td');
     if (className) td.className = className;
     td.textContent = text;
+    return td;
+  }
+
+  function makeDraftYearCell(year) {
+    const td = document.createElement('td');
+    if (!Number.isFinite(year)) {
+      td.textContent = '—';
+      return td;
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `draft-class-filter-button${filterDraftYear === year ? ' is-active' : ''}`;
+    button.textContent = String(year);
+    button.setAttribute('aria-pressed', filterDraftYear === year ? 'true' : 'false');
+    button.setAttribute(
+      'aria-label',
+      filterDraftYear === year ? `Clear draft class ${year} filter` : `Show only draft class ${year}`,
+    );
+    button.addEventListener('click', () => setDraftYearFilter(year));
+    td.append(button);
     return td;
   }
 
@@ -445,6 +496,13 @@
       sortKey = key;
       sortDirection = key === 'rating' || key === 'potential' ? 'desc' : 'asc';
     }
+    render();
+    saveProspects(pendingFile || fileInput.files?.[0] || null);
+  }
+
+  function setDraftYearFilter(year) {
+    const nextYear = finiteNumber(year);
+    filterDraftYear = nextYear !== null && filterDraftYear !== nextYear ? nextYear : null;
     render();
     saveProspects(pendingFile || fileInput.files?.[0] || null);
   }
