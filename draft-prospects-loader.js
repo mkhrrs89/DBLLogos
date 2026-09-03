@@ -3,7 +3,7 @@
 
   const styleLink = document.createElement('link');
   styleLink.rel = 'stylesheet';
-  styleLink.href = './draft-prospects.css?v=20260902-draft-prospects-age-watch-colors';
+  styleLink.href = './draft-prospects.css?v=20260903-draft-prospects-persistent';
   document.head.append(styleLink);
 
   const fullscreenStyle = document.createElement('style');
@@ -73,7 +73,7 @@
   else page?.append(panel);
 
   const script = document.createElement('script');
-  script.src = './draft-prospects.js?v=20260902-draft-prospects-age-watch-colors';
+  script.src = './draft-prospects.js?v=20260903-draft-prospects-persistent';
   script.dataset.dblDraftProspects = 'true';
   document.body.append(script);
 })();
