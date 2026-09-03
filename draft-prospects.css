@@ -45,7 +45,8 @@
 .draft-prospects-table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
-  text-align: left;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
@@ -65,8 +66,10 @@
 }
 
 .draft-prospects-sort {
+  width: 100%;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   padding: 0;
   border: 0;
@@ -77,6 +80,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -88,20 +92,23 @@
 .draft-prospects-sort-indicator {
   min-width: 0.8em;
   color: var(--accent);
+  text-align: center;
 }
 
 .draft-prospect-name {
   font-weight: 800;
   color: var(--text);
+  text-align: center;
 }
 
 .draft-prospect-number {
-  text-align: right !important;
+  text-align: center !important;
 }
 
 .draft-watch {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   color: var(--muted);
 }
