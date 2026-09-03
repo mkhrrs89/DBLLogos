@@ -24,6 +24,14 @@
   background: rgba(255,255,255,0.018);
 }
 
+.draft-prospects-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
 .draft-prospects-table-wrap {
   max-width: 100%;
   overflow: auto;
@@ -105,6 +113,52 @@
   text-align: center !important;
 }
 
+.draft-class-filter-button {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.draft-class-filter-button:hover,
+.draft-class-filter-button:focus-visible {
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+  outline: none;
+}
+
+.draft-class-filter-button.is-active {
+  border-color: var(--accent);
+  background: rgba(214,132,76,0.14);
+  color: var(--text);
+}
+
+.draft-prospects-clear-filter {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.draft-prospects-clear-filter:hover,
+.draft-prospects-clear-filter:focus-visible {
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.07);
+  outline: none;
+}
+
 .draft-watch {
   display: inline-flex;
   align-items: center;
@@ -133,7 +187,7 @@
 .draft-watch.watch-other .draft-watch-dot { background: var(--accent); }
 
 .draft-prospects-count {
-  margin: 0 0 10px;
+  margin: 0;
   color: var(--muted);
   font-size: 0.84rem;
 }
@@ -141,6 +195,11 @@
 @media (max-width: 680px) {
   .draft-prospects-panel {
     padding: 12px;
+  }
+
+  .draft-prospects-summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .draft-prospects-table {
