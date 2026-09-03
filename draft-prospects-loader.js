@@ -3,7 +3,7 @@
 
   const styleLink = document.createElement('link');
   styleLink.rel = 'stylesheet';
-  styleLink.href = './draft-prospects.css?v=20260903-draft-prospects-centered-columns';
+  styleLink.href = './draft-prospects.css?v=20260903-draft-class-filter';
   document.head.append(styleLink);
 
   const fullscreenStyle = document.createElement('style');
@@ -73,7 +73,7 @@
   else page?.append(panel);
 
   const script = document.createElement('script');
-  script.src = './draft-prospects.js?v=20260903-draft-prospects-centered-columns';
+  script.src = './draft-prospects.js?v=20260903-draft-class-filter';
   script.dataset.dblDraftProspects = 'true';
   document.body.append(script);
 })();
