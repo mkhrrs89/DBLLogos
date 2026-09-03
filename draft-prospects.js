@@ -17,12 +17,12 @@
   const WATCH_LABELS = new Map([
     [1, 'Red'],
     [2, 'Green'],
-    [3, 'Blue'],
+    [3, 'Family'],
     [4, 'Yellow'],
     [5, 'Purple'],
-    [6, 'Pink'],
-    [7, 'Aqua'],
-    [8, 'Orange'],
+    [6, 'Hoopland'],
+    [7, 'K&P / Street'],
+    [8, 'Presidents'],
   ]);
 
   const COLUMNS = [
