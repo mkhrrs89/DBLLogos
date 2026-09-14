@@ -3,11 +3,12 @@
   const tabBtn = document.getElementById('draftProspectsTabBtn');
   const panel = document.getElementById('draftProspectsPanel');
   const wrap = document.getElementById('draftProspectsWrap');
+  const searchInput = document.getElementById('draftProspectsSearch');
   const fileInput = document.getElementById('leagueFile');
   const clearBtn = document.getElementById('clearLeagueFileBtn');
   const statusMessage = document.getElementById('statusMessage');
 
-  if (!stream || !tabBtn || !panel || !wrap || !fileInput) return;
+  if (!stream || !tabBtn || !panel || !wrap || !searchInput || !fileInput) return;
 
   const DB_NAME = 'dbl-logo-draft-prospects-cache';
   const DB_VERSION = 1;
@@ -47,6 +48,14 @@
 
   const restorePromise = restoreSavedProspects();
 
+  searchInput.addEventListener('input', () => {
+    if (prospects.length) render();
+  });
+
+  searchInput.addEventListener('search', () => {
+    if (prospects.length) render();
+  });
+
   tabBtn.addEventListener('click', async () => {
     activateTab();
     await restorePromise;
@@ -74,6 +83,7 @@
     loadingVersion = -1;
     prospects = [];
     filterDraftYear = null;
+    searchInput.value = '';
 
     await clearSavedProspects();
 
@@ -91,6 +101,7 @@
     loadingVersion = -1;
     prospects = [];
     filterDraftYear = null;
+    searchInput.value = '';
     await clearSavedProspects();
     renderEmpty('Load or re-upload a league file to show draft prospects.');
   });
@@ -348,9 +359,13 @@
     wrap.className = 'draft-prospects-wrap';
     wrap.replaceChildren();
 
-    const filteredProspects = filterDraftYear === null
+    const classFilteredProspects = filterDraftYear === null
       ? prospects
       : prospects.filter((prospect) => prospect.draftYear === filterDraftYear);
+    const nameQuery = searchInput.value.trim().toLocaleLowerCase();
+    const filteredProspects = nameQuery
+      ? classFilteredProspects.filter((prospect) => String(prospect.name || '').toLocaleLowerCase().includes(nameQuery))
+      : classFilteredProspects;
     const sorted = [...filteredProspects].sort(compareProspects);
 
     const summary = document.createElement('div');
@@ -362,15 +377,24 @@
     const minYear = years.length ? Math.min(...years) : null;
     const maxYear = years.length ? Math.max(...years) : null;
 
-    if (filterDraftYear !== null) {
-      count.textContent = `${filteredProspects.length.toLocaleString()} prospect${filteredProspects.length === 1 ? '' : 's'} • Class ${filterDraftYear} • ${prospects.length.toLocaleString()} total`;
+    if (filterDraftYear !== null || nameQuery) {
+      const details = [
+        `${filteredProspects.length.toLocaleString()} prospect${filteredProspects.length === 1 ? '' : 's'}`,
+      ];
+      if (filterDraftYear !== null) details.push(`Class ${filterDraftYear}`);
+      if (nameQuery) details.push(`matching “${searchInput.value.trim()}”`);
+      details.push(`${prospects.length.toLocaleString()} total`);
+      count.textContent = details.join(' • ');
 
-      const clearFilter = document.createElement('button');
-      clearFilter.type = 'button';
-      clearFilter.className = 'draft-prospects-clear-filter';
-      clearFilter.textContent = 'Clear class filter';
-      clearFilter.addEventListener('click', () => setDraftYearFilter(null));
-      summary.append(count, clearFilter);
+      summary.append(count);
+      if (filterDraftYear !== null) {
+        const clearFilter = document.createElement('button');
+        clearFilter.type = 'button';
+        clearFilter.className = 'draft-prospects-clear-filter';
+        clearFilter.textContent = 'Clear class filter';
+        clearFilter.addEventListener('click', () => setDraftYearFilter(null));
+        summary.append(clearFilter);
+      }
     } else {
       count.textContent = `${prospects.length.toLocaleString()} prospect${prospects.length === 1 ? '' : 's'}${minYear !== null && maxYear !== null ? ` • Draft classes ${minYear}–${maxYear}` : ''}`;
       summary.append(count);
@@ -414,21 +438,31 @@
     table.append(thead);
 
     const tbody = document.createElement('tbody');
-    sorted.forEach((prospect) => {
+    if (!sorted.length) {
       const row = document.createElement('tr');
-
-      row.append(
-        makeCell(prospect.name, 'draft-prospect-name'),
-        makeDraftYearCell(prospect.draftYear),
-        makeCell(formatValue(prospect.potential), 'draft-prospect-number'),
-        makeWatchCell(prospect.watch),
-        makeCell(prospect.position),
-        makeCell(formatValue(prospect.age), 'draft-prospect-number'),
-        makeCell(formatValue(prospect.rating), 'draft-prospect-number'),
-      );
-
+      const cell = document.createElement('td');
+      cell.colSpan = COLUMNS.length;
+      cell.className = 'draft-prospects-no-results';
+      cell.textContent = 'No prospects match this search.';
+      row.append(cell);
       tbody.append(row);
-    });
+    } else {
+      sorted.forEach((prospect) => {
+        const row = document.createElement('tr');
+
+        row.append(
+          makeCell(prospect.name, 'draft-prospect-name'),
+          makeDraftYearCell(prospect.draftYear),
+          makeCell(formatValue(prospect.potential), 'draft-prospect-number'),
+          makeWatchCell(prospect.watch),
+          makeCell(prospect.position),
+          makeCell(formatValue(prospect.age), 'draft-prospect-number'),
+          makeCell(formatValue(prospect.rating), 'draft-prospect-number'),
+        );
+
+        tbody.append(row);
+      });
+    }
 
     table.append(tbody);
     tableWrap.append(table);
