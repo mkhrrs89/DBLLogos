@@ -73,7 +73,7 @@
   else page?.append(panel);
 
   const script = document.createElement('script');
-  script.src = './draft-prospects.js?v=20260903-watch-list-labels';
+  script.src = './draft-prospects.js?v=20260914-watch-pot-secondary';
   script.dataset.dblDraftProspects = 'true';
   document.body.append(script);
 })();
