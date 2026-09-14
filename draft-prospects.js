@@ -526,15 +526,27 @@
       }
     }
 
-    if (result === 0) {
-      const yearA = Number.isFinite(a.draftYear) ? a.draftYear : Infinity;
-      const yearB = Number.isFinite(b.draftYear) ? b.draftYear : Infinity;
-      result = yearA - yearB;
-    }
-    if (result === 0) {
-      result = a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true });
+    if (result !== 0) return result * direction;
+
+    if (sortKey === 'watch') {
+      const aPotential = Number.isFinite(a.potential) ? a.potential : null;
+      const bPotential = Number.isFinite(b.potential) ? b.potential : null;
+      const aPotentialMissing = aPotential === null;
+      const bPotentialMissing = bPotential === null;
+
+      if (aPotentialMissing !== bPotentialMissing) return aPotentialMissing ? 1 : -1;
+      if (!aPotentialMissing && !bPotentialMissing) {
+        const potentialResult = bPotential - aPotential;
+        if (potentialResult !== 0) return potentialResult;
+      }
     }
 
+    const yearA = Number.isFinite(a.draftYear) ? a.draftYear : Infinity;
+    const yearB = Number.isFinite(b.draftYear) ? b.draftYear : Infinity;
+    result = yearA - yearB;
+    if (result !== 0) return result * direction;
+
+    result = a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true });
     return result * direction;
   }
 
