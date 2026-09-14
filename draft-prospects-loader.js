@@ -3,7 +3,7 @@
 
   const styleLink = document.createElement('link');
   styleLink.rel = 'stylesheet';
-  styleLink.href = './draft-prospects.css?v=20260903-watch-list-labels';
+  styleLink.href = './draft-prospects.css?v=20260914-prospect-name-search';
   document.head.append(styleLink);
 
   const fullscreenStyle = document.createElement('style');
@@ -52,7 +52,24 @@
   description.className = 'subtle';
   description.textContent = 'Every undrafted prospect in every draft class stored in the loaded league file.';
 
-  header.append(heading, description);
+  const searchLabel = document.createElement('label');
+  searchLabel.className = 'draft-prospects-search';
+  searchLabel.setAttribute('for', 'draftProspectsSearch');
+
+  const searchText = document.createElement('span');
+  searchText.textContent = 'Player search';
+
+  const searchInput = document.createElement('input');
+  searchInput.id = 'draftProspectsSearch';
+  searchInput.className = 'draft-prospects-search-input';
+  searchInput.type = 'search';
+  searchInput.placeholder = 'Search player names…';
+  searchInput.autocomplete = 'off';
+  searchInput.spellcheck = false;
+  searchInput.setAttribute('aria-label', 'Search draft prospects by player name');
+
+  searchLabel.append(searchText, searchInput);
+  header.append(heading, description, searchLabel);
 
   const wrap = document.createElement('div');
   wrap.id = 'draftProspectsWrap';
@@ -73,7 +90,7 @@
   else page?.append(panel);
 
   const script = document.createElement('script');
-  script.src = './draft-prospects.js?v=20260914-watch-pot-secondary';
+  script.src = './draft-prospects.js?v=20260914-prospect-name-search';
   script.dataset.dblDraftProspects = 'true';
   document.body.append(script);
 })();
