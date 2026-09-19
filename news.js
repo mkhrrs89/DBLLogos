@@ -349,6 +349,7 @@
         const gap = candidate.recordValue - candidate.value;
         result.push(makeItem({
           season: candidate.season,
+          day: candidate.day,
           order: candidate.order,
           type: 'Single-game record chase',
           headline: `${candidate.name} came within ${formatGap(gap, stat)} of the single-game ${stat.label} record.`,
@@ -364,6 +365,7 @@
       gameCounter += 1;
       const season = readGameSeason(game);
       if (!Number.isFinite(season)) return;
+      const day = readGameDay(game);
       if (currentSeason !== null && season !== currentSeason) flushNear();
       currentSeason = season;
       const gid = game?.gid ?? game?.id ?? gameCounter;
@@ -390,6 +392,7 @@
             if (value > previous.value) {
               result.push(makeItem({
                 season,
+                day,
                 order,
                 type: 'Single-game record',
                 headline: `${name} set a new single-game ${stat.label} record with ${formatNumber(value)}.`,
@@ -404,6 +407,7 @@
             if (value === previous.value && name !== previous.name) {
               result.push(makeItem({
                 season,
+                day,
                 order,
                 type: 'Single-game record',
                 headline: `${name} tied the single-game ${stat.label} record at ${formatNumber(value)}.`,
@@ -419,6 +423,7 @@
               if (!existing || ratio > existing.ratio || (ratio === existing.ratio && value > existing.value)) {
                 nearByStat.set(stat.key, {
                   season,
+                  day,
                   order,
                   gid,
                   pid,
@@ -489,7 +494,19 @@
 
       const season = document.createElement('div');
       season.className = 'news-season';
-      season.textContent = String(item.season);
+      season.dataset.season = String(item.season);
+
+      const seasonYear = document.createElement('span');
+      seasonYear.className = 'news-season-year';
+      seasonYear.textContent = String(item.season);
+      season.appendChild(seasonYear);
+
+      if (Number.isFinite(item.day)) {
+        const day = document.createElement('span');
+        day.className = 'news-day';
+        day.textContent = `Day ${item.day}`;
+        season.appendChild(day);
+      }
 
       const visuals = buildNewsVisuals(item);
 
@@ -695,6 +712,11 @@
   function readGameSeason(game = {}) {
     const season = Number(game?.season ?? game?.year);
     return Number.isFinite(season) ? season : null;
+  }
+
+  function readGameDay(game = {}) {
+    const day = Number(game?.day ?? game?.dayNumber ?? game?.dayNum);
+    return Number.isFinite(day) ? day : null;
   }
 
   function readOrder(gid, fallback) {
