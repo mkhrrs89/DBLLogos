@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>DBL Logo Timeline</title>
+    <script>
+      try {
+        document.documentElement.dataset.theme =
+          localStorage.getItem('zengm-companion-theme:v1') || 'orange';
+      } catch (error) {
+        document.documentElement.dataset.theme = 'orange';
+      }
+    </script>
     <link rel="stylesheet" href="./styles.css?v=20260919-upload-row" />
     <link rel="stylesheet" href="./color-schemes.css" />
     <link rel="stylesheet" href="./logos-by-year.css" />
@@ -12,6 +20,7 @@
     <link rel="stylesheet" href="./records-player-images.css" />
     <link rel="stylesheet" href="./news.css?v=20260919-news-logo-inline" />
     <link rel="stylesheet" href="./rivals.css" />
+    <link rel="stylesheet" href="./settings.css?v=20260919-themes" />
     <style>
       #recordsWrap .record-item:nth-child(n + 51) {
         display: none;
@@ -103,6 +112,7 @@
           <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
           <button id="newsTabBtn" class="tab-btn" type="button" aria-selected="false">News</button>
           <button id="rivalsTabBtn" class="tab-btn" type="button" aria-selected="false">Rivals</button>
+          <button id="settingsTabBtn" class="tab-btn" type="button" aria-selected="false">Settings</button>
         </nav>
 
         <section class="panel controls-panel">
@@ -332,6 +342,43 @@
             </div>
           </div>
         </section>
+
+        <section id="settingsPanel" class="panel settings-panel" hidden>
+          <div class="settings-header">
+            <h2>Settings</h2>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-heading">
+              <h3>Theme</h3>
+              <p>Choose the visual style for the entire app.</p>
+            </div>
+
+            <div class="theme-options" role="group" aria-label="App theme">
+              <button
+                class="theme-option"
+                type="button"
+                data-theme-choice="orange"
+                aria-pressed="false"
+              >
+                <span class="theme-preview theme-preview-orange" aria-hidden="true"></span>
+                <strong>Orange</strong>
+                <span class="theme-option-copy">The current dark burnt-orange design.</span>
+              </button>
+
+              <button
+                class="theme-option"
+                type="button"
+                data-theme-choice="newspaper"
+                aria-pressed="false"
+              >
+                <span class="theme-preview theme-preview-newspaper" aria-hidden="true"></span>
+                <strong>Newspaper</strong>
+                <span class="theme-option-copy">Cream paper, dark ink, serif type, and print-style rules.</span>
+              </button>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -369,5 +416,6 @@
     <script src="./news-persistence.js?v=20260825-news-persist-indexeddb"></script>
     <script src="./news-year-shading.js?v=20260919-news-day-number"></script>
     <script src="./rivals.js?v=20260914-prospect-name-search"></script>
+    <script src="./settings.js?v=20260919-themes"></script>
   </body>
 </html>
