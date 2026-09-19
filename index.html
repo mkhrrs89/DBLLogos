@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>DBL Logo Timeline</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260919-upload-row" />
     <link rel="stylesheet" href="./color-schemes.css" />
     <link rel="stylesheet" href="./logos-by-year.css" />
     <link rel="stylesheet" href="./logos-by-team.css" />
@@ -108,11 +108,11 @@
 
         <section class="panel controls-panel">
           <div class="upload-block">
-            <label class="upload-label" for="leagueFile">League file</label>
             <input
               id="leagueFile"
               class="file-input"
               type="file"
+              aria-label="League file"
               accept=".json,.gz,.json.gz,application/json,application/gzip"
             />
             <p class="hint">Supports plain JSON exports and <code>.json.gz</code> files.</p>
