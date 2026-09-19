@@ -49,11 +49,22 @@
 }
 
 .news-season {
+  display: grid;
+  gap: 5px;
+  justify-items: start;
   font-size: 1.55rem;
   line-height: 1;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: var(--accent);
+}
+
+.news-day {
+  font-size: 0.72rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--muted);
 }
 
 .news-visuals {
