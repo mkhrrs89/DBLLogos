@@ -185,19 +185,81 @@
   }
 }
 
-@media (max-width: 470px) {
+@media (max-width: 470px) and (orientation: portrait) {
+  .news-panel {
+    padding: 8px;
+  }
+
+  .news-header {
+    margin-bottom: 10px;
+  }
+
   .news-item {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding-top: 6px;
-    padding-bottom: 6px;
+    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-areas:
+      "season content"
+      "visuals content";
+    column-gap: 10px;
+    row-gap: 5px;
+    align-items: start;
+    padding: 8px 9px;
+    border-radius: 14px;
   }
 
   .news-season {
-    font-size: 1.35rem;
+    grid-area: season;
+    gap: 3px;
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+
+  .news-day {
+    font-size: 0.62rem;
+    line-height: 1;
   }
 
   .news-visuals {
+    grid-area: visuals;
+    width: 72px;
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: start;
+    gap: 5px;
+    margin: 0;
+  }
+
+  .news-player-photo {
+    width: 56px;
+    height: 72px;
+    flex-basis: auto;
+  }
+
+  .news-team-logo {
+    width: 42px;
+    height: 42px;
+    flex-basis: auto;
+  }
+
+  .news-content {
+    grid-area: content;
+    align-self: start;
+  }
+
+  .news-type {
     margin-bottom: 2px;
+    font-size: 0.62rem;
+    line-height: 1.15;
+    letter-spacing: 0.05em;
+  }
+
+  .news-headline {
+    font-size: 0.84rem;
+    line-height: 1.24;
+  }
+
+  .news-detail {
+    margin-top: 4px;
+    font-size: 0.74rem;
+    line-height: 1.3;
   }
 }
