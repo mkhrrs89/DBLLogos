@@ -195,7 +195,7 @@
   }
 
   .news-item {
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: 104px minmax(0, 1fr);
     grid-template-areas:
       "season content"
       "visuals content";
@@ -220,11 +220,11 @@
 
   .news-visuals {
     grid-area: visuals;
-    width: 72px;
-    display: grid;
-    grid-template-columns: 1fr;
-    justify-items: start;
-    gap: 5px;
+    width: 104px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
     margin: 0;
   }
 
