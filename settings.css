@@ -1,0 +1,390 @@
+/* Theme settings UI */
+.settings-panel {
+  padding: 18px;
+  min-width: 0;
+}
+
+.settings-header {
+  margin-bottom: 16px;
+}
+
+.settings-header h2,
+.settings-section h3 {
+  margin: 0;
+}
+
+.settings-section {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-section-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.settings-section-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  max-width: 720px;
+}
+
+.theme-option {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 4px 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.035);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-option:hover {
+  background: rgba(255,255,255,0.065);
+}
+
+.theme-option.is-active,
+.theme-option[aria-pressed="true"] {
+  border-color: rgba(var(--accent-rgb), 0.85);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.12);
+}
+
+.theme-option strong {
+  align-self: end;
+  font-size: 0.98rem;
+}
+
+.theme-option-copy {
+  align-self: start;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.theme-preview {
+  grid-row: 1 / span 2;
+  width: 72px;
+  height: 54px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+}
+
+.theme-preview-orange {
+  background:
+    linear-gradient(180deg, rgba(217,119,50,0.22), transparent 46%),
+    #160e09;
+}
+
+.theme-preview-newspaper {
+  position: relative;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(45,35,24,0.045) 0,
+      rgba(45,35,24,0.045) 1px,
+      transparent 1px,
+      transparent 5px
+    ),
+    #efe4c5;
+}
+
+.theme-preview-newspaper::before,
+.theme-preview-newspaper::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  background: #493d2d;
+}
+
+.theme-preview-newspaper::before {
+  top: 10px;
+  height: 4px;
+  box-shadow: 0 8px 0 rgba(73,61,45,0.72);
+}
+
+.theme-preview-newspaper::after {
+  top: 31px;
+  height: 1px;
+  box-shadow:
+    0 5px 0 rgba(73,61,45,0.55),
+    0 10px 0 rgba(73,61,45,0.42);
+}
+
+/* The current design remains the Orange theme. */
+html[data-theme="orange"] {
+  color-scheme: dark;
+}
+
+/* Newspaper theme */
+html[data-theme="newspaper"] {
+  color-scheme: light;
+  --bg: #e7d8b3;
+  --panel: #f5ecd4;
+  --panel-2: #eadcba;
+  --line: rgba(58, 46, 31, 0.22);
+  --line-strong: rgba(58, 46, 31, 0.42);
+  --text: #241e17;
+  --muted: #695c48;
+  --muted-2: #8a785d;
+  --accent: #765a38;
+  --accent-rgb: 118, 90, 56;
+  --photo-gold: #8a6a35;
+  --shadow: 0 7px 18px rgba(62, 47, 27, 0.10);
+  --radius-lg: 4px;
+  --radius-md: 3px;
+  --radius-sm: 2px;
+}
+
+html[data-theme="newspaper"],
+html[data-theme="newspaper"] body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+html[data-theme="newspaper"] body {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(62, 48, 30, 0.018) 0,
+      rgba(62, 48, 30, 0.018) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    radial-gradient(circle at 50% 0, #f4e9cb 0, var(--bg) 560px);
+  background-repeat: repeat, no-repeat;
+  background-size: auto, 100% 560px;
+}
+
+html[data-theme="newspaper"] .topbar {
+  padding-bottom: 10px;
+  border-bottom: 3px double rgba(36, 30, 23, 0.72);
+}
+
+html[data-theme="newspaper"] h1,
+html[data-theme="newspaper"] h2,
+html[data-theme="newspaper"] h3,
+html[data-theme="newspaper"] strong {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+html[data-theme="newspaper"] h1 {
+  letter-spacing: -0.025em;
+  font-variant: small-caps;
+}
+
+html[data-theme="newspaper"] .panel,
+html[data-theme="newspaper"] .page > .panel {
+  background: rgba(249, 242, 220, 0.76);
+  border-color: rgba(58, 46, 31, 0.34);
+  box-shadow: var(--shadow);
+  backdrop-filter: none;
+}
+
+html[data-theme="newspaper"] .tab-bar {
+  border-top: 1px solid rgba(58, 46, 31, 0.55);
+  border-bottom: 1px solid rgba(58, 46, 31, 0.55);
+}
+
+html[data-theme="newspaper"] .tab-btn {
+  border-radius: 2px;
+  border-color: transparent;
+  background: transparent;
+  color: #5e513f;
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+html[data-theme="newspaper"] .tab-btn:hover {
+  color: var(--text);
+  background: rgba(118, 90, 56, 0.08);
+}
+
+html[data-theme="newspaper"] .tab-btn.active {
+  color: var(--text);
+  border-color: rgba(58, 46, 31, 0.48);
+  background: #dfcfa6;
+}
+
+html[data-theme="newspaper"] .file-input,
+html[data-theme="newspaper"] .sort-select,
+html[data-theme="newspaper"] .banner-url-input,
+html[data-theme="newspaper"] .draft-prospects-search-input,
+html[data-theme="newspaper"] .rivals-select,
+html[data-theme="newspaper"] .action-btn,
+html[data-theme="newspaper"] .mobile-fullscreen-btn,
+html[data-theme="newspaper"] .logos-by-year-nav,
+html[data-theme="newspaper"] .draft-prospects-clear-filter {
+  border-color: rgba(58, 46, 31, 0.42);
+  border-radius: 2px;
+  background: #f1e5c7;
+  color: var(--text);
+  box-shadow: none;
+}
+
+html[data-theme="newspaper"] .action-btn:hover,
+html[data-theme="newspaper"] .mobile-fullscreen-btn:hover,
+html[data-theme="newspaper"] .logos-by-year-nav:hover:not(:disabled),
+html[data-theme="newspaper"] .draft-prospects-clear-filter:hover {
+  background: #e4d2a8;
+}
+
+html[data-theme="newspaper"] .toggle-slider {
+  border-color: rgba(58, 46, 31, 0.42);
+  background: #d7c49a;
+}
+
+html[data-theme="newspaper"] .toggle-slider::after {
+  background: #f9f1dc;
+  box-shadow: 0 0 0 1px rgba(58, 46, 31, 0.22);
+}
+
+html[data-theme="newspaper"] .toggle-switch input:checked + .toggle-slider {
+  border-color: #5d4930;
+  background: #8f734c;
+}
+
+html[data-theme="newspaper"] .timeline-fullscreen {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(62,48,30,0.018) 0,
+      rgba(62,48,30,0.018) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    var(--bg);
+}
+
+html[data-theme="newspaper"] .timeline-wrap,
+html[data-theme="newspaper"] .logos-by-year-box,
+html[data-theme="newspaper"] .logos-by-team-box,
+html[data-theme="newspaper"] .color-schemes-wrap.empty-state,
+html[data-theme="newspaper"] .color-scheme-group,
+html[data-theme="newspaper"] .banners-wrap.empty-state,
+html[data-theme="newspaper"] .rankings-wrap.empty-state,
+html[data-theme="newspaper"] .records-wrap.empty-state,
+html[data-theme="newspaper"] .hof-wrap.empty-state,
+html[data-theme="newspaper"] .news-wrap.empty-state,
+html[data-theme="newspaper"] .rivals-wrap,
+html[data-theme="newspaper"] .draft-prospects-wrap.empty-state,
+html[data-theme="newspaper"] .draft-prospects-table-wrap {
+  background: rgba(255, 249, 232, 0.62);
+  border-color: rgba(58, 46, 31, 0.30);
+}
+
+html[data-theme="newspaper"] .timeline-table thead th,
+html[data-theme="newspaper"] .draft-prospects-table th {
+  background: rgba(232, 218, 182, 0.97);
+  color: var(--text);
+  backdrop-filter: none;
+}
+
+html[data-theme="newspaper"] .row-header {
+  background: rgba(241, 230, 200, 0.98);
+  backdrop-filter: none;
+}
+
+html[data-theme="newspaper"] .logo-cell,
+html[data-theme="newspaper"] .empty-cell,
+html[data-theme="newspaper"] .logo-card,
+html[data-theme="newspaper"] .empty-card,
+html[data-theme="newspaper"] .stat-card,
+html[data-theme="newspaper"] .ranking-item,
+html[data-theme="newspaper"] .record-item,
+html[data-theme="newspaper"] .hof-card,
+html[data-theme="newspaper"] .hof-stat,
+html[data-theme="newspaper"] .career-leader-card,
+html[data-theme="newspaper"] .color-team-card,
+html[data-theme="newspaper"] .color-team-logo,
+html[data-theme="newspaper"] .news-item {
+  background: rgba(250, 243, 223, 0.74);
+  border-color: rgba(58, 46, 31, 0.25);
+}
+
+html[data-theme="newspaper"] .career-leader-heading,
+html[data-theme="newspaper"] .color-scheme-group-header {
+  background: #e8d8af;
+  border-color: rgba(58, 46, 31, 0.28);
+}
+
+html[data-theme="newspaper"] .news-item.news-alt-year {
+  background: #e7d6ad;
+  border-color: rgba(58, 46, 31, 0.30);
+}
+
+html[data-theme="newspaper"] .news-season,
+html[data-theme="newspaper"] .career-leader-value,
+html[data-theme="newspaper"] .record-points,
+html[data-theme="newspaper"] .career-leader-rank,
+html[data-theme="newspaper"] .color-team-initials,
+html[data-theme="newspaper"] .draft-prospects-sort-indicator,
+html[data-theme="newspaper"] .draft-class-filter-button {
+  color: #644b2f;
+}
+
+html[data-theme="newspaper"] .career-leader-rank,
+html[data-theme="newspaper"] .hof-award-chip,
+html[data-theme="newspaper"] .row-tid {
+  background: #e1cfa4;
+  border-color: rgba(58, 46, 31, 0.28);
+}
+
+html[data-theme="newspaper"] .logos-by-team-hide-action {
+  background: #efe2c0;
+  color: var(--text);
+  border-color: rgba(58,46,31,0.55);
+  box-shadow: 0 4px 12px rgba(58,46,31,0.16);
+}
+
+html[data-theme="newspaper"] .news-player-photo,
+html[data-theme="newspaper"] .record-player-photo {
+  background: #eadbb7;
+  border-color: rgba(58,46,31,0.32);
+}
+
+html[data-theme="newspaper"] .hof-gallery-item,
+html[data-theme="newspaper"] .hof-portrait {
+  border-color: #7e6747;
+  border-image: none;
+  background: #eadbb7;
+  box-shadow: 0 0 0 1px rgba(58,46,31,0.24);
+}
+
+html[data-theme="newspaper"] .theme-option {
+  background: #f1e5c7;
+}
+
+html[data-theme="newspaper"] .theme-option:hover {
+  background: #e7d6ad;
+}
+
+html[data-theme="newspaper"] .theme-option.is-active,
+html[data-theme="newspaper"] .theme-option[aria-pressed="true"] {
+  border-color: #5d4930;
+  box-shadow: 0 0 0 2px rgba(93,73,48,0.12);
+}
+
+@media (max-width: 680px) {
+  .settings-panel {
+    padding: 12px;
+  }
+
+  .theme-options {
+    grid-template-columns: 1fr;
+  }
+}
