@@ -1,6 +1,6 @@
 (() => {
   const STORAGE_KEY = 'zengm-companion-theme:v1';
-  const THEMES = new Set(['orange', 'newspaper']);
+  const THEMES = new Set(['orange', 'newspaper', 'dark-newspaper']);
   const tabBtn = document.getElementById('settingsTabBtn');
   const panel = document.getElementById('settingsPanel');
   const tabBar = document.querySelector('.tab-bar');
