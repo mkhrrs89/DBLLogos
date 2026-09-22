@@ -14,6 +14,7 @@
   const panel = document.getElementById('allTimeLeadersPanel');
   const wrap = document.getElementById('allTimeLeadersWrap');
   const fileInput = document.getElementById('leagueFile');
+  const fileHub = window.DBLLeagueFileHub;
   const clearBtn = document.getElementById('clearLeagueFileBtn');
   const statusMessage = document.getElementById('statusMessage');
 
@@ -55,9 +56,8 @@
     document.getElementById(tabId)?.addEventListener('click', deactivateLeadersTab);
   }
 
-  fileInput?.addEventListener('change', (event) => {
-    const [file] = event.target.files || [];
-    if (!file) return;
+  const acceptLeagueFile = (file) => {
+    if (!file || pendingLeagueFile === file) return;
 
     // The main app already performs a full read/decompression/parse. Defer this
     // second pass so large mobile league files are never processed concurrently.
@@ -67,7 +67,16 @@
     if (!panel.hidden) {
       refreshPendingFileWhenReady();
     }
-  });
+  };
+
+  if (fileHub) {
+    fileHub.subscribe(({ file }) => acceptLeagueFile(file));
+  } else {
+    fileInput?.addEventListener('change', (event) => {
+      const [file] = event.target.files || [];
+      acceptLeagueFile(file);
+    });
+  }
 
   clearBtn?.addEventListener('click', () => {
     leaders = null;
@@ -150,7 +159,7 @@
       const isLoaded = text.includes(loadedText);
       const isError = statusMessage.classList.contains('error');
 
-      if (isLoaded || (!isLoading && isError)) return;
+      if (isLoaded || isError || !isLoading) return;
       await delay(100);
     }
   }
