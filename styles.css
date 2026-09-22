@@ -679,53 +679,55 @@ body.fullscreen-open {
 .ranking-item::before {
   content: counter(rankings);
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(255,255,255,0.03);
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 1.12rem;
+  line-height: 1;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
 .ranking-row {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-columns: 66px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
 }
 
 .ranking-logo {
-  width: 52px;
-  height: 52px;
+  width: 66px;
+  height: 66px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent;
+  border: 0;
 }
 
 .ranking-logo img {
   display: block;
-  width: 44px;
-  height: 44px;
+  width: 62px;
+  height: 62px;
   object-fit: contain;
 }
 
 .ranking-details {
+  display: grid;
+  gap: 3px;
   min-width: 0;
 }
 
 .ranking-details strong {
   display: block;
   overflow-wrap: anywhere;
+}
+
+.ranking-meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+  font-weight: 400;
 }
 
 .ranking-score {
@@ -817,34 +819,37 @@ body.fullscreen-open {
   }
 
   .ranking-item {
-    padding: 7px 8px 7px 40px;
+    padding: 7px 8px 7px 36px;
   }
 
   .ranking-item::before {
-    left: 8px;
-    width: 22px;
-    height: 22px;
-    font-size: 0.72rem;
+    left: 7px;
+    font-size: 1rem;
   }
 
   .ranking-row {
-    grid-template-columns: 42px minmax(0, 1fr) auto;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
     gap: 8px;
   }
 
   .ranking-logo {
-    width: 42px;
-    height: 42px;
+    width: 56px;
+    height: 56px;
   }
 
   .ranking-logo img {
-    width: 36px;
-    height: 36px;
+    width: 54px;
+    height: 54px;
   }
 
   .ranking-details strong {
     font-size: 0.84rem;
     line-height: 1.15;
+  }
+
+  .ranking-meta {
+    font-size: 0.7rem;
+    line-height: 1.2;
   }
 
   .ranking-score {
