@@ -513,6 +513,10 @@ function calculateTeamSeasonRanking(row, year, entry, maxRoundsWon) {
     teamName,
     label: `${year} ${teamName}`,
     logoURL,
+    regularWins,
+    regularLosses,
+    regularWinPct,
+    seasonFinish: buildSeasonFinish(season, maxRoundsWon, hasPlayoffAppearance),
     finalScore: clampScore(finalScore),
     regularSeasonScore: clampScore(regularSeasonScore),
     playoffScore: clampScore(playoffScore),
@@ -564,6 +568,26 @@ function isChampionSeason(season = {}, maxRoundsWon = 0) {
     || season.champion === true
     || season.playoffFinish === 'champion'
     || (maxRoundsWon > 0 && roundsWon === maxRoundsWon);
+}
+
+function buildSeasonFinish(season = {}, maxRoundsWon = 0, hasPlayoffAppearance = false) {
+  if (isChampionSeason(season, maxRoundsWon)) return 'Champion';
+
+  const roundsWon = Number(season.playoffRoundsWon ?? season.roundsWon);
+  if (!hasPlayoffAppearance || (Number.isFinite(roundsWon) && roundsWon < 0)) {
+    return 'Missed Playoffs';
+  }
+
+  if (!Number.isFinite(roundsWon) || maxRoundsWon <= 0) {
+    return 'Lost in Playoffs';
+  }
+
+  const roundsShort = maxRoundsWon - roundsWon;
+  if (roundsShort === 1) return 'Lost Finals';
+  if (roundsShort === 2) return 'Lost Semifinals';
+  if (roundsShort === 3) return 'Lost Quarterfinals';
+  if (roundsShort === 4) return 'Lost Round of 16';
+  return 'Lost in Playoffs';
 }
 
 function clampScore(score) {
@@ -1756,6 +1780,17 @@ function renderRankings(timeline) {
     const name = document.createElement('strong');
     name.textContent = ranking.label;
     details.appendChild(name);
+
+    const wins = Number(ranking.regularWins);
+    const losses = Number(ranking.regularLosses);
+    const winPct = Number(ranking.regularWinPct);
+    const finish = typeof ranking.seasonFinish === 'string' ? ranking.seasonFinish.trim() : '';
+    if (Number.isFinite(wins) && Number.isFinite(losses) && Number.isFinite(winPct) && finish) {
+      const meta = document.createElement('span');
+      meta.className = 'ranking-meta';
+      meta.textContent = `${wins}-${losses} · ${(winPct * 100).toFixed(1)}% · ${finish}`;
+      details.appendChild(meta);
+    }
 
     const score = document.createElement('span');
     score.className = 'ranking-score';
