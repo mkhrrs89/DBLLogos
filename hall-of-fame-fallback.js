@@ -1,6 +1,7 @@
 (() => {
   const stream = window.DBLLeagueStream;
   const fileInput = document.getElementById('leagueFile');
+  const fileHub = window.DBLLeagueFileHub;
   const hallTabBtn = document.getElementById('hallOfFameTabBtn');
   const hallPanel = document.getElementById('hallOfFamePanel');
   const hallWrap = document.getElementById('hallOfFameWrap');
@@ -21,21 +22,30 @@
   let loadedFile = null;
   let fileVersion = 0;
 
-  fileInput.addEventListener('change', (event) => {
-    const [file] = event.target.files || [];
+  const acceptLeagueFile = (file) => {
+    if (!file || selectedFile === file) return;
     fileVersion += 1;
-    selectedFile = file || null;
+    selectedFile = file;
     loadingFile = null;
     loadedFile = null;
 
     // If the user loaded a file while already viewing Hall of Fame, rebuild it
     // after the lightweight main timeline finishes rather than leaving the old
     // empty state on screen.
-    if (selectedFile && hallPanel && !hallPanel.hidden) {
+    if (hallPanel && !hallPanel.hidden) {
       const version = fileVersion;
       window.setTimeout(() => ensureHallOfFameLoaded(version), 0);
     }
-  });
+  };
+
+  if (fileHub) {
+    fileHub.subscribe(({ file }) => acceptLeagueFile(file));
+  } else {
+    fileInput.addEventListener('change', (event) => {
+      const [file] = event.target.files || [];
+      acceptLeagueFile(file);
+    });
+  }
 
   clearBtn?.addEventListener('click', () => {
     fileVersion += 1;
@@ -59,7 +69,11 @@
     }
 
     const [inputFile] = fileInput.files || [];
-    const file = selectedFile || inputFile || window.__dblLargeLeagueFile || null;
+    const file = selectedFile
+      || fileHub?.getCurrentFile?.()
+      || inputFile
+      || window.__dblLargeLeagueFile
+      || null;
     if (!file || version !== fileVersion) return;
 
     // Most importantly, do not build Hall of Fame concurrently with the main
@@ -177,7 +191,11 @@
 
   function isCurrent(file, version) {
     const [inputFile] = fileInput.files || [];
-    const currentFile = selectedFile || inputFile || window.__dblLargeLeagueFile || null;
+    const currentFile = selectedFile
+      || fileHub?.getCurrentFile?.()
+      || inputFile
+      || window.__dblLargeLeagueFile
+      || null;
     return version === fileVersion && currentFile === file;
   }
 
