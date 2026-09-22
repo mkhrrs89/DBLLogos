@@ -1785,12 +1785,16 @@ function renderRankings(timeline) {
     const losses = Number(ranking.regularLosses);
     const winPct = Number(ranking.regularWinPct);
     const finish = typeof ranking.seasonFinish === 'string' ? ranking.seasonFinish.trim() : '';
-    if (Number.isFinite(wins) && Number.isFinite(losses) && Number.isFinite(winPct) && finish) {
-      const meta = document.createElement('span');
-      meta.className = 'ranking-meta';
-      meta.textContent = `${wins}-${losses} · ${(winPct * 100).toFixed(1)}% · ${finish}`;
-      details.appendChild(meta);
-    }
+    const hasSeasonDetails = Number.isFinite(wins)
+      && Number.isFinite(losses)
+      && Number.isFinite(winPct)
+      && Boolean(finish);
+    const meta = document.createElement('span');
+    meta.className = `ranking-meta${hasSeasonDetails ? '' : ' is-missing'}`;
+    meta.textContent = hasSeasonDetails
+      ? `${wins}-${losses} · ${(winPct * 100).toFixed(1)}% · ${finish}`
+      : 'Re-upload league file to load record · win% · finish';
+    details.appendChild(meta);
 
     const score = document.createElement('span');
     score.className = 'ranking-score';
