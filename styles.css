@@ -718,12 +718,115 @@ body.fullscreen-open {
 }
 
 @media (max-width: 520px) {
+  body {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .topbar {
+    margin-bottom: 9px;
+    padding: 8px 3px 0;
+  }
+
+  h1 {
+    font-size: 1.72rem;
+    line-height: 1;
+  }
+
+  .page {
+    gap: 9px;
+  }
+
+  .tab-bar {
+    gap: 4px;
+    padding: 5px;
+    scrollbar-width: none;
+  }
+
+  .tab-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    padding: 6px 9px;
+    font-size: 0.82rem;
+  }
+
+  .controls-panel {
+    padding: 8px;
+  }
+
+  .upload-block {
+    gap: 7px;
+  }
+
+  .file-input {
+    padding: 7px 8px;
+    font-size: 0.78rem;
+  }
+
+  .file-input::file-selector-button {
+    margin-right: 7px;
+    padding: 5px 8px;
+    font: inherit;
+  }
+
+  #clearLeagueFileBtn {
+    padding: 6px 8px;
+    font-size: 0.74rem;
+  }
+
+  .rankings-panel {
+    padding: 10px;
+  }
+
+  .rankings-header {
+    margin-bottom: 9px;
+  }
+
+  .rankings-header h2 {
+    font-size: 1rem;
+  }
+
+  .rankings-header .subtle {
+    margin-top: 5px;
+    font-size: 0.82rem;
+    line-height: 1.3;
+  }
+
+  .rankings-list {
+    gap: 6px;
+    padding-left: 1.45rem;
+  }
+
+  .ranking-item {
+    padding: 7px 8px;
+  }
+
   .ranking-row {
-    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .ranking-logo {
+    width: 42px;
+    height: 42px;
+  }
+
+  .ranking-logo img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ranking-details strong {
+    font-size: 0.84rem;
+    line-height: 1.15;
   }
 
   .ranking-score {
-    grid-column: 2;
+    grid-column: auto;
+    font-size: 0.84rem;
+    white-space: nowrap;
   }
 }
 
