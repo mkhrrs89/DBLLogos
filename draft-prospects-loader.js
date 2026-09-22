@@ -90,7 +90,7 @@
   else page?.append(panel);
 
   const script = document.createElement('script');
-  script.src = './draft-prospects.js?v=20260914-prospect-name-search';
+  script.src = './draft-prospects.js?v=20260922-shared-league-file';
   script.dataset.dblDraftProspects = 'true';
   document.body.append(script);
 })();
