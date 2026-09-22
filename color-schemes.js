@@ -32,6 +32,19 @@
     Unassigned: 'transparent',
   };
 
+  const HEADER_FAMILY_ORDER = [
+    'Red',
+    'Blue',
+    'Orange',
+    'Green',
+    'Purple',
+    'Pink',
+    'Yellow/Gold',
+    'Brown',
+    'Black',
+    'Gray',
+  ];
+
   // Centralized tuning values for the generic color-family classifier.
   // Hue is 0-360; saturation and lightness are 0-1.
   const COLOR_CLASSIFIER_TUNING = {
@@ -628,6 +641,7 @@
 
     const header = document.createElement('div');
     header.className = 'color-scheme-group-header';
+    applySchemeHeaderColors(header, group.families);
 
     const heading = document.createElement('div');
     const title = document.createElement('h3');
@@ -744,6 +758,29 @@
       .join('')
       .toUpperCase();
     return element;
+  }
+
+  function applySchemeHeaderColors(header, families) {
+    const orderedFamilies = Array.from(new Set(
+      (Array.isArray(families) ? families : [])
+        .filter((family) => family !== 'White/Cream' && FAMILY_COLORS[family] && FAMILY_COLORS[family] !== 'transparent'),
+    )).sort((a, b) => {
+      const aIndex = HEADER_FAMILY_ORDER.indexOf(a);
+      const bIndex = HEADER_FAMILY_ORDER.indexOf(b);
+      const normalizedA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
+      const normalizedB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
+      return normalizedA - normalizedB;
+    });
+
+    if (!orderedFamilies.length) return;
+
+    const colors = orderedFamilies.map((family) => FAMILY_COLORS[family]);
+    const background = colors.length === 1
+      ? colors[0]
+      : `linear-gradient(90deg, ${colors.join(', ')})`;
+
+    header.classList.add('has-scheme-color');
+    header.style.setProperty('--scheme-header-background', background);
   }
 
   function formatSchemeName(families) {
