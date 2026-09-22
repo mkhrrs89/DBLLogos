@@ -1,6 +1,7 @@
 (() => {
   const stream = window.DBLLeagueStream;
   const fileInput = document.getElementById('leagueFile');
+  const fileHub = window.DBLLeagueFileHub;
   const clearBtn = document.getElementById('clearLeagueFileBtn');
   const hallTabBtn = document.getElementById('hallOfFameTabBtn');
   const recordsTabBtn = document.getElementById('recordsTabBtn');
@@ -17,25 +18,37 @@
   ];
 
   let pendingFile = null;
+  let lastLeagueFile = null;
   let fileVersion = 0;
   let hallLoadedVersion = 0;
   let recordsLoadedVersion = 0;
   let hallLoadingVersion = 0;
   let recordsLoadingVersion = 0;
 
-  fileInput.addEventListener('change', (event) => {
-    const [file] = event.target.files || [];
+  const acceptLeagueFile = (file) => {
+    if (!file || lastLeagueFile === file) return;
+    lastLeagueFile = file;
     fileVersion += 1;
-    pendingFile = file && stream.isLargeFile(file) ? file : null;
+    pendingFile = stream.isLargeFile(file) ? file : null;
     hallLoadedVersion = 0;
     recordsLoadedVersion = 0;
     hallLoadingVersion = 0;
     recordsLoadingVersion = 0;
-  });
+  };
+
+  if (fileHub) {
+    fileHub.subscribe(({ file }) => acceptLeagueFile(file));
+  } else {
+    fileInput.addEventListener('change', (event) => {
+      const [file] = event.target.files || [];
+      acceptLeagueFile(file);
+    });
+  }
 
   clearBtn?.addEventListener('click', () => {
     fileVersion += 1;
     pendingFile = null;
+    lastLeagueFile = null;
     hallLoadedVersion = 0;
     recordsLoadedVersion = 0;
     hallLoadingVersion = 0;
