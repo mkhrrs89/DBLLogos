@@ -4,6 +4,7 @@
   const panel = document.getElementById('newsPanel');
   const wrap = document.getElementById('newsWrap');
   const fileInput = document.getElementById('leagueFile');
+  const fileHub = window.DBLLeagueFileHub;
   const clearBtn = document.getElementById('clearLeagueFileBtn');
   const statusMessage = document.getElementById('statusMessage');
 
@@ -43,16 +44,24 @@
     });
   });
 
-  fileInput.addEventListener('change', (event) => {
-    const [file] = event.target.files || [];
+  const acceptLeagueFile = (file) => {
+    if (!file || pendingFile === file) return;
     fileVersion += 1;
-    pendingFile = file || null;
+    pendingFile = file;
     loadedVersion = 0;
     loadingVersion = 0;
     items = [];
-    if (!panel.hidden && pendingFile) buildNews();
-    else if (!pendingFile) renderEmpty();
-  });
+    if (!panel.hidden) buildNews();
+  };
+
+  if (fileHub) {
+    fileHub.subscribe(({ file }) => acceptLeagueFile(file));
+  } else {
+    fileInput.addEventListener('change', (event) => {
+      const [file] = event.target.files || [];
+      acceptLeagueFile(file);
+    });
+  }
 
   clearBtn?.addEventListener('click', () => {
     fileVersion += 1;
@@ -119,8 +128,10 @@
     const startedAt = Date.now();
     while (version === fileVersion && Date.now() - startedAt < 90000) {
       const text = statusMessage.textContent || '';
+      const isLoading = text.startsWith('Loading ');
       if (text.startsWith(`Loaded ${fileName}`)) return;
-      if (statusMessage.classList.contains('error') && !text.startsWith('Loading ')) return;
+      if (statusMessage.classList.contains('error') && !isLoading) return;
+      if (!isLoading) return;
       await delay(100);
     }
   }
