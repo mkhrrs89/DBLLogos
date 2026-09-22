@@ -499,9 +499,9 @@ function calculateTeamSeasonRanking(row, year, entry, maxRoundsWon) {
       + ((50 + playoffNetRating * 4) * 0.35)
       + (roundAdvancementScore * 0.30)
     : 0;
-  const finalScore = (regularSeasonScore * 0.55)
+  const finalScore = (regularSeasonScore * 0.56)
     + (playoffScore * 0.40)
-    + (championshipBonus * 0.05);
+    + (championshipBonus * 0.04);
   const logoURL = entry.primaryLogoURL || entry.smallLogoURL || entry.fallbackLogoURL || '';
   const teamName = entry.teamName || row.latestLocation || 'Unknown Team';
 
