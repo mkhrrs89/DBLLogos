@@ -652,27 +652,7 @@
     count.textContent = `${group.teams.length} ${group.teams.length === 1 ? 'team' : 'teams'}`;
     heading.append(title, count);
 
-    const badges = document.createElement('div');
-    badges.className = 'color-family-swatches';
-
-    for (const family of group.families) {
-      const badge = document.createElement('span');
-      badge.className = 'color-family-badge';
-
-      const dot = document.createElement('span');
-      dot.className = 'color-family-dot';
-      dot.style.background = FAMILY_COLORS[family] || 'transparent';
-      if (family === 'White/Cream' || family === 'Unassigned') {
-        dot.classList.add('needs-border');
-      }
-
-      const text = document.createElement('span');
-      text.textContent = family;
-      badge.append(dot, text);
-      badges.appendChild(badge);
-    }
-
-    header.append(heading, badges);
+    header.appendChild(heading);
 
     const grid = document.createElement('div');
     grid.className = 'color-team-grid';
