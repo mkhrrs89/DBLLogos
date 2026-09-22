@@ -5,6 +5,7 @@
   const wrap = document.getElementById('draftProspectsWrap');
   const searchInput = document.getElementById('draftProspectsSearch');
   const fileInput = document.getElementById('leagueFile');
+  const fileHub = window.DBLLeagueFileHub;
   const clearBtn = document.getElementById('clearLeagueFileBtn');
   const statusMessage = document.getElementById('statusMessage');
 
@@ -75,9 +76,9 @@
     });
   });
 
-  fileInput.addEventListener('change', async (event) => {
-    const [file] = event.target.files || [];
-    pendingFile = file || null;
+  const acceptLeagueFile = async (file) => {
+    if (!file || pendingFile === file) return;
+    pendingFile = file;
     fileVersion += 1;
     loadedVersion = -1;
     loadingVersion = -1;
@@ -87,12 +88,21 @@
 
     await clearSavedProspects();
 
-    if (!panel.hidden && pendingFile) {
+    if (!panel.hidden) {
       buildProspects();
-    } else if (!pendingFile) {
-      renderEmpty('Load or re-upload a league file to show draft prospects.');
     }
-  });
+  };
+
+  if (fileHub) {
+    fileHub.subscribe(({ file }) => {
+      void acceptLeagueFile(file);
+    });
+  } else {
+    fileInput.addEventListener('change', (event) => {
+      const [file] = event.target.files || [];
+      void acceptLeagueFile(file);
+    });
+  }
 
   clearBtn?.addEventListener('click', async () => {
     pendingFile = null;
@@ -122,7 +132,11 @@
     const version = fileVersion;
     if (loadingVersion === version) return;
 
-    const file = pendingFile || fileInput.files?.[0] || window.__dblLargeLeagueFile || null;
+    const file = pendingFile
+      || fileHub?.getCurrentFile?.()
+      || fileInput.files?.[0]
+      || window.__dblLargeLeagueFile
+      || null;
     if (!file) {
       if (prospects.length && loadedVersion === fileVersion) {
         render();
