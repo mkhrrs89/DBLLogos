@@ -93,6 +93,7 @@
   const panel = document.getElementById('colorSchemesPanel');
   const wrap = document.getElementById('colorSchemesWrap');
   const fileInput = document.getElementById('leagueFile');
+  const fileHub = window.DBLLeagueFileHub;
   const clearBtn = document.getElementById('clearLeagueFileBtn');
   const statusMessage = document.getElementById('statusMessage');
 
@@ -146,9 +147,8 @@
     render(teams);
   });
 
-  fileInput?.addEventListener('change', (event) => {
-    const [file] = event.target.files || [];
-    if (!file) return;
+  const acceptLeagueFile = (file) => {
+    if (!file || pendingLeagueFile === file) return;
 
     // app.js is already reading, decompressing, and parsing this file. Running
     // another full parse simultaneously can exhaust memory on mobile devices.
@@ -158,7 +158,16 @@
     if (!panel.hidden) {
       refreshPendingFileWhenReady();
     }
-  });
+  };
+
+  if (fileHub) {
+    fileHub.subscribe(({ file }) => acceptLeagueFile(file));
+  } else {
+    fileInput?.addEventListener('change', (event) => {
+      const [file] = event.target.files || [];
+      acceptLeagueFile(file);
+    });
+  }
 
   clearBtn?.addEventListener('click', () => {
     teams = [];
@@ -276,7 +285,7 @@
       const isLoaded = text.includes(loadedText);
       const isError = statusMessage.classList.contains('error');
 
-      if (isLoaded || (!isLoading && isError)) return;
+      if (isLoaded || isError || !isLoading) return;
       await delay(100);
     }
   }
