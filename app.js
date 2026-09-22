@@ -491,7 +491,6 @@ function calculateTeamSeasonRanking(row, year, entry, maxRoundsWon) {
   );
   const roundAdvancementScore = calculateRoundAdvancementScore(season, maxRoundsWon);
   const championshipBonus = isChampionSeason(season, maxRoundsWon) ? 100 : 0;
-  const contextBonus = readNumber(season.contextBonus, season.hype, season.playoffHype) || 0;
   const regularSeasonScore = (regularWinPct * 100 * 0.45)
     + ((50 + regularNetRating * 4) * 0.35)
     + ((50 + srs * 4) * 0.20);
@@ -500,10 +499,9 @@ function calculateTeamSeasonRanking(row, year, entry, maxRoundsWon) {
       + ((50 + playoffNetRating * 4) * 0.35)
       + (roundAdvancementScore * 0.30)
     : 0;
-  const finalScore = (regularSeasonScore * 0.45)
+  const finalScore = (regularSeasonScore * 0.55)
     + (playoffScore * 0.40)
-    + (championshipBonus * 0.10)
-    + (contextBonus * 0.05);
+    + (championshipBonus * 0.05);
   const logoURL = entry.primaryLogoURL || entry.smallLogoURL || entry.fallbackLogoURL || '';
   const teamName = entry.teamName || row.latestLocation || 'Unknown Team';
 
