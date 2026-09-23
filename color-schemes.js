@@ -92,6 +92,7 @@
     '#E4DAC0': 'White/Cream',
     '#F0DFBB': 'White/Cream',
     '#F3EDDB': 'White/Cream',
+    '#F3DC9B': 'White/Cream',
     '#657A85': 'Blue',
     '#953917': 'Red',
     '#973B03': 'Red',
