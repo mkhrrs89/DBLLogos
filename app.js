@@ -1,4 +1,5 @@
 const fileInput = document.getElementById('leagueFile');
+const leagueFileHub = window.DBLLeagueFileHub;
 const statusMessage = document.getElementById('statusMessage');
 const teamCountEl = document.getElementById('teamCount');
 const yearRangeEl = document.getElementById('yearRange');
@@ -57,6 +58,7 @@ let useSmallLogos = false;
 let hallOfFameView = 'details';
 let hallOfFameSortKey = 'goatScore';
 let hallOfFameSortDirection = 'desc';
+let leagueLoadVersion = 0;
 
 restoreSavedTimeline();
 setActiveTab('logos');
@@ -99,25 +101,32 @@ uniformYearSelect?.addEventListener('change', () => {
   renderUniforms(fullTimeline);
 });
 
-fileInput.addEventListener('change', async (event) => {
-  const [file] = event.target.files || [];
+async function loadLeagueFile(file, source = 'upload') {
   if (!file) return;
 
-  setStatus(`Loading ${file.name}...`, 'info');
+  const loadVersion = ++leagueLoadVersion;
+  const fileName = typeof file.name === 'string' && file.name ? file.name : 'league file';
+  setStatus(`${source === 'restore' ? 'Restoring' : 'Loading'} ${fileName}...`, 'info');
 
   try {
     const text = await readLeagueFile(file);
+    if (loadVersion !== leagueLoadVersion) return;
+
     const league = JSON.parse(text);
     const timeline = buildTimelineData(league);
+    if (loadVersion !== leagueLoadVersion) return;
+
     isLeagueFileCleared = false;
     setTimeline(timeline);
-    persistTimeline(file.name, timeline);
-    setStatus(`Loaded ${file.name}.`, 'info');
+    persistTimeline(fileName, timeline);
+    setStatus(`Loaded ${fileName}.`, 'info');
   } catch (error) {
+    if (loadVersion !== leagueLoadVersion) return;
     console.error(error);
-    if (hasSavedTimeline()) {
+
+    if (hasSavedTimeline() && fullTimeline) {
       setStatus(
-        `Could not load ${file.name}. Keeping your currently saved timeline. ${error.message || ''}`.trim(),
+        `Could not load ${fileName}. Keeping your currently saved timeline. ${error.message || ''}`.trim(),
         'error',
       );
     } else {
@@ -127,7 +136,24 @@ fileInput.addEventListener('change', async (event) => {
       setStatus(error.message || 'Could not parse league file.', 'error');
     }
   }
-});
+}
+
+if (leagueFileHub) {
+  leagueFileHub.subscribe(({ file, source }) => {
+    if (!file) return;
+
+    // Let the rest of the synchronous scripts finish installing the large-file
+    // reader before rebuilding from an IndexedDB-restored file.
+    window.setTimeout(() => {
+      void loadLeagueFile(file, source === 'restore' ? 'restore' : 'upload');
+    }, 0);
+  });
+} else {
+  fileInput.addEventListener('change', (event) => {
+    const [file] = event.target.files || [];
+    if (file) void loadLeagueFile(file, 'upload');
+  });
+}
 
 mobileFullscreenBtn.addEventListener('click', () => {
   if (!currentTimeline || isLeagueFileCleared) return;
@@ -171,6 +197,7 @@ document.addEventListener('keydown', (event) => {
 
 
 function clearLoadedLeagueFile() {
+  leagueLoadVersion += 1;
   try {
     localStorage.removeItem(SAVED_TIMELINE_KEY);
   } catch (error) {
