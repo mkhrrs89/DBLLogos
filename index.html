@@ -12,7 +12,7 @@
         document.documentElement.dataset.theme = 'orange';
       }
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260922-ranking-outside" />
+    <link rel="stylesheet" href="./styles.css?v=20260923-hof-sorting" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css" />
     <link rel="stylesheet" href="./logos-by-team.css" />
@@ -291,13 +291,61 @@
           <div class="rankings-header">
             <h2>Hall of Fame</h2>
             <p class="subtle">All inducted players, ranked by the GOAT formula stored in the uploaded league file.</p>
-            <div class="hof-view-switch" role="group" aria-label="Hall of Fame view">
-              <button id="hofDetailsViewBtn" class="action-btn hof-view-btn active" type="button" aria-pressed="true">
-                Details
-              </button>
-              <button id="hofGalleryViewBtn" class="action-btn hof-view-btn" type="button" aria-pressed="false">
-                Photo gallery
-              </button>
+            <div class="hof-controls">
+              <div class="hof-view-switch" role="group" aria-label="Hall of Fame view">
+                <button id="hofDetailsViewBtn" class="action-btn hof-view-btn active" type="button" aria-pressed="true">
+                  Details
+                </button>
+                <button id="hofGalleryViewBtn" class="action-btn hof-view-btn" type="button" aria-pressed="false">
+                  Photo gallery
+                </button>
+              </div>
+
+              <div class="hof-sort-controls">
+                <label class="hof-sort-label" for="hofSortSelect">
+                  <span>Sort by</span>
+                  <select id="hofSortSelect" class="sort-select">
+                    <optgroup label="Overall">
+                      <option value="goatScore">GOAT score</option>
+                    </optgroup>
+                    <optgroup label="Career timeline">
+                      <option value="draftYear">Year drafted</option>
+                      <option value="retiredYear">Year retired</option>
+                      <option value="yearsPlayed">Years played</option>
+                      <option value="gp">Games played</option>
+                    </optgroup>
+                    <optgroup label="Awards">
+                      <option value="championships">Championships</option>
+                      <option value="mvps">MVPs</option>
+                      <option value="allStars">All-Star selections</option>
+                      <option value="allLeagueSelections">All-League selections</option>
+                      <option value="dpoys">DPOYs</option>
+                      <option value="allDefensiveSelections">All-Defensive selections</option>
+                      <option value="finalsMvps">Finals MVPs</option>
+                    </optgroup>
+                    <optgroup label="Career totals">
+                      <option value="pts">Total points</option>
+                      <option value="trb">Total rebounds</option>
+                      <option value="ast">Total assists</option>
+                      <option value="stl">Total steals</option>
+                      <option value="blk">Total blocks</option>
+                      <option value="ws">Win Shares</option>
+                      <option value="vorp">VORP</option>
+                      <option value="ewa">EWA</option>
+                    </optgroup>
+                    <optgroup label="Rate / advanced">
+                      <option value="pts36">Points per 36</option>
+                      <option value="ppg">Points per game</option>
+                      <option value="per">PER</option>
+                      <option value="ws48">WS/48</option>
+                      <option value="bpm">BPM</option>
+                    </optgroup>
+                  </select>
+                </label>
+                <button id="hofSortDirectionBtn" class="action-btn hof-sort-direction" type="button">
+                  High → Low
+                </button>
+              </div>
             </div>
           </div>
           <div id="hallOfFameWrap" class="hof-wrap empty-state">
@@ -415,7 +463,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script src="./league-file-hub.js?v=20260922-shared-league-file"></script>
-    <script src="./app.js?v=20260922-ranking-formula-v4"></script>
+    <script src="./app.js?v=20260923-hof-sorting"></script>
     <script src="./large-file-loader.js?v=20260825-hof-fallback"></script>
     <script src="./logos-by-year.js"></script>
     <script src="./logos-by-team.js"></script>
