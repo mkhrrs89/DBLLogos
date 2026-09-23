@@ -1660,8 +1660,11 @@ function getHallOfFameAwardCount(player, type) {
 }
 
 function getHallOfFameSortValue(player, key) {
-  const direct = Number(player?.[key]);
-  if (Number.isFinite(direct)) return direct;
+  const rawDirect = player?.[key];
+  if (rawDirect !== null && rawDirect !== undefined && rawDirect !== '') {
+    const direct = Number(rawDirect);
+    if (Number.isFinite(direct)) return direct;
+  }
 
   if (key === 'championships') return getHallOfFameAwardCount(player, 'Won Championship');
   if (key === 'mvps') return getHallOfFameAwardCount(player, 'Most Valuable Player');
