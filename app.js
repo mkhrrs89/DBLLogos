@@ -35,6 +35,8 @@ const rankingsWrap = document.getElementById('rankingsWrap');
 const hallOfFameWrap = document.getElementById('hallOfFameWrap');
 const hofDetailsViewBtn = document.getElementById('hofDetailsViewBtn');
 const hofGalleryViewBtn = document.getElementById('hofGalleryViewBtn');
+const hofSortSelect = document.getElementById('hofSortSelect');
+const hofSortDirectionBtn = document.getElementById('hofSortDirectionBtn');
 const recordsWrap = document.getElementById('recordsWrap');
 const uniformYearSelect = document.getElementById('uniformYearSelect');
 const importBannersBtn = document.getElementById('importBannersBtn');
@@ -53,6 +55,8 @@ let selectedUniformYear = null;
 let isLeagueFileCleared = false;
 let useSmallLogos = false;
 let hallOfFameView = 'details';
+let hallOfFameSortKey = 'goatScore';
+let hallOfFameSortDirection = 'desc';
 
 restoreSavedTimeline();
 setActiveTab('logos');
@@ -69,6 +73,19 @@ rankingsTabBtn?.addEventListener('click', () => setActiveTab('rankings'));
 hallOfFameTabBtn?.addEventListener('click', () => setActiveTab('hallOfFame'));
 hofDetailsViewBtn?.addEventListener('click', () => setHallOfFameView('details'));
 hofGalleryViewBtn?.addEventListener('click', () => setHallOfFameView('gallery'));
+hofSortSelect?.addEventListener('change', () => {
+  hallOfFameSortKey = HOF_SORT_DEFINITIONS[hofSortSelect.value]
+    ? hofSortSelect.value
+    : 'goatScore';
+  hallOfFameSortDirection = HOF_SORT_DEFINITIONS[hallOfFameSortKey]?.defaultDirection || 'desc';
+  updateHallOfFameSortControls();
+  renderHallOfFame(fullTimeline);
+});
+hofSortDirectionBtn?.addEventListener('click', () => {
+  hallOfFameSortDirection = hallOfFameSortDirection === 'asc' ? 'desc' : 'asc';
+  updateHallOfFameSortControls();
+  renderHallOfFame(fullTimeline);
+});
 recordsTabBtn?.addEventListener('click', () => setActiveTab('records'));
 importBannersBtn?.addEventListener('click', () => bannerImportFile?.click());
 bannerImportFile?.addEventListener('change', importBannerLinksFromFile);
@@ -655,6 +672,35 @@ const HOF_AWARD_PRIORITY = [
   'Inducted into the Hall of Fame',
 ];
 
+
+const HOF_SORT_DEFINITIONS = {
+  goatScore: { label: 'GOAT score', defaultDirection: 'desc' },
+  draftYear: { label: 'Year drafted', defaultDirection: 'asc', year: true },
+  retiredYear: { label: 'Year retired', defaultDirection: 'asc', year: true },
+  championships: { label: 'Championships', defaultDirection: 'desc' },
+  mvps: { label: 'MVPs', defaultDirection: 'desc' },
+  allStars: { label: 'All-Star selections', defaultDirection: 'desc' },
+  allLeagueSelections: { label: 'All-League selections', defaultDirection: 'desc' },
+  dpoys: { label: 'DPOYs', defaultDirection: 'desc' },
+  allDefensiveSelections: { label: 'All-Defensive selections', defaultDirection: 'desc' },
+  finalsMvps: { label: 'Finals MVPs', defaultDirection: 'desc' },
+  pts36: { label: 'Points per 36', defaultDirection: 'desc' },
+  pts: { label: 'Total points', defaultDirection: 'desc' },
+  trb: { label: 'Total rebounds', defaultDirection: 'desc' },
+  ast: { label: 'Total assists', defaultDirection: 'desc' },
+  stl: { label: 'Total steals', defaultDirection: 'desc' },
+  blk: { label: 'Total blocks', defaultDirection: 'desc' },
+  yearsPlayed: { label: 'Years played', defaultDirection: 'desc' },
+  gp: { label: 'Games played', defaultDirection: 'desc' },
+  vorp: { label: 'VORP', defaultDirection: 'desc' },
+  ewa: { label: 'EWA', defaultDirection: 'desc' },
+  ws: { label: 'Win Shares', defaultDirection: 'desc' },
+  ws48: { label: 'WS/48', defaultDirection: 'desc' },
+  bpm: { label: 'BPM', defaultDirection: 'desc' },
+  per: { label: 'PER', defaultDirection: 'desc' },
+  ppg: { label: 'Points per game', defaultDirection: 'desc' },
+};
+
 function buildHallOfFamePlayers(league = {}) {
   const playersByPid = new Map();
 
@@ -691,8 +737,15 @@ function buildHallOfFamePlayerSummary(player, goatFormula) {
   const seasons = regularStats
     .map((row) => Number(row.season))
     .filter(Number.isFinite);
+  const uniqueSeasons = new Set(seasons);
   const gp = sumHallOfFameStat(regularStats, 'gp');
+  const min = sumHallOfFameStat(regularStats, 'min');
   const pts = sumHallOfFameStat(regularStats, 'pts');
+  const trb = sumHallOfFameStat(regularStats, 'trb');
+  const ast = sumHallOfFameStat(regularStats, 'ast');
+  const stl = sumHallOfFameStat(regularStats, 'stl');
+  const blk = sumHallOfFameStat(regularStats, 'blk');
+  const awards = summarizeHallOfFameAwards(player?.awards);
 
   let goatScore = null;
   if (goatFormula) {
@@ -703,20 +756,54 @@ function buildHallOfFamePlayerSummary(player, goatFormula) {
     }
   }
 
+  const awardCount = (type) => awards
+    .filter((award) => award.type === type)
+    .reduce((total, award) => total + (Number(award.count) || 0), 0);
+  const allLeagueSelections = [
+    'First Team All-League',
+    'Second Team All-League',
+    'Third Team All-League',
+  ].reduce((total, type) => total + awardCount(type), 0);
+  const allDefensiveSelections = [
+    'First Team All-Defensive',
+    'Second Team All-Defensive',
+    'Third Team All-Defensive',
+  ].reduce((total, type) => total + awardCount(type), 0);
+
   return {
     pid: readOptionalNumber(player?.pid),
     name: getRosterPlayerName(player),
     pos: typeof player?.pos === 'string' ? player.pos : '',
     imgURL: normalizeLogoUrl(player?.imgURL || ''),
+    draftYear: readOptionalNumber(player?.draft?.year ?? player?.draftYear),
+    retiredYear: readOptionalNumber(player?.retiredYear ?? player?.retired?.year),
     careerStart: seasons.length ? Math.min(...seasons) : null,
     careerEnd: seasons.length ? Math.max(...seasons) : null,
+    yearsPlayed: uniqueSeasons.size,
+    gp,
+    min,
+    pts,
+    trb,
+    ast,
+    stl,
+    blk,
     ppg: gp > 0 ? pts / gp : 0,
+    pts36: min > 0 ? (pts * 36) / min : 0,
+    per: weightedHallOfFameAverage(regularStats, 'per'),
+    ws48: weightedHallOfFameAverage(regularStats, 'ws48'),
     bpm: weightedHallOfFameAverage(regularStats, 'bpm'),
     vorp: sumHallOfFameStat(regularStats, 'vorp'),
     ewa: sumHallOfFameStat(regularStats, 'ewa'),
     ws: sumHallOfFameStat(regularStats, 'ws'),
+    championships: awardCount('Won Championship'),
+    mvps: awardCount('Most Valuable Player'),
+    allStars: awardCount('All-Star'),
+    allLeagueSelections,
+    dpoys: awardCount('Defensive Player of the Year'),
+    allDefensiveSelections,
+    finalsMvps: awardCount('Finals MVP'),
     goatScore,
-    awards: summarizeHallOfFameAwards(player?.awards),
+    awards,
   };
 }
 
@@ -1566,11 +1653,75 @@ function renderUniforms(timeline) {
 
 
 
+function getHallOfFameAwardCount(player, type) {
+  return (Array.isArray(player?.awards) ? player.awards : [])
+    .filter((award) => award?.type === type)
+    .reduce((total, award) => total + (Number(award?.count) || 0), 0);
+}
+
+function getHallOfFameSortValue(player, key) {
+  const direct = Number(player?.[key]);
+  if (Number.isFinite(direct)) return direct;
+
+  if (key === 'championships') return getHallOfFameAwardCount(player, 'Won Championship');
+  if (key === 'mvps') return getHallOfFameAwardCount(player, 'Most Valuable Player');
+  if (key === 'allStars') return getHallOfFameAwardCount(player, 'All-Star');
+  if (key === 'dpoys') return getHallOfFameAwardCount(player, 'Defensive Player of the Year');
+  if (key === 'finalsMvps') return getHallOfFameAwardCount(player, 'Finals MVP');
+  if (key === 'allLeagueSelections') {
+    return ['First Team All-League', 'Second Team All-League', 'Third Team All-League']
+      .reduce((total, type) => total + getHallOfFameAwardCount(player, type), 0);
+  }
+  if (key === 'allDefensiveSelections') {
+    return ['First Team All-Defensive', 'Second Team All-Defensive', 'Third Team All-Defensive']
+      .reduce((total, type) => total + getHallOfFameAwardCount(player, type), 0);
+  }
+
+  return null;
+}
+
+function getSortedHallOfFamePlayers(players) {
+  const direction = hallOfFameSortDirection === 'asc' ? 1 : -1;
+  return [...players].sort((a, b) => {
+    const aValue = getHallOfFameSortValue(a, hallOfFameSortKey);
+    const bValue = getHallOfFameSortValue(b, hallOfFameSortKey);
+    const aValid = Number.isFinite(aValue);
+    const bValid = Number.isFinite(bValue);
+
+    if (aValid !== bValid) return aValid ? -1 : 1;
+    if (aValid && bValid && aValue !== bValue) return (aValue - bValue) * direction;
+
+    const aGoat = Number(a?.goatScore);
+    const bGoat = Number(b?.goatScore);
+    if (Number.isFinite(aGoat) && Number.isFinite(bGoat) && aGoat !== bGoat) {
+      return bGoat - aGoat;
+    }
+    return String(a?.name || '').localeCompare(String(b?.name || ''));
+  });
+}
+
+function updateHallOfFameSortControls() {
+  if (hofSortSelect && hofSortSelect.value !== hallOfFameSortKey) {
+    hofSortSelect.value = hallOfFameSortKey;
+  }
+  if (!hofSortDirectionBtn) return;
+
+  const definition = HOF_SORT_DEFINITIONS[hallOfFameSortKey] || HOF_SORT_DEFINITIONS.goatScore;
+  const ascending = hallOfFameSortDirection === 'asc';
+  hofSortDirectionBtn.textContent = definition.year
+    ? (ascending ? 'Oldest → Newest' : 'Newest → Oldest')
+    : (ascending ? 'Low → High' : 'High → Low');
+  hofSortDirectionBtn.setAttribute(
+    'aria-label',
+    `Sort ${definition.label} ${ascending ? 'ascending' : 'descending'}`,
+  );
+}
+
 function renderHallOfFame(timeline) {
   hallOfFameWrap.innerHTML = '';
-  const players = Array.isArray(timeline?.hallOfFamePlayers) ? timeline.hallOfFamePlayers : [];
+  const sourcePlayers = Array.isArray(timeline?.hallOfFamePlayers) ? timeline.hallOfFamePlayers : [];
 
-  if (!players.length) {
+  if (!sourcePlayers.length) {
     hallOfFameWrap.className = 'hof-wrap empty-state';
     const empty = document.createElement('div');
     empty.className = 'empty-copy';
@@ -1580,6 +1731,8 @@ function renderHallOfFame(timeline) {
   }
 
   hallOfFameWrap.className = 'hof-wrap';
+  updateHallOfFameSortControls();
+  const players = getSortedHallOfFamePlayers(sourcePlayers);
 
   if (hallOfFameView === 'gallery') {
     renderHallOfFameGallery(players);
