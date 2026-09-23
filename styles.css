@@ -933,11 +933,42 @@ body.fullscreen-open {
   }
 }
 
+.hof-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 12px;
+}
+
 .hof-view-switch {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 0;
+}
+
+.hof-sort-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hof-sort-label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.hof-sort-label .sort-select {
+  min-width: 190px;
+}
+
+.hof-sort-direction {
+  white-space: nowrap;
 }
 
 .hof-view-btn.active {
@@ -1131,6 +1162,28 @@ body.fullscreen-open {
 }
 
 @media (max-width: 680px) {
+  .hof-controls,
+  .hof-sort-controls {
+    align-items: stretch;
+  }
+
+  .hof-sort-controls {
+    width: 100%;
+  }
+
+  .hof-sort-label {
+    flex: 1 1 180px;
+  }
+
+  .hof-sort-label .sort-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hof-sort-direction {
+    flex: 0 0 auto;
+  }
+
   .hof-card {
     grid-template-columns: 82px minmax(0, 1fr);
     gap: 12px;
