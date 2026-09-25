@@ -53,12 +53,15 @@
   margin-top: 10px;
 }
 
-.draft-prospects-duplicate-names {
+.draft-prospects-duplicate-names,
+.draft-prospects-potential-filter {
   font-size: 0.8rem;
 }
 
 .draft-prospects-duplicate-names.is-active,
-.draft-prospects-duplicate-names[aria-pressed="true"] {
+.draft-prospects-duplicate-names[aria-pressed="true"],
+.draft-prospects-potential-filter.is-active,
+.draft-prospects-potential-filter[aria-pressed="true"] {
   border-color: var(--accent);
   background: rgba(var(--accent-rgb), 0.18);
 }
