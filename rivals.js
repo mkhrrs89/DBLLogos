@@ -223,7 +223,7 @@
 (() => {
   if (document.querySelector('script[data-dbl-draft-loader]')) return;
   const script = document.createElement('script');
-  script.src = './draft-prospects-loader.js?v=20260922-shared-league-file';
+  script.src = './draft-prospects-loader.js?v=20260924-duplicate-names';
   script.dataset.dblDraftLoader = 'true';
   document.body.append(script);
 })();
