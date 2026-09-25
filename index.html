@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="./records-player-images.css" />
     <link rel="stylesheet" href="./news.css?v=20260919-news-logo-inline" />
     <link rel="stylesheet" href="./rivals.css" />
+    <link rel="stylesheet" href="./colleges.css?v=20260925-colleges" />
     <link rel="stylesheet" href="./settings.css?v=20260922-ranking-outside" />
     <style>
       #recordsWrap .record-item:nth-child(n + 51) {
@@ -112,6 +113,7 @@
           <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
           <button id="newsTabBtn" class="tab-btn" type="button" aria-selected="false">News</button>
           <button id="rivalsTabBtn" class="tab-btn" type="button" aria-selected="false">Rivals</button>
+          <button id="collegesTabBtn" class="tab-btn" type="button" aria-selected="false">Colleges</button>
           <button id="settingsTabBtn" class="tab-btn" type="button" aria-selected="false">Settings</button>
         </nav>
 
@@ -391,6 +393,18 @@
           </div>
         </section>
 
+        <section id="collegesPanel" class="panel colleges-panel" hidden>
+          <div class="colleges-header">
+            <h2>Colleges</h2>
+            <p class="subtle">Assign every college found in the loaded league file to a U.S. state or International.</p>
+          </div>
+          <div id="collegesWrap" class="colleges-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to list its colleges.</p>
+            </div>
+          </div>
+        </section>
+
         <section id="settingsPanel" class="panel settings-panel" hidden>
           <div class="settings-header">
             <h2>Settings</h2>
@@ -476,6 +490,7 @@
     <script src="./news-persistence.js?v=20260825-news-persist-indexeddb"></script>
     <script src="./news-year-shading.js?v=20260919-news-day-number"></script>
     <script src="./rivals.js?v=20260924-pot65-filter"></script>
+    <script src="./colleges.js?v=20260925-colleges"></script>
     <script src="./settings.js?v=20260921-dark-newspaper"></script>
     <script src="./tab-router.js?v=20260923-navigation-fix"></script>
   </body>
