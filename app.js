@@ -1805,7 +1805,10 @@ function renderHallOfFame(timeline) {
     const range = Number.isFinite(player.careerStart) && Number.isFinite(player.careerEnd)
       ? `${player.careerStart}–${player.careerEnd}`
       : 'Career years unavailable';
-    career.textContent = player.pos ? `${range} · ${player.pos}` : range;
+    const careerParts = [range];
+    if (player.pos) careerParts.push(player.pos);
+    careerParts.push(Number.isFinite(player.pid) ? `PID ${player.pid}` : 'PID unavailable');
+    career.textContent = careerParts.join(' · ');
     titleBlock.append(name, career);
 
     const goat = document.createElement('div');
