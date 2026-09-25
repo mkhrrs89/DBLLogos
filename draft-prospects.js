@@ -4,6 +4,7 @@
   const panel = document.getElementById('draftProspectsPanel');
   const wrap = document.getElementById('draftProspectsWrap');
   const searchInput = document.getElementById('draftProspectsSearch');
+  const duplicateNamesBtn = document.getElementById('draftProspectsDuplicateNamesBtn');
   const fileInput = document.getElementById('leagueFile');
   const fileHub = window.DBLLeagueFileHub;
   const clearBtn = document.getElementById('clearLeagueFileBtn');
@@ -45,6 +46,7 @@
   let sortKey = 'draftYear';
   let sortDirection = 'asc';
   let filterDraftYear = null;
+  let duplicateNamesOnly = false;
   let dbPromise = null;
 
   const restorePromise = restoreSavedProspects();
@@ -55,6 +57,12 @@
 
   searchInput.addEventListener('search', () => {
     if (prospects.length) render();
+  });
+
+  duplicateNamesBtn?.addEventListener('click', () => {
+    duplicateNamesOnly = !duplicateNamesOnly;
+    render();
+    saveProspects(pendingFile || fileHub?.getCurrentFile?.() || fileInput.files?.[0] || null);
   });
 
   tabBtn.addEventListener('click', async () => {
@@ -84,7 +92,9 @@
     loadingVersion = -1;
     prospects = [];
     filterDraftYear = null;
+    duplicateNamesOnly = false;
     searchInput.value = '';
+    updateDuplicateNamesButton();
 
     await clearSavedProspects();
 
@@ -111,7 +121,9 @@
     loadingVersion = -1;
     prospects = [];
     filterDraftYear = null;
+    duplicateNamesOnly = false;
     searchInput.value = '';
+    updateDuplicateNamesButton();
     await clearSavedProspects();
     renderEmpty('Load or re-upload a league file to show draft prospects.');
   });
@@ -268,6 +280,7 @@
       sortKey,
       sortDirection,
       filterDraftYear,
+      duplicateNamesOnly,
       prospects,
     };
 
@@ -309,6 +322,7 @@
       filterDraftYear = savedFilter !== null && prospects.some((prospect) => prospect.draftYear === savedFilter)
         ? savedFilter
         : null;
+      duplicateNamesOnly = saved.duplicateNamesOnly === true;
 
       loadedVersion = fileVersion;
 
@@ -373,13 +387,19 @@
     wrap.className = 'draft-prospects-wrap';
     wrap.replaceChildren();
 
+    const duplicateNameSet = getExactDuplicateNameSet(prospects);
+    updateDuplicateNamesButton(duplicateNameSet);
+
     const classFilteredProspects = filterDraftYear === null
       ? prospects
       : prospects.filter((prospect) => prospect.draftYear === filterDraftYear);
+    const duplicateFilteredProspects = duplicateNamesOnly
+      ? classFilteredProspects.filter((prospect) => duplicateNameSet.has(String(prospect.name || '')))
+      : classFilteredProspects;
     const nameQuery = searchInput.value.trim().toLocaleLowerCase();
     const filteredProspects = nameQuery
-      ? classFilteredProspects.filter((prospect) => String(prospect.name || '').toLocaleLowerCase().includes(nameQuery))
-      : classFilteredProspects;
+      ? duplicateFilteredProspects.filter((prospect) => String(prospect.name || '').toLocaleLowerCase().includes(nameQuery))
+      : duplicateFilteredProspects;
     const sorted = [...filteredProspects].sort(compareProspects);
 
     const summary = document.createElement('div');
@@ -391,11 +411,12 @@
     const minYear = years.length ? Math.min(...years) : null;
     const maxYear = years.length ? Math.max(...years) : null;
 
-    if (filterDraftYear !== null || nameQuery) {
+    if (filterDraftYear !== null || duplicateNamesOnly || nameQuery) {
       const details = [
         `${filteredProspects.length.toLocaleString()} prospect${filteredProspects.length === 1 ? '' : 's'}`,
       ];
       if (filterDraftYear !== null) details.push(`Class ${filterDraftYear}`);
+      if (duplicateNamesOnly) details.push('duplicate names only');
       if (nameQuery) details.push(`matching “${searchInput.value.trim()}”`);
       details.push(`${prospects.length.toLocaleString()} total`);
       count.textContent = details.join(' • ');
@@ -457,7 +478,9 @@
       const cell = document.createElement('td');
       cell.colSpan = COLUMNS.length;
       cell.className = 'draft-prospects-no-results';
-      cell.textContent = 'No prospects match this search.';
+      cell.textContent = filterDraftYear !== null || duplicateNamesOnly || nameQuery
+        ? 'No prospects match the active filters.'
+        : 'No draft prospects were found.';
       row.append(cell);
       tbody.append(row);
     } else {
@@ -481,6 +504,44 @@
     table.append(tbody);
     tableWrap.append(table);
     wrap.append(tableWrap);
+  }
+
+  function getExactDuplicateNameSet(rows) {
+    const counts = new Map();
+
+    for (const prospect of Array.isArray(rows) ? rows : []) {
+      const name = String(prospect?.name || '');
+      if (!name) continue;
+      counts.set(name, (counts.get(name) || 0) + 1);
+    }
+
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([name]) => name),
+    );
+  }
+
+  function updateDuplicateNamesButton(duplicateNameSet = getExactDuplicateNameSet(prospects)) {
+    if (!duplicateNamesBtn) return;
+
+    const duplicateProspectCount = prospects.reduce(
+      (total, prospect) => total + (duplicateNameSet.has(String(prospect?.name || '')) ? 1 : 0),
+      0,
+    );
+
+    duplicateNamesBtn.textContent = duplicateProspectCount
+      ? `Duplicate names (${duplicateProspectCount.toLocaleString()})`
+      : 'Duplicate names';
+    duplicateNamesBtn.classList.toggle('is-active', duplicateNamesOnly);
+    duplicateNamesBtn.setAttribute('aria-pressed', duplicateNamesOnly ? 'true' : 'false');
+    duplicateNamesBtn.disabled = prospects.length > 0 && duplicateProspectCount === 0;
+
+    if (duplicateProspectCount === 0 && duplicateNamesOnly) {
+      duplicateNamesOnly = false;
+      duplicateNamesBtn.classList.remove('is-active');
+      duplicateNamesBtn.setAttribute('aria-pressed', 'false');
+    }
   }
 
   function makeCell(text, className = '') {
