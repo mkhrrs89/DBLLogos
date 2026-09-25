@@ -5,6 +5,7 @@
   const wrap = document.getElementById('draftProspectsWrap');
   const searchInput = document.getElementById('draftProspectsSearch');
   const duplicateNamesBtn = document.getElementById('draftProspectsDuplicateNamesBtn');
+  const hideLowPotentialBtn = document.getElementById('draftProspectsHideLowPotentialBtn');
   const fileInput = document.getElementById('leagueFile');
   const fileHub = window.DBLLeagueFileHub;
   const clearBtn = document.getElementById('clearLeagueFileBtn');
@@ -47,6 +48,7 @@
   let sortDirection = 'asc';
   let filterDraftYear = null;
   let duplicateNamesOnly = false;
+  let hideBelow65Potential = false;
   let dbPromise = null;
 
   const restorePromise = restoreSavedProspects();
@@ -61,6 +63,13 @@
 
   duplicateNamesBtn?.addEventListener('click', () => {
     duplicateNamesOnly = !duplicateNamesOnly;
+    render();
+    saveProspects(pendingFile || fileHub?.getCurrentFile?.() || fileInput.files?.[0] || null);
+  });
+
+  hideLowPotentialBtn?.addEventListener('click', () => {
+    hideBelow65Potential = !hideBelow65Potential;
+    updateHideLowPotentialButton();
     render();
     saveProspects(pendingFile || fileHub?.getCurrentFile?.() || fileInput.files?.[0] || null);
   });
@@ -93,8 +102,10 @@
     prospects = [];
     filterDraftYear = null;
     duplicateNamesOnly = false;
+    hideBelow65Potential = false;
     searchInput.value = '';
     updateDuplicateNamesButton();
+    updateHideLowPotentialButton();
 
     await clearSavedProspects();
 
@@ -122,8 +133,10 @@
     prospects = [];
     filterDraftYear = null;
     duplicateNamesOnly = false;
+    hideBelow65Potential = false;
     searchInput.value = '';
     updateDuplicateNamesButton();
+    updateHideLowPotentialButton();
     await clearSavedProspects();
     renderEmpty('Load or re-upload a league file to show draft prospects.');
   });
@@ -281,6 +294,7 @@
       sortDirection,
       filterDraftYear,
       duplicateNamesOnly,
+      hideBelow65Potential,
       prospects,
     };
 
@@ -323,6 +337,7 @@
         ? savedFilter
         : null;
       duplicateNamesOnly = saved.duplicateNamesOnly === true;
+      hideBelow65Potential = saved.hideBelow65Potential === true;
 
       loadedVersion = fileVersion;
 
@@ -389,6 +404,7 @@
 
     const duplicateNameSet = getExactDuplicateNameSet(prospects);
     updateDuplicateNamesButton(duplicateNameSet);
+    updateHideLowPotentialButton();
 
     const classFilteredProspects = filterDraftYear === null
       ? prospects
@@ -396,10 +412,15 @@
     const duplicateFilteredProspects = duplicateNamesOnly
       ? classFilteredProspects.filter((prospect) => duplicateNameSet.has(String(prospect.name || '')))
       : classFilteredProspects;
+    const potentialFilteredProspects = hideBelow65Potential
+      ? duplicateFilteredProspects.filter((prospect) => (
+        !Number.isFinite(prospect.potential) || prospect.potential >= 65
+      ))
+      : duplicateFilteredProspects;
     const nameQuery = searchInput.value.trim().toLocaleLowerCase();
     const filteredProspects = nameQuery
-      ? duplicateFilteredProspects.filter((prospect) => String(prospect.name || '').toLocaleLowerCase().includes(nameQuery))
-      : duplicateFilteredProspects;
+      ? potentialFilteredProspects.filter((prospect) => String(prospect.name || '').toLocaleLowerCase().includes(nameQuery))
+      : potentialFilteredProspects;
     const sorted = [...filteredProspects].sort(compareProspects);
 
     const summary = document.createElement('div');
@@ -411,12 +432,13 @@
     const minYear = years.length ? Math.min(...years) : null;
     const maxYear = years.length ? Math.max(...years) : null;
 
-    if (filterDraftYear !== null || duplicateNamesOnly || nameQuery) {
+    if (filterDraftYear !== null || duplicateNamesOnly || hideBelow65Potential || nameQuery) {
       const details = [
         `${filteredProspects.length.toLocaleString()} prospect${filteredProspects.length === 1 ? '' : 's'}`,
       ];
       if (filterDraftYear !== null) details.push(`Class ${filterDraftYear}`);
       if (duplicateNamesOnly) details.push('duplicate names only');
+      if (hideBelow65Potential) details.push('Pot 65+ only');
       if (nameQuery) details.push(`matching “${searchInput.value.trim()}”`);
       details.push(`${prospects.length.toLocaleString()} total`);
       count.textContent = details.join(' • ');
@@ -478,7 +500,7 @@
       const cell = document.createElement('td');
       cell.colSpan = COLUMNS.length;
       cell.className = 'draft-prospects-no-results';
-      cell.textContent = filterDraftYear !== null || duplicateNamesOnly || nameQuery
+      cell.textContent = filterDraftYear !== null || duplicateNamesOnly || hideBelow65Potential || nameQuery
         ? 'No prospects match the active filters.'
         : 'No draft prospects were found.';
       row.append(cell);
@@ -542,6 +564,14 @@
       duplicateNamesBtn.classList.remove('is-active');
       duplicateNamesBtn.setAttribute('aria-pressed', 'false');
     }
+  }
+
+  function updateHideLowPotentialButton() {
+    if (!hideLowPotentialBtn) return;
+
+    hideLowPotentialBtn.classList.toggle('is-active', hideBelow65Potential);
+    hideLowPotentialBtn.setAttribute('aria-pressed', hideBelow65Potential ? 'true' : 'false');
+    hideLowPotentialBtn.textContent = 'Hide Pot <65';
   }
 
   function makeCell(text, className = '') {
