@@ -3,7 +3,7 @@
 
   const styleLink = document.createElement('link');
   styleLink.rel = 'stylesheet';
-  styleLink.href = './draft-prospects.css?v=20260924-duplicate-names';
+  styleLink.href = './draft-prospects.css?v=20260924-pot65-filter';
   document.head.append(styleLink);
 
   const fullscreenStyle = document.createElement('style');
@@ -80,7 +80,14 @@
   duplicateNamesBtn.setAttribute('aria-pressed', 'false');
   duplicateNamesBtn.textContent = 'Duplicate names';
 
-  filterActions.append(duplicateNamesBtn);
+  const hideLowPotentialBtn = document.createElement('button');
+  hideLowPotentialBtn.id = 'draftProspectsHideLowPotentialBtn';
+  hideLowPotentialBtn.className = 'action-btn draft-prospects-potential-filter';
+  hideLowPotentialBtn.type = 'button';
+  hideLowPotentialBtn.setAttribute('aria-pressed', 'false');
+  hideLowPotentialBtn.textContent = 'Hide Pot <65';
+
+  filterActions.append(duplicateNamesBtn, hideLowPotentialBtn);
   header.append(heading, description, searchLabel, filterActions);
 
   const wrap = document.createElement('div');
@@ -102,7 +109,7 @@
   else page?.append(panel);
 
   const script = document.createElement('script');
-  script.src = './draft-prospects.js?v=20260924-duplicate-names';
+  script.src = './draft-prospects.js?v=20260924-pot65-filter';
   script.dataset.dblDraftProspects = 'true';
   document.body.append(script);
 })();
