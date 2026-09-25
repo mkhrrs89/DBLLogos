@@ -46,6 +46,28 @@
   box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.12);
 }
 
+.draft-prospects-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.draft-prospects-duplicate-names {
+  font-size: 0.8rem;
+}
+
+.draft-prospects-duplicate-names.is-active,
+.draft-prospects-duplicate-names[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.18);
+}
+
+.draft-prospects-duplicate-names:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .draft-prospects-wrap.empty-state {
   min-height: 260px;
   display: grid;
