@@ -19,6 +19,7 @@
     newsTabBtn: 'newsPanel',
     rivalsTabBtn: 'rivalsPanel',
     draftProspectsTabBtn: 'draftProspectsPanel',
+    collegesTabBtn: 'collegesPanel',
     settingsTabBtn: 'settingsPanel',
   };
 
