@@ -3,7 +3,7 @@
 
   const styleLink = document.createElement('link');
   styleLink.rel = 'stylesheet';
-  styleLink.href = './draft-prospects.css?v=20260914-prospect-name-search';
+  styleLink.href = './draft-prospects.css?v=20260924-duplicate-names';
   document.head.append(styleLink);
 
   const fullscreenStyle = document.createElement('style');
@@ -69,7 +69,19 @@
   searchInput.setAttribute('aria-label', 'Search draft prospects by player name');
 
   searchLabel.append(searchText, searchInput);
-  header.append(heading, description, searchLabel);
+
+  const filterActions = document.createElement('div');
+  filterActions.className = 'draft-prospects-filter-actions';
+
+  const duplicateNamesBtn = document.createElement('button');
+  duplicateNamesBtn.id = 'draftProspectsDuplicateNamesBtn';
+  duplicateNamesBtn.className = 'action-btn draft-prospects-duplicate-names';
+  duplicateNamesBtn.type = 'button';
+  duplicateNamesBtn.setAttribute('aria-pressed', 'false');
+  duplicateNamesBtn.textContent = 'Duplicate names';
+
+  filterActions.append(duplicateNamesBtn);
+  header.append(heading, description, searchLabel, filterActions);
 
   const wrap = document.createElement('div');
   wrap.id = 'draftProspectsWrap';
@@ -90,7 +102,7 @@
   else page?.append(panel);
 
   const script = document.createElement('script');
-  script.src = './draft-prospects.js?v=20260922-shared-league-file';
+  script.src = './draft-prospects.js?v=20260924-duplicate-names';
   script.dataset.dblDraftProspects = 'true';
   document.body.append(script);
 })();
