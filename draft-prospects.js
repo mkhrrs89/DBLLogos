@@ -6,6 +6,7 @@
   const searchInput = document.getElementById('draftProspectsSearch');
   const duplicateNamesBtn = document.getElementById('draftProspectsDuplicateNamesBtn');
   const hideLowPotentialBtn = document.getElementById('draftProspectsHideLowPotentialBtn');
+  const hideBelow70PotentialBtn = document.getElementById('draftProspectsHideBelow70PotentialBtn');
   const fileInput = document.getElementById('leagueFile');
   const fileHub = window.DBLLeagueFileHub;
   const clearBtn = document.getElementById('clearLeagueFileBtn');
@@ -49,6 +50,7 @@
   let filterDraftYear = null;
   let duplicateNamesOnly = false;
   let hideBelow65Potential = false;
+  let hideBelow70Potential = false;
   let dbPromise = null;
 
   const restorePromise = restoreSavedProspects();
@@ -70,6 +72,13 @@
   hideLowPotentialBtn?.addEventListener('click', () => {
     hideBelow65Potential = !hideBelow65Potential;
     updateHideLowPotentialButton();
+    render();
+    saveProspects(pendingFile || fileHub?.getCurrentFile?.() || fileInput.files?.[0] || null);
+  });
+
+  hideBelow70PotentialBtn?.addEventListener('click', () => {
+    hideBelow70Potential = !hideBelow70Potential;
+    updateHideBelow70PotentialButton();
     render();
     saveProspects(pendingFile || fileHub?.getCurrentFile?.() || fileInput.files?.[0] || null);
   });
@@ -103,9 +112,11 @@
     filterDraftYear = null;
     duplicateNamesOnly = false;
     hideBelow65Potential = false;
+    hideBelow70Potential = false;
     searchInput.value = '';
     updateDuplicateNamesButton();
     updateHideLowPotentialButton();
+    updateHideBelow70PotentialButton();
 
     await clearSavedProspects();
 
@@ -134,9 +145,11 @@
     filterDraftYear = null;
     duplicateNamesOnly = false;
     hideBelow65Potential = false;
+    hideBelow70Potential = false;
     searchInput.value = '';
     updateDuplicateNamesButton();
     updateHideLowPotentialButton();
+    updateHideBelow70PotentialButton();
     await clearSavedProspects();
     renderEmpty('Load or re-upload a league file to show draft prospects.');
   });
@@ -295,6 +308,7 @@
       filterDraftYear,
       duplicateNamesOnly,
       hideBelow65Potential,
+      hideBelow70Potential,
       prospects,
     };
 
@@ -338,6 +352,7 @@
         : null;
       duplicateNamesOnly = saved.duplicateNamesOnly === true;
       hideBelow65Potential = saved.hideBelow65Potential === true;
+      hideBelow70Potential = saved.hideBelow70Potential === true;
 
       loadedVersion = fileVersion;
 
@@ -405,6 +420,7 @@
     const duplicateNameSet = getExactDuplicateNameSet(prospects);
     updateDuplicateNamesButton(duplicateNameSet);
     updateHideLowPotentialButton();
+    updateHideBelow70PotentialButton();
 
     const classFilteredProspects = filterDraftYear === null
       ? prospects
@@ -417,10 +433,15 @@
         !Number.isFinite(prospect.potential) || prospect.potential >= 65
       ))
       : duplicateFilteredProspects;
+    const elitePotentialFilteredProspects = hideBelow70Potential
+      ? potentialFilteredProspects.filter((prospect) => (
+        Number.isFinite(prospect.potential) && prospect.potential >= 70
+      ))
+      : potentialFilteredProspects;
     const nameQuery = searchInput.value.trim().toLocaleLowerCase();
     const filteredProspects = nameQuery
-      ? potentialFilteredProspects.filter((prospect) => String(prospect.name || '').toLocaleLowerCase().includes(nameQuery))
-      : potentialFilteredProspects;
+      ? elitePotentialFilteredProspects.filter((prospect) => String(prospect.name || '').toLocaleLowerCase().includes(nameQuery))
+      : elitePotentialFilteredProspects;
     const sorted = [...filteredProspects].sort(compareProspects);
 
     const summary = document.createElement('div');
@@ -432,13 +453,14 @@
     const minYear = years.length ? Math.min(...years) : null;
     const maxYear = years.length ? Math.max(...years) : null;
 
-    if (filterDraftYear !== null || duplicateNamesOnly || hideBelow65Potential || nameQuery) {
+    if (filterDraftYear !== null || duplicateNamesOnly || hideBelow65Potential || hideBelow70Potential || nameQuery) {
       const details = [
         `${filteredProspects.length.toLocaleString()} prospect${filteredProspects.length === 1 ? '' : 's'}`,
       ];
       if (filterDraftYear !== null) details.push(`Class ${filterDraftYear}`);
       if (duplicateNamesOnly) details.push('duplicate names only');
       if (hideBelow65Potential) details.push('Pot 65+ only');
+      if (hideBelow70Potential) details.push('Pot 70+ only');
       if (nameQuery) details.push(`matching “${searchInput.value.trim()}”`);
       details.push(`${prospects.length.toLocaleString()} total`);
       count.textContent = details.join(' • ');
@@ -500,7 +522,7 @@
       const cell = document.createElement('td');
       cell.colSpan = COLUMNS.length;
       cell.className = 'draft-prospects-no-results';
-      cell.textContent = filterDraftYear !== null || duplicateNamesOnly || hideBelow65Potential || nameQuery
+      cell.textContent = filterDraftYear !== null || duplicateNamesOnly || hideBelow65Potential || hideBelow70Potential || nameQuery
         ? 'No prospects match the active filters.'
         : 'No draft prospects were found.';
       row.append(cell);
@@ -572,6 +594,14 @@
     hideLowPotentialBtn.classList.toggle('is-active', hideBelow65Potential);
     hideLowPotentialBtn.setAttribute('aria-pressed', hideBelow65Potential ? 'true' : 'false');
     hideLowPotentialBtn.textContent = 'Hide Pot <65';
+  }
+
+  function updateHideBelow70PotentialButton() {
+    if (!hideBelow70PotentialBtn) return;
+
+    hideBelow70PotentialBtn.classList.toggle('is-active', hideBelow70Potential);
+    hideBelow70PotentialBtn.setAttribute('aria-pressed', hideBelow70Potential ? 'true' : 'false');
+    hideBelow70PotentialBtn.textContent = 'Hide Pot <70';
   }
 
   function makeCell(text, className = '') {
