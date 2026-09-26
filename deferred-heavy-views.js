@@ -56,7 +56,14 @@
   });
 
   hallTabBtn?.addEventListener('click', () => {
-    loadHallOfFameForLargeFile();
+    window.queueMicrotask(() => {
+      const coordinator = window.DBLHallOfFameLoader;
+      if (coordinator?.ensureLoaded) {
+        void coordinator.ensureLoaded();
+        return;
+      }
+      void loadHallOfFameForLargeFile();
+    });
   });
 
   recordsTabBtn?.addEventListener('click', () => {
