@@ -116,6 +116,8 @@ async function loadLeagueFile(file, source = 'upload') {
     const timeline = buildTimelineData(league);
     if (loadVersion !== leagueLoadVersion) return;
 
+    preserveDeferredViewsDuringRestore(timeline, fileName, source);
+
     isLeagueFileCleared = false;
     setTimeline(timeline);
     persistTimeline(fileName, timeline);
@@ -219,6 +221,39 @@ function clearLoadedLeagueFile() {
     fileInput.value = '';
   }
   setStatus('Cleared loaded league file and generated views. Banner and uniform links were not changed.', 'info');
+}
+
+function preserveDeferredViewsDuringRestore(timeline, fileName, source) {
+  if (source !== 'restore' || !timeline || !fullTimeline) return;
+
+  let savedFileName = '';
+  try {
+    const raw = localStorage.getItem(SAVED_TIMELINE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      savedFileName = typeof parsed?.fileName === 'string' ? parsed.fileName : '';
+    }
+  } catch (error) {
+    console.warn('Could not inspect the saved timeline while restoring deferred views.', error);
+  }
+
+  if (!savedFileName || savedFileName !== fileName) return;
+
+  const cachedHall = Array.isArray(fullTimeline.hallOfFamePlayers)
+    ? fullTimeline.hallOfFamePlayers
+    : [];
+  const nextHall = Array.isArray(timeline.hallOfFamePlayers)
+    ? timeline.hallOfFamePlayers
+    : [];
+  if (!nextHall.length && cachedHall.length) {
+    timeline.hallOfFamePlayers = cachedHall;
+  }
+
+  const cachedRecords = normalizeScoringRecords(fullTimeline.scoringRecords);
+  const nextRecords = normalizeScoringRecords(timeline.scoringRecords);
+  if (!nextRecords.length && cachedRecords.length) {
+    timeline.scoringRecords = cachedRecords;
+  }
 }
 
 function setStatus(message, type = 'info') {
