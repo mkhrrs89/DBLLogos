@@ -1,5 +1,5 @@
 (() => {
-  const SAVED_LEADERS_KEY = 'dbl-logo-all-time-leaders:v1';
+  const SAVED_LEADERS_KEY = 'dbl-logo-all-time-leaders:v2';
   const LEADER_LIMIT = 10;
   const UNKNOWN_POSITION = 'UNK';
   const STAT_DEFINITIONS = [
@@ -8,6 +8,12 @@
     { key: 'ast', title: 'Assists', valueLabel: 'AST' },
     { key: 'stl', title: 'Steals', valueLabel: 'STL' },
     { key: 'blk', title: 'Blocks', valueLabel: 'BLK' },
+    { key: 'tp', title: '3-Pointers Made', valueLabel: '3PM' },
+    { key: 'fg', title: 'Field Goals Made', valueLabel: 'FGM' },
+    { key: 'ft', title: 'Free Throws Made', valueLabel: 'FTM' },
+    { key: 'gmsc', title: 'Game Score', valueLabel: 'GmSc' },
+    { key: 'tov', title: 'Turnovers', valueLabel: 'TOV' },
+    { key: 'pf', title: 'Fouls', valueLabel: 'PF' },
   ];
 
   const tabBtn = document.getElementById('allTimeLeadersTabBtn');
@@ -271,6 +277,12 @@
       ast: sumStat(regularStats, 'ast'),
       stl: sumStat(regularStats, 'stl'),
       blk: sumStat(regularStats, 'blk'),
+      tp: sumStat(regularStats, 'tp'),
+      fg: sumStat(regularStats, 'fg'),
+      ft: sumStat(regularStats, 'ft'),
+      gmsc: sumStat(regularStats, 'gmsc'),
+      tov: sumStat(regularStats, 'tov'),
+      pf: sumStat(regularStats, 'pf'),
       sourceRows: regularStats.length,
     };
   }
