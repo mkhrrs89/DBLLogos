@@ -516,6 +516,15 @@
     }
 
     wrap.className = 'all-time-leaders-wrap';
+
+    const summary = document.createElement('div');
+    summary.className = 'career-leader-summary-grid';
+
+    for (const stat of STAT_DEFINITIONS) {
+      const entries = data[stat.key] || [];
+      summary.appendChild(buildLeaderSummaryTile(stat, entries[0] || null));
+    }
+
     const grid = document.createElement('div');
     grid.className = 'career-leaders-grid';
 
@@ -523,7 +532,52 @@
       grid.appendChild(buildLeaderList(stat, data[stat.key] || []));
     }
 
-    wrap.appendChild(grid);
+    wrap.append(summary, grid);
+  }
+
+  function buildLeaderSummaryTile(stat, entry) {
+    const tile = document.createElement('section');
+    tile.className = 'career-leader-summary-tile';
+
+    const label = document.createElement('span');
+    label.className = 'career-leader-summary-label';
+    label.textContent = stat.title;
+
+    if (!entry) {
+      const empty = document.createElement('span');
+      empty.className = 'career-leader-summary-empty';
+      empty.textContent = '—';
+      tile.append(label, empty);
+      return tile;
+    }
+
+    const photo = document.createElement('div');
+    photo.className = 'career-leader-summary-photo';
+
+    const imageURL = normalizeImageUrl(entry.imgURL);
+    if (imageURL) {
+      const image = document.createElement('img');
+      image.src = imageURL;
+      image.alt = '';
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      image.setAttribute('aria-hidden', 'true');
+      image.addEventListener('error', () => {
+        photo.classList.add('is-missing');
+        image.remove();
+      });
+      photo.appendChild(image);
+    } else {
+      photo.classList.add('is-missing');
+    }
+
+    const value = document.createElement('strong');
+    value.className = 'career-leader-summary-value';
+    value.textContent = formatCareerTotal(entry.value);
+    value.title = stat.valueLabel;
+
+    tile.append(label, photo, value);
+    return tile;
   }
 
   function buildLeaderList(stat, entries) {
