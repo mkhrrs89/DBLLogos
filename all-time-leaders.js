@@ -1,5 +1,5 @@
 (() => {
-  const SAVED_LEADERS_KEY = 'dbl-logo-all-time-leaders:v2';
+  const SAVED_LEADERS_KEY = 'dbl-logo-all-time-leaders:v3';
   const LEADER_LIMIT = 10;
   const UNKNOWN_POSITION = 'UNK';
   const STAT_DEFINITIONS = [
@@ -11,6 +11,7 @@
     { key: 'tp', title: '3-Pointers Made', valueLabel: '3PM' },
     { key: 'fg', title: 'Field Goals Made', valueLabel: 'FGM' },
     { key: 'ft', title: 'Free Throws Made', valueLabel: 'FTM' },
+    { key: 'wsEwaAvg', title: 'WS / EWA Average', valueLabel: 'WS/EWA AVG', decimals: 1 },
     { key: 'gmsc', title: 'Game Score', valueLabel: 'GmSc' },
     { key: 'tov', title: 'Turnovers', valueLabel: 'TOV' },
     { key: 'pf', title: 'Fouls', valueLabel: 'PF' },
@@ -280,6 +281,7 @@
       tp: sumStat(regularStats, 'tp'),
       fg: sumStat(regularStats, 'fg'),
       ft: sumStat(regularStats, 'ft'),
+      wsEwaAvg: averageStatTotals(regularStats, 'ws', 'ewa'),
       gmsc: sumGameScore(regularStats),
       tov: sumStat(regularStats, 'tov'),
       pf: sumStat(regularStats, 'pf'),
@@ -372,6 +374,10 @@
       if (Number.isFinite(value)) total += value;
     }
     return total;
+  }
+
+  function averageStatTotals(rows, firstStat, secondStat) {
+    return (sumStat(rows, firstStat) + sumStat(rows, secondStat)) / 2;
   }
 
   function sumGameScore(rows) {
@@ -573,7 +579,7 @@
 
     const value = document.createElement('strong');
     value.className = 'career-leader-summary-value';
-    value.textContent = formatCareerTotal(entry.value);
+    value.textContent = formatStatValue(entry.value, stat);
     value.title = stat.valueLabel;
 
     tile.append(label, photo, value);
@@ -645,7 +651,7 @@
 
       const value = document.createElement('strong');
       value.className = 'career-leader-value';
-      value.textContent = formatCareerTotal(entry.value);
+      value.textContent = formatStatValue(entry.value, stat);
       value.title = stat.valueLabel;
 
       item.append(rank, details, value);
@@ -665,6 +671,21 @@
     }
     if (Number.isFinite(entry.gp)) parts.push(`${formatCareerTotal(entry.gp)} GP`);
     return parts.join(' · ');
+  }
+
+  function formatStatValue(value, stat = {}) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '0';
+
+    const decimals = Number.isInteger(stat.decimals) ? Math.max(0, stat.decimals) : 0;
+    if (decimals > 0) {
+      return number.toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    }
+
+    return formatCareerTotal(number);
   }
 
   function formatCareerTotal(value) {
