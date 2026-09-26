@@ -1,5 +1,5 @@
 (() => {
-  const SAVED_LEADERS_KEY = 'dbl-logo-all-time-leaders:v3';
+  const SAVED_LEADERS_KEY = 'dbl-logo-all-time-leaders:v4';
   const LEADER_LIMIT = 10;
   const UNKNOWN_POSITION = 'UNK';
   const STAT_DEFINITIONS = [
@@ -368,6 +368,14 @@
         const drb = Number(row?.drb);
         if (Number.isFinite(orb) || Number.isFinite(drb)) {
           value = (Number.isFinite(orb) ? orb : 0) + (Number.isFinite(drb) ? drb : 0);
+        }
+      }
+
+      if (!Number.isFinite(value) && stat === 'ws') {
+        const ows = Number(row?.ows);
+        const dws = Number(row?.dws);
+        if (Number.isFinite(ows) || Number.isFinite(dws)) {
+          value = (Number.isFinite(ows) ? ows : 0) + (Number.isFinite(dws) ? dws : 0);
         }
       }
 
