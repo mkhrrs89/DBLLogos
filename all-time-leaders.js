@@ -280,7 +280,7 @@
       tp: sumStat(regularStats, 'tp'),
       fg: sumStat(regularStats, 'fg'),
       ft: sumStat(regularStats, 'ft'),
-      gmsc: sumStat(regularStats, 'gmsc'),
+      gmsc: sumGameScore(regularStats),
       tov: sumStat(regularStats, 'tov'),
       pf: sumStat(regularStats, 'pf'),
       sourceRows: regularStats.length,
@@ -371,6 +371,51 @@
 
       if (Number.isFinite(value)) total += value;
     }
+    return total;
+  }
+
+  function sumGameScore(rows) {
+    let total = 0;
+
+    for (const row of rows) {
+      const stored = Number(row?.gmsc);
+      if (Number.isFinite(stored)) {
+        total += stored;
+        continue;
+      }
+
+      const pts = Number(row?.pts);
+      const fg = Number(row?.fg);
+      const fga = Number(row?.fga);
+      const ft = Number(row?.ft);
+      const fta = Number(row?.fta);
+      const orb = Number(row?.orb);
+      const drb = Number(row?.drb);
+      const stl = Number(row?.stl);
+      const ast = Number(row?.ast);
+      const blk = Number(row?.blk);
+      const pf = Number(row?.pf);
+      const tov = Number(row?.tov);
+
+      const values = [pts, fg, fga, ft, fta, orb, drb, stl, ast, blk, pf, tov];
+      if (!values.some(Number.isFinite)) continue;
+
+      total += (Number.isFinite(pts) ? pts : 0)
+        + 0.4 * (Number.isFinite(fg) ? fg : 0)
+        - 0.7 * (Number.isFinite(fga) ? fga : 0)
+        - 0.4 * (
+          (Number.isFinite(fta) ? fta : 0)
+          - (Number.isFinite(ft) ? ft : 0)
+        )
+        + 0.7 * (Number.isFinite(orb) ? orb : 0)
+        + 0.3 * (Number.isFinite(drb) ? drb : 0)
+        + (Number.isFinite(stl) ? stl : 0)
+        + 0.7 * (Number.isFinite(ast) ? ast : 0)
+        + 0.7 * (Number.isFinite(blk) ? blk : 0)
+        - 0.4 * (Number.isFinite(pf) ? pf : 0)
+        - (Number.isFinite(tov) ? tov : 0);
+    }
+
     return total;
   }
 
