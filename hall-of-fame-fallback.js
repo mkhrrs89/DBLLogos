@@ -21,6 +21,8 @@
   let loadingFile = null;
   let loadedFile = null;
   let fileVersion = 0;
+  let activeLoadPromise = null;
+  let activeLoadVersion = -1;
 
   const acceptLeagueFile = (file) => {
     if (!file || selectedFile === file) return;
@@ -62,6 +64,25 @@
   });
 
   async function ensureHallOfFameLoaded(version = fileVersion) {
+    if (activeLoadPromise && activeLoadVersion === version) {
+      return activeLoadPromise;
+    }
+
+    const promise = ensureHallOfFameLoadedInternal(version);
+    activeLoadPromise = promise;
+    activeLoadVersion = version;
+
+    try {
+      return await promise;
+    } finally {
+      if (activeLoadPromise === promise) {
+        activeLoadPromise = null;
+        activeLoadVersion = -1;
+      }
+    }
+  }
+
+  async function ensureHallOfFameLoadedInternal(version = fileVersion) {
     const existingPlayers = getExistingHallPlayers();
     if (existingPlayers.length) {
       renderHallOfFame(fullTimeline);
@@ -163,7 +184,7 @@
 
     while (isCurrent(file, version) && Date.now() - startedAt < timeoutMs) {
       const text = statusMessage.textContent || '';
-      const isLoading = text.startsWith('Loading ');
+      const isLoading = /^(Loading|Restoring)\s/.test(text);
       const loadedThisFile = text.startsWith(`Loaded ${file.name}`)
         || text.includes(`Loaded ${file.name}.`);
       const failedThisFile = statusMessage.classList.contains('error') && !isLoading;
@@ -212,4 +233,10 @@
     empty.appendChild(paragraph);
     hallWrap.replaceChildren(empty);
   }
+
+  window.DBLHallOfFameLoader = {
+    ensureLoaded: () => ensureHallOfFameLoaded(fileVersion),
+    getFileVersion: () => fileVersion,
+    isLoading: () => Boolean(activeLoadPromise || loadingFile),
+  };
 })();
