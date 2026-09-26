@@ -3,7 +3,7 @@
 
   const styleLink = document.createElement('link');
   styleLink.rel = 'stylesheet';
-  styleLink.href = './draft-prospects.css?v=20260924-pot65-filter';
+  styleLink.href = './draft-prospects.css?v=20260925-pot70-filter';
   document.head.append(styleLink);
 
   const fullscreenStyle = document.createElement('style');
@@ -87,7 +87,14 @@
   hideLowPotentialBtn.setAttribute('aria-pressed', 'false');
   hideLowPotentialBtn.textContent = 'Hide Pot <65';
 
-  filterActions.append(duplicateNamesBtn, hideLowPotentialBtn);
+  const hideBelow70PotentialBtn = document.createElement('button');
+  hideBelow70PotentialBtn.id = 'draftProspectsHideBelow70PotentialBtn';
+  hideBelow70PotentialBtn.className = 'action-btn draft-prospects-potential-filter';
+  hideBelow70PotentialBtn.type = 'button';
+  hideBelow70PotentialBtn.setAttribute('aria-pressed', 'false');
+  hideBelow70PotentialBtn.textContent = 'Hide Pot <70';
+
+  filterActions.append(duplicateNamesBtn, hideLowPotentialBtn, hideBelow70PotentialBtn);
   header.append(heading, description, searchLabel, filterActions);
 
   const wrap = document.createElement('div');
@@ -109,7 +116,7 @@
   else page?.append(panel);
 
   const script = document.createElement('script');
-  script.src = './draft-prospects.js?v=20260924-pot65-filter';
+  script.src = './draft-prospects.js?v=20260925-pot70-filter';
   script.dataset.dblDraftProspects = 'true';
   document.body.append(script);
 })();
