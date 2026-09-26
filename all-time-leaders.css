@@ -18,6 +18,76 @@
   min-width: 0;
 }
 
+.career-leader-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.career-leader-summary-tile {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 7px;
+  align-items: center;
+  justify-items: center;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.025);
+  text-align: center;
+}
+
+.career-leader-summary-label {
+  width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.career-leader-summary-photo {
+  width: 86px;
+  height: 86px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.035);
+}
+
+.career-leader-summary-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.career-leader-summary-photo.is-missing::after {
+  content: 'No photo';
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted-2);
+  font-size: 0.68rem;
+}
+
+.career-leader-summary-value {
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.career-leader-summary-empty {
+  grid-row: 2 / 4;
+  align-self: center;
+  color: var(--muted);
+}
+
 .career-leaders-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
@@ -151,6 +221,28 @@
 }
 
 @media (max-width: 520px) {
+  .career-leader-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .career-leader-summary-tile {
+    padding: 7px 5px;
+  }
+
+  .career-leader-summary-photo {
+    width: 72px;
+    height: 72px;
+  }
+
+  .career-leader-summary-label {
+    font-size: 0.64rem;
+  }
+
+  .career-leader-summary-value {
+    font-size: 0.84rem;
+  }
+
   .career-leader-item.has-player-photo {
     min-height: 72px;
   }
