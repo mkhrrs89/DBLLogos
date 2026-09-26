@@ -223,7 +223,7 @@
 (() => {
   if (document.querySelector('script[data-dbl-draft-loader]')) return;
   const script = document.createElement('script');
-  script.src = './draft-prospects-loader.js?v=20260924-pot65-filter';
+  script.src = './draft-prospects-loader.js?v=20260925-pot70-filter';
   script.dataset.dblDraftLoader = 'true';
   document.body.append(script);
 })();
