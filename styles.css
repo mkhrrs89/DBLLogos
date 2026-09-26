@@ -46,6 +46,17 @@ select {
   font: inherit;
 }
 
+/* On iOS touch devices, suppress the browser's double-tap-to-zoom gesture
+   while preserving normal scrolling and two-finger pinch zoom. */
+@supports (-webkit-touch-callout: none) {
+  @media (hover: none) and (pointer: coarse) {
+    body,
+    body * {
+      touch-action: manipulation;
+    }
+  }
+}
+
 .app-shell {
   width: 100%;
   max-width: 1600px;
