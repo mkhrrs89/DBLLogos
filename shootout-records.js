@@ -95,7 +95,7 @@
       return;
     }
 
-    if (loadedVersion === fileVersion && records.length) {
+    if (loadedVersion === fileVersion) {
       render();
       return;
     }
@@ -604,6 +604,7 @@
 
   function firstFiniteNumber(...values) {
     for (const value of values) {
+      if (value === null || value === undefined || value === '') continue;
       const number = Number(value);
       if (Number.isFinite(number)) return number;
     }
@@ -611,6 +612,7 @@
   }
 
   function readNumber(value) {
+    if (value === null || value === undefined || value === '') return null;
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
   }
