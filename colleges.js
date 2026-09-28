@@ -232,6 +232,11 @@
     summary.appendChild(count);
     wrap.appendChild(summary);
 
+    const groupedAssignments = buildGroupedAssignments();
+    if (groupedAssignments) {
+      wrap.appendChild(groupedAssignments);
+    }
+
     const list = document.createElement('div');
     list.className = 'colleges-list';
 
@@ -275,6 +280,64 @@
     }
 
     wrap.appendChild(list);
+  }
+
+  function buildGroupedAssignments() {
+    const grouped = new Map(LOCATIONS.map((location) => [location, []]));
+
+    for (const [college, location] of Object.entries(assignments)) {
+      if (!college || !isValidLocation(location)) continue;
+      grouped.get(location).push(college);
+    }
+
+    const populated = LOCATIONS
+      .map((location) => ({
+        location,
+        colleges: grouped.get(location).sort((a, b) => (
+          a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true })
+        )),
+      }))
+      .filter((group) => group.colleges.length > 0);
+
+    if (!populated.length) return null;
+
+    const section = document.createElement('section');
+    section.className = 'college-groups';
+
+    const heading = document.createElement('h3');
+    heading.className = 'college-groups-title';
+    heading.textContent = 'Assigned Colleges by Location';
+    section.appendChild(heading);
+
+    const grid = document.createElement('div');
+    grid.className = 'college-groups-grid';
+
+    for (const group of populated) {
+      const block = document.createElement('section');
+      block.className = 'college-state-group';
+
+      const stateHeading = document.createElement('h4');
+      stateHeading.textContent = group.location;
+
+      const divider = document.createElement('div');
+      divider.className = 'college-state-divider';
+      divider.setAttribute('aria-hidden', 'true');
+
+      const list = document.createElement('ul');
+      list.className = 'college-state-list';
+
+      for (const college of group.colleges) {
+        const item = document.createElement('li');
+        item.textContent = college;
+        list.appendChild(item);
+      }
+
+      block.append(stateHeading, divider, list);
+      grid.appendChild(block);
+    }
+
+    section.appendChild(grid);
+    return section;
   }
 
   function isValidLocation(value) {
