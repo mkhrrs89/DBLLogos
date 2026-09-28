@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="./logos-by-team.css" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
     <link rel="stylesheet" href="./records-player-images.css?v=20260926-mobile-records" />
+    <link rel="stylesheet" href="./shootout-records.css?v=20260927-shootout-records" />
     <link rel="stylesheet" href="./news.css?v=20260919-news-logo-inline" />
     <link rel="stylesheet" href="./rivals.css" />
     <link rel="stylesheet" href="./colleges.css?v=20260925-colleges" />
@@ -111,6 +112,7 @@
           <button id="allTimeLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Leaders</button>
           <button id="hallOfFameTabBtn" class="tab-btn" type="button" aria-selected="false">Hall of Fame</button>
           <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
+          <button id="shootoutRecordsTabBtn" class="tab-btn" type="button" aria-selected="false">Shootout Records</button>
           <button id="newsTabBtn" class="tab-btn" type="button" aria-selected="false">News</button>
           <button id="rivalsTabBtn" class="tab-btn" type="button" aria-selected="false">Rivals</button>
           <button id="collegesTabBtn" class="tab-btn" type="button" aria-selected="false">Colleges</button>
@@ -369,6 +371,31 @@
           </div>
         </section>
 
+        <section id="shootoutRecordsPanel" class="panel shootout-records-panel" hidden>
+          <div class="shootout-records-header">
+            <div class="shootout-records-heading">
+              <h2>Shootout Records</h2>
+              <p class="subtle">Career player shootout records from games retained in the loaded league file.</p>
+            </div>
+            <label class="shootout-records-sort" for="shootoutRecordsSort">
+              <span>Sort by</span>
+              <select id="shootoutRecordsSort" class="sort-select">
+                <option value="wins">Wins</option>
+                <option value="appearances">Appearances</option>
+                <option value="winPct">Win %</option>
+                <option value="shootPct">Shootout %</option>
+                <option value="makes">Makes</option>
+                <option value="attempts">Attempts</option>
+              </select>
+            </label>
+          </div>
+          <div id="shootoutRecordsWrap" class="shootout-records-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to calculate player shootout records.</p>
+            </div>
+          </div>
+        </section>
+
         <section id="newsPanel" class="panel news-panel" hidden>
           <div class="news-header">
             <h2>News</h2>
@@ -484,6 +511,7 @@
     <script src="./color-schemes.js?v=20260922-f3dc9b-cream"></script>
     <script src="./all-time-leaders.js?v=20260926-ws-average-fix"></script>
     <script src="./records-player-images.js"></script>
+    <script src="./shootout-records.js?v=20260927-shootout-records"></script>
     <script src="./deferred-heavy-views.js?v=20260926-hof-stability"></script>
     <script src="./hall-of-fame-fallback.js?v=20260926-hof-stability"></script>
     <script src="./news.js?v=20260922-shared-league-file"></script>
