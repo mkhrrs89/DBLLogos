@@ -16,6 +16,7 @@
     allTimeLeadersTabBtn: 'allTimeLeadersPanel',
     hallOfFameTabBtn: 'hallOfFamePanel',
     recordsTabBtn: 'recordsPanel',
+    shootoutRecordsTabBtn: 'shootoutRecordsPanel',
     newsTabBtn: 'newsPanel',
     rivalsTabBtn: 'rivalsPanel',
     draftProspectsTabBtn: 'draftProspectsPanel',
