@@ -1,5 +1,5 @@
 (() => {
-  const CACHE_KEY = 'dbl-logo-shootout-records:v1';
+  const CACHE_KEY = 'dbl-logo-shootout-records:v2';
 
   const tabBtn = document.getElementById('shootoutRecordsTabBtn');
   const panel = document.getElementById('shootoutRecordsPanel');
@@ -19,6 +19,9 @@
   let loadingVersion = -1;
   let records = [];
   let shootoutCount = 0;
+  let coverageStart = null;
+  let coverageEnd = null;
+  let detailedGameStart = null;
   let cachedPayload = loadCache();
 
   sortSelect?.addEventListener('change', render);
@@ -41,11 +44,17 @@
     loadingVersion = -1;
     records = [];
     shootoutCount = 0;
+    coverageStart = null;
+    coverageEnd = null;
+    detailedGameStart = null;
 
     const signature = fileSignature(file);
     if (cachedPayload?.signature === signature) {
       records = normalizeCachedRecords(cachedPayload.records);
       shootoutCount = Number(cachedPayload.shootoutCount) || 0;
+      coverageStart = readNumber(cachedPayload.coverageStart);
+      coverageEnd = readNumber(cachedPayload.coverageEnd);
+      detailedGameStart = readNumber(cachedPayload.detailedGameStart);
       loadedVersion = fileVersion;
       if (!panel.hidden) render();
       return;
@@ -72,6 +81,9 @@
     loadingVersion = -1;
     records = [];
     shootoutCount = 0;
+    coverageStart = null;
+    coverageEnd = null;
+    detailedGameStart = null;
 
     try {
       localStorage.removeItem(CACHE_KEY);
@@ -110,20 +122,55 @@
       await waitForMainLeagueLoad(version);
       if (!isCurrent(file, version)) return;
 
-      const shootouts = [];
+      const shootoutsByKey = new Map();
       const participantPids = new Set();
+      let earliestDetailedSeason = null;
 
       await stream.forEachTopLevelArrayItem(file, 'games', (game) => {
         if (!isCurrent(file, version)) return;
         const parsed = parseShootoutGame(game);
         if (!parsed) return;
 
-        shootouts.push(parsed);
+        const key = getShootoutKey(parsed);
+        shootoutsByKey.set(key, parsed);
+        participantPids.add(parsed.winner.pid);
+        participantPids.add(parsed.loser.pid);
+
+        if (Number.isFinite(parsed.season)) {
+          earliestDetailedSeason = earliestDetailedSeason === null
+            ? parsed.season
+            : Math.min(earliestDetailedSeason, parsed.season);
+        }
+      });
+
+      if (!isCurrent(file, version)) return;
+
+      showLoading('Backfilling older shootouts from the event log…');
+
+      await stream.forEachTopLevelArrayItem(file, 'events', (event) => {
+        if (!isCurrent(file, version)) return;
+        const parsed = parseShootoutEvent(event);
+        if (!parsed) return;
+
+        const key = getShootoutKey(parsed);
+        if (!shootoutsByKey.has(key)) {
+          shootoutsByKey.set(key, parsed);
+        }
+
         participantPids.add(parsed.winner.pid);
         participantPids.add(parsed.loser.pid);
       });
 
       if (!isCurrent(file, version)) return;
+
+      const shootouts = Array.from(shootoutsByKey.values());
+      const seasons = shootouts
+        .map((shootout) => Number(shootout.season))
+        .filter(Number.isFinite);
+
+      coverageStart = seasons.length ? Math.min(...seasons) : null;
+      coverageEnd = seasons.length ? Math.max(...seasons) : null;
+      detailedGameStart = earliestDetailedSeason;
 
       showLoading('Matching shootout players to photos…');
 
@@ -148,6 +195,9 @@
       cachedPayload = {
         signature: fileSignature(file),
         shootoutCount,
+        coverageStart,
+        coverageEnd,
+        detailedGameStart,
         records,
       };
       saveCache(cachedPayload);
@@ -216,7 +266,75 @@
         makes: lostShootoutPoints,
         attempts: firstFiniteNumber(lostTeam.sAtt),
       },
+      source: 'game',
     };
+  }
+
+  function parseShootoutEvent(event = {}) {
+    const text = String(event?.text || '');
+    if (!/defeated/i.test(text) || !/shootout/i.test(text)) return null;
+
+    const participants = extractShootoutParticipants(text);
+    if (participants.length < 2) return null;
+
+    const shootoutScore = extractShootoutScore(text);
+    if (!shootoutScore) return null;
+
+    const gidMatch = text.match(/\/game_log\/[^/"']+\/\d+\/(\d+)/i);
+    const regulationMatch = text.match(/>(\d+)\s*[-–]\s*(\d+)\s*\(\d+\s*[-–]\s*\d+\)<\/a>/i);
+
+    return {
+      gid: gidMatch ? Number(gidMatch[1]) : null,
+      eid: readNumber(event?.eid),
+      season: readNumber(event?.season),
+      day: null,
+      playoffs: false,
+      regulationScore: {
+        winner: regulationMatch ? Number(regulationMatch[1]) : null,
+        loser: regulationMatch ? Number(regulationMatch[2]) : null,
+      },
+      winner: {
+        pid: participants[0].pid,
+        name: participants[0].name,
+        makes: shootoutScore.winner,
+        attempts: null,
+      },
+      loser: {
+        pid: participants[1].pid,
+        name: participants[1].name,
+        makes: shootoutScore.loser,
+        attempts: null,
+      },
+      source: 'event',
+    };
+  }
+
+  function extractShootoutScore(text) {
+    const matches = Array.from(String(text || '').matchAll(/\((\d+)\s*[-–]\s*(\d+)\)/g));
+    if (!matches.length) return null;
+
+    const match = matches[matches.length - 1];
+    return {
+      winner: Number(match[1]),
+      loser: Number(match[2]),
+    };
+  }
+
+  function getShootoutKey(shootout = {}) {
+    if (Number.isFinite(Number(shootout.gid))) {
+      return `gid:${Number(shootout.gid)}`;
+    }
+    if (Number.isFinite(Number(shootout.eid))) {
+      return `event:${Number(shootout.eid)}`;
+    }
+    return [
+      'fallback',
+      shootout.season,
+      shootout.winner?.pid,
+      shootout.loser?.pid,
+      shootout.winner?.makes,
+      shootout.loser?.makes,
+    ].join(':');
   }
 
   function extractShootoutParticipants(html) {
@@ -250,6 +368,7 @@
         wins: 0,
         losses: 0,
         makes: 0,
+        attemptMakes: 0,
         attempts: 0,
         history: [],
       };
@@ -264,13 +383,19 @@
       winner.appearances += 1;
       winner.wins += 1;
       winner.makes += Number(game.winner.makes) || 0;
-      winner.attempts += Number(game.winner.attempts) || 0;
+      if (Number.isFinite(game.winner.attempts)) {
+        winner.attemptMakes += Number(game.winner.makes) || 0;
+        winner.attempts += game.winner.attempts;
+      }
       winner.history.push(buildHistoryEntry(game, true));
 
       loser.appearances += 1;
       loser.losses += 1;
       loser.makes += Number(game.loser.makes) || 0;
-      loser.attempts += Number(game.loser.attempts) || 0;
+      if (Number.isFinite(game.loser.attempts)) {
+        loser.attemptMakes += Number(game.loser.makes) || 0;
+        loser.attempts += game.loser.attempts;
+      }
       loser.history.push(buildHistoryEntry(game, false));
     }
 
@@ -313,6 +438,7 @@
       regulationOpponentScore: winnerSide
         ? game.regulationScore.loser
         : game.regulationScore.winner,
+      source: game.source || 'game',
     };
   }
 
@@ -327,7 +453,17 @@
 
     const summary = document.createElement('p');
     summary.className = 'shootout-records-summary';
-    summary.textContent = `${shootoutCount.toLocaleString()} stored shootouts · ${records.length.toLocaleString()} players`;
+    const summaryParts = [
+      `${shootoutCount.toLocaleString()} stored shootouts`,
+      `${records.length.toLocaleString()} players`,
+    ];
+    if (Number.isFinite(coverageStart) && Number.isFinite(coverageEnd)) {
+      summaryParts.push(`history ${coverageStart}–${coverageEnd}`);
+    }
+    if (Number.isFinite(detailedGameStart) && Number.isFinite(coverageEnd) && detailedGameStart > coverageStart) {
+      summaryParts.push(`attempt data ${detailedGameStart}–${coverageEnd}`);
+    }
+    summary.textContent = summaryParts.join(' · ');
     wrap.appendChild(summary);
 
     const list = document.createElement('div');
@@ -344,7 +480,7 @@
   function compareRecords(a, b) {
     const mode = sortSelect?.value || 'wins';
     const winPct = (player) => player.appearances > 0 ? player.wins / player.appearances : 0;
-    const shootPct = (player) => player.attempts > 0 ? player.makes / player.attempts : 0;
+    const shootPct = (player) => player.attempts > 0 ? player.attemptMakes / player.attempts : 0;
 
     const comparators = {
       wins: () => (b.wins - a.wins)
@@ -410,8 +546,8 @@
     stats.append(
       buildStat('Shootouts', player.appearances),
       buildStat('Makes', player.makes),
-      buildStat('Attempts', player.attempts),
-      buildStat('Shootout %', formatPercent(player.makes, player.attempts)),
+      buildStat('Known att.', player.attempts || '—'),
+      buildStat('Shootout %', formatPercent(player.attemptMakes, player.attempts)),
       buildStat('Win %', formatPercent(player.wins, player.appearances)),
     );
 
@@ -498,6 +634,8 @@
     if (game.playoffs) metaParts.push('Playoffs');
     if (Number.isFinite(game.ownAttempts)) {
       metaParts.push(`${game.ownScore}/${game.ownAttempts} shooting`);
+    } else if (game.source === 'event') {
+      metaParts.push('attempts not retained');
     }
 
     const meta = document.createElement('span');
@@ -597,6 +735,7 @@
         wins: Number(record.wins) || 0,
         losses: Number(record.losses) || 0,
         makes: Number(record.makes) || 0,
+        attemptMakes: Number(record.attemptMakes) || 0,
         attempts: Number(record.attempts) || 0,
         history: Array.isArray(record.history) ? record.history : [],
       }));
