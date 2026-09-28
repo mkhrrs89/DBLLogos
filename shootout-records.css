@@ -1,0 +1,327 @@
+.shootout-records-panel {
+  min-width: 0;
+  padding: 14px;
+}
+
+.shootout-records-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.shootout-records-heading {
+  min-width: 0;
+}
+
+.shootout-records-heading h2 {
+  margin: 0;
+}
+
+.shootout-records-heading .subtle {
+  margin-top: 5px;
+}
+
+.shootout-records-sort {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.shootout-records-wrap.empty-state {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.02);
+}
+
+.shootout-records-summary {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.shootout-player-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.shootout-player-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.03);
+}
+
+.shootout-player-main {
+  position: relative;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 96px;
+  border-bottom: 1px solid var(--line);
+}
+
+.shootout-player-rank {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  left: 6px;
+  padding: 2px 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  color: var(--text);
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.shootout-player-photo {
+  width: 96px;
+  height: 96px;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+  background: rgba(255,255,255,0.035);
+  color: var(--accent);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.shootout-player-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.shootout-player-identity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.shootout-player-identity h3 {
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.shootout-player-identity span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.shootout-player-record {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  padding-right: 12px;
+  white-space: nowrap;
+}
+
+.shootout-player-record strong {
+  color: var(--accent);
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.shootout-player-record span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.shootout-player-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.shootout-stat {
+  display: grid;
+  gap: 3px;
+  padding: 9px 8px;
+  border-right: 1px solid var(--line);
+  text-align: center;
+}
+
+.shootout-stat:last-child {
+  border-right: 0;
+}
+
+.shootout-stat span {
+  color: var(--muted);
+  font-size: 0.65rem;
+  line-height: 1.1;
+}
+
+.shootout-stat strong {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.shootout-history summary {
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.shootout-history[open] summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.shootout-history-list {
+  display: grid;
+}
+
+.shootout-history-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.shootout-history-row:last-child {
+  border-bottom: 0;
+}
+
+.shootout-history-result {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+}
+
+.shootout-history-row.is-win .shootout-history-result {
+  color: #b8f5c8;
+  background: rgba(70, 180, 105, 0.16);
+  border: 1px solid rgba(70, 180, 105, 0.32);
+}
+
+.shootout-history-row.is-loss .shootout-history-result {
+  color: #ffc3c3;
+  background: rgba(215, 80, 80, 0.14);
+  border: 1px solid rgba(215, 80, 80, 0.28);
+}
+
+.shootout-history-body {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.shootout-history-body strong {
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.shootout-history-body span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .shootout-player-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .shootout-records-panel {
+    padding: 10px;
+  }
+
+  .shootout-records-header {
+    align-items: stretch;
+    gap: 9px;
+    margin-bottom: 10px;
+  }
+
+  .shootout-records-sort .sort-select {
+    width: 100%;
+  }
+
+  .shootout-player-main {
+    grid-template-columns: 82px minmax(0, 1fr) auto;
+    gap: 9px;
+    min-height: 88px;
+  }
+
+  .shootout-player-photo {
+    width: 82px;
+    height: 88px;
+  }
+
+  .shootout-player-record {
+    padding-right: 9px;
+  }
+
+  .shootout-player-record strong {
+    font-size: 1.08rem;
+  }
+
+  .shootout-player-identity h3 {
+    font-size: 0.92rem;
+  }
+
+  .shootout-player-stats {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .shootout-stat {
+    padding: 8px 3px;
+  }
+
+  .shootout-stat span {
+    font-size: 0.58rem;
+  }
+
+  .shootout-stat strong {
+    font-size: 0.76rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .shootout-player-main {
+    grid-template-columns: 74px minmax(0, 1fr) auto;
+  }
+
+  .shootout-player-photo {
+    width: 74px;
+  }
+
+  .shootout-player-record strong {
+    font-size: 1rem;
+  }
+
+  .shootout-stat span {
+    font-size: 0.54rem;
+  }
+
+  .shootout-stat strong {
+    font-size: 0.7rem;
+  }
+}
