@@ -14,6 +14,7 @@
     uniformsTabBtn: 'uniformsPanel',
     rankingsTabBtn: 'rankingsPanel',
     allTimeLeadersTabBtn: 'allTimeLeadersPanel',
+    teamLeadersTabBtn: 'teamLeadersPanel',
     hallOfFameTabBtn: 'hallOfFamePanel',
     recordsTabBtn: 'recordsPanel',
     shootoutRecordsTabBtn: 'shootoutRecordsPanel',
