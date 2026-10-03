@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="./logos-by-year.css" />
     <link rel="stylesheet" href="./logos-by-team.css" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
+    <link rel="stylesheet" href="./team-leaders.css?v=20261003-cleveland-leaders" />
     <link rel="stylesheet" href="./records-player-images.css?v=20260926-mobile-records" />
     <link rel="stylesheet" href="./shootout-records.css?v=20260927-shootout-records" />
     <link rel="stylesheet" href="./news.css?v=20260919-news-logo-inline" />
@@ -110,6 +111,7 @@
           <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
           <button id="rankingsTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Teams</button>
           <button id="allTimeLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Leaders</button>
+          <button id="teamLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">Team Leaders</button>
           <button id="hallOfFameTabBtn" class="tab-btn" type="button" aria-selected="false">Hall of Fame</button>
           <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
           <button id="shootoutRecordsTabBtn" class="tab-btn" type="button" aria-selected="false">Shootout Records</button>
@@ -287,6 +289,18 @@
           <div id="allTimeLeadersWrap" class="all-time-leaders-wrap empty-state">
             <div class="empty-copy">
               <p>Load or re-upload a league file to calculate career statistical leaders.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="teamLeadersPanel" class="panel team-leaders-panel" hidden>
+          <div class="team-leaders-header">
+            <h2>Team Leaders</h2>
+            <p id="teamLeadersSubtitle" class="subtle">Top 10 regular-season career totals for the Cleveland franchise.</p>
+          </div>
+          <div id="teamLeadersWrap" class="team-leaders-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to calculate Cleveland franchise leaders.</p>
             </div>
           </div>
         </section>
@@ -510,6 +524,7 @@
     <script src="./logos-by-team.js"></script>
     <script src="./color-schemes.js?v=20260922-f3dc9b-cream"></script>
     <script src="./all-time-leaders.js?v=20260926-ws-average-fix"></script>
+    <script src="./team-leaders.js?v=20261003-cleveland-leaders"></script>
     <script src="./records-player-images.js"></script>
     <script src="./shootout-records.js?v=20260928-full-history"></script>
     <script src="./deferred-heavy-views.js?v=20260926-hof-stability"></script>
@@ -520,6 +535,6 @@
     <script src="./rivals.js?v=20260925-pot70-filter"></script>
     <script src="./colleges.js?v=20260928-grouped-assignments"></script>
     <script src="./settings.js?v=20260921-dark-newspaper"></script>
-    <script src="./tab-router.js?v=20260927-shootout-records"></script>
+    <script src="./tab-router.js?v=20261003-team-leaders"></script>
   </body>
 </html>
