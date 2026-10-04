@@ -1,0 +1,55 @@
+.records-subtabs {
+  display: flex;
+  gap: 7px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.records-subtab-btn {
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.025);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.records-subtab-btn.active {
+  border-color: rgba(var(--accent-rgb), 0.58);
+  background: rgba(var(--accent-rgb), 0.13);
+  color: var(--text);
+}
+
+#recordsAdjustedWrap[hidden],
+#recordsWrap[hidden] {
+  display: none !important;
+}
+
+.records-adjusted-context {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .records-subtabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .records-subtab-btn {
+    width: 100%;
+    padding: 7px 6px;
+    font-size: 0.7rem;
+  }
+
+  #recordsAdjustedWrap {
+    width: 100%;
+  }
+}
