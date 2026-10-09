@@ -1,0 +1,199 @@
+.players-month-panel {
+  min-width: 0;
+  border: 0;
+}
+
+.players-month-header {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.players-month-header h2 {
+  margin: 0;
+}
+
+.players-month-wrap.empty-state {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.018);
+}
+
+.players-month-method {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.players-month-seasons {
+  display: grid;
+  gap: 16px;
+}
+
+.players-month-season {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.02);
+}
+
+.players-month-season-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.players-month-season-heading h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.players-month-season-heading span,
+.players-month-unavailable {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.players-month-unavailable {
+  margin: 0;
+  padding: 13px;
+}
+
+.players-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+
+.players-month-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.025);
+}
+
+.players-month-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 9px;
+  border-bottom: 1px solid var(--line);
+}
+
+.players-month-label strong {
+  font-size: 0.82rem;
+}
+
+.players-month-label span {
+  color: var(--muted);
+  font-size: 0.65rem;
+  text-align: right;
+}
+
+.players-month-player {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  min-height: 82px;
+  align-items: center;
+}
+
+.players-month-photo {
+  width: 82px;
+  height: 82px;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+  background: rgba(255,255,255,0.035);
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.players-month-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.players-month-identity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 8px 9px;
+}
+
+.players-month-identity strong {
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.players-month-identity span {
+  color: var(--muted);
+  font-size: 0.67rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.players-month-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+
+.players-month-stat {
+  display: grid;
+  gap: 2px;
+  padding: 7px 3px;
+  text-align: center;
+  border-right: 1px solid var(--line);
+}
+
+.players-month-stat:last-child {
+  border-right: 0;
+}
+
+.players-month-stat span {
+  color: var(--muted);
+  font-size: 0.56rem;
+}
+
+.players-month-stat strong {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .players-month-grid {
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .players-month-season-heading {
+    padding: 9px 10px;
+  }
+
+  .players-month-player {
+    grid-template-columns: 76px minmax(0, 1fr);
+    min-height: 76px;
+  }
+
+  .players-month-photo {
+    width: 76px;
+    height: 76px;
+  }
+}
