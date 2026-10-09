@@ -1,6 +1,20 @@
 (() => {
   const CACHE_KEY = 'dbl-logo-players-of-month:v1';
   const GAMES_PER_MONTH = 15;
+  const MONTH_NAMES = [
+    'November',
+    'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+  ];
 
   const tabBtn = document.getElementById('playersOfMonthTabBtn');
   const panel = document.getElementById('playersOfMonthPanel');
@@ -472,7 +486,7 @@
     label.className = 'players-month-label';
 
     const monthName = document.createElement('strong');
-    monthName.textContent = `Month ${month.month}`;
+    monthName.textContent = getMonthName(month.month);
 
     const range = document.createElement('span');
     range.textContent = `≈ team games ${month.rangeStart}–${month.rangeEnd}`;
@@ -510,6 +524,11 @@
 
     card.append(label, playerRow, stats);
     return card;
+  }
+
+  function getMonthName(monthNumber) {
+    const index = Math.max(0, Number(monthNumber) - 1);
+    return MONTH_NAMES[index % MONTH_NAMES.length] || `Month ${monthNumber}`;
   }
 
   function buildPhoto(player) {
