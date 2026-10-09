@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="./logos-by-team.css" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
     <link rel="stylesheet" href="./team-leaders.css?v=20261003-cleveland-leaders" />
+    <link rel="stylesheet" href="./players-of-month.css?v=20261008-players-month" />
     <link rel="stylesheet" href="./records-player-images.css?v=20260926-mobile-records" />
     <link rel="stylesheet" href="./records-adjusted.css?v=20261004-adjusted-points" />
     <link rel="stylesheet" href="./shootout-records.css?v=20260927-shootout-records" />
@@ -113,6 +114,7 @@
           <button id="rankingsTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Teams</button>
           <button id="allTimeLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Leaders</button>
           <button id="teamLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">Team Leaders</button>
+          <button id="playersOfMonthTabBtn" class="tab-btn" type="button" aria-selected="false">Players of the Month</button>
           <button id="hallOfFameTabBtn" class="tab-btn" type="button" aria-selected="false">Hall of Fame</button>
           <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
           <button id="shootoutRecordsTabBtn" class="tab-btn" type="button" aria-selected="false">Shootout Records</button>
@@ -302,6 +304,18 @@
           <div id="teamLeadersWrap" class="team-leaders-wrap empty-state">
             <div class="empty-copy">
               <p>Load a league file to calculate Cleveland franchise leaders.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="playersOfMonthPanel" class="panel players-month-panel" hidden>
+          <div class="players-month-header">
+            <h2>Players of the Month</h2>
+            <p class="subtle">Regular season only. Each league month represents roughly 15 games per team.</p>
+          </div>
+          <div id="playersOfMonthWrap" class="players-month-wrap empty-state">
+            <div class="empty-copy">
+              <p>Load a league file to calculate Players of the Month.</p>
             </div>
           </div>
         </section>
@@ -551,6 +565,7 @@
     <script src="./color-schemes.js?v=20260922-f3dc9b-cream"></script>
     <script src="./all-time-leaders.js?v=20260926-ws-average-fix"></script>
     <script src="./team-leaders.js?v=20261003-cleveland-leaders"></script>
+    <script src="./players-of-month.js?v=20261008-players-month"></script>
     <script src="./records-player-images.js"></script>
     <script src="./records-adjusted.js?v=20261004-adjusted-points"></script>
     <script src="./shootout-records.js?v=20260928-full-history"></script>
@@ -562,6 +577,6 @@
     <script src="./rivals.js?v=20260925-pot70-filter"></script>
     <script src="./colleges.js?v=20260928-grouped-assignments"></script>
     <script src="./settings.js?v=20260921-dark-newspaper"></script>
-    <script src="./tab-router.js?v=20261003-team-leaders"></script>
+    <script src="./tab-router.js?v=20261008-players-month"></script>
   </body>
 </html>
