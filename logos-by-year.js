@@ -245,7 +245,9 @@
       teams.push({
         teamName,
         tid: Number.isFinite(row?.tid) ? row.tid : Number.MAX_SAFE_INTEGER,
-        urls: getLogoCandidates(row, selectedYear, entry),
+        // Only the exact selected season is eligible for this image.
+        // A failed image must never be replaced by an older franchise logo.
+        url: normalizeUrl(entry.primaryLogoURL) || normalizeUrl(entry.smallLogoURL),
       });
     }
 
@@ -262,40 +264,12 @@
     updateLogoCount();
   }
 
-  function getLogoCandidates(row, year, currentEntry) {
-    const seen = new Set();
-    const urls = [];
-    const add = (value) => {
-      const url = normalizeUrl(value);
-      if (url && !seen.has(url)) {
-        seen.add(url);
-        urls.push(url);
-      }
-    };
-
-    // Try the selected season's full-size image, normalized fallback and small
-    // image first. Then fall back to older seasons, but never future designs.
-    const entries = [currentEntry];
-    for (const [entryYear, entry] of [...row.entriesByYear.entries()]
-      .filter(([entryYear]) => Number(entryYear) < year && Number.isFinite(Number(entryYear)))
-      .sort((a, b) => Number(b[0]) - Number(a[0]))) {
-      if (entry) entries.push(entry);
-    }
-
-    for (const entry of entries) {
-      add(entry.primaryLogoURL);
-      add(entry.fallbackLogoURL);
-      add(entry.smallLogoURL);
-    }
-    return urls;
-  }
-
   function buildLogoItem(team) {
     const item = document.createElement('div');
     item.className = 'logos-by-year-item';
     item.title = team.teamName;
 
-    if (!team.urls.length) {
+    if (!team.url) {
       showMissingLogo(item, team.teamName);
       return item;
     }
@@ -306,21 +280,17 @@
     image.decoding = 'async';
     image.referrerPolicy = 'no-referrer';
 
-    let candidateIndex = 0;
-    const tryNextUrl = () => {
-      if (!item.isConnected && candidateIndex > 0) return;
-      if (candidateIndex >= team.urls.length) {
-        image.remove();
-        showMissingLogo(item, team.teamName);
-        updateLogoCount();
-        return;
-      }
-      image.src = team.urls[candidateIndex++];
-    };
+    // Broken/offline images leave the team's gallery slot visible. Do not
+    // attempt historical URLs: those may represent a different team design.
+    image.addEventListener('error', () => {
+      if (!item.isConnected) return;
+      image.remove();
+      showMissingLogo(item, team.teamName);
+      updateLogoCount();
+    }, { once: true });
 
-    image.addEventListener('error', tryNextUrl);
     item.appendChild(image);
-    tryNextUrl();
+    image.src = team.url;
     return item;
   }
 
@@ -336,7 +306,7 @@
     const name = document.createElement('span');
     name.textContent = teamName;
     const message = document.createElement('small');
-    message.textContent = 'No logo available';
+    message.textContent = 'Logo unavailable';
     placeholder.append(name, message);
     item.appendChild(placeholder);
   }
