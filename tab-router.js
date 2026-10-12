@@ -30,6 +30,36 @@
   let activeTabId = null;
   let restoreObserver = null;
 
+  function getGroups() {
+    return Array.from(tabBar.querySelectorAll('.tab-group'));
+  }
+
+  function closeGroups(except = null) {
+    for (const group of getGroups()) {
+      if (group !== except) group.open = false;
+    }
+  }
+
+  function syncActiveGroup(button) {
+    for (const group of getGroups()) {
+      group.classList.toggle('has-active', Boolean(button && group.contains(button)));
+    }
+  }
+
+  for (const group of getGroups()) {
+    group.addEventListener('toggle', () => {
+      if (group.open) closeGroups(group);
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    if (!tabBar.contains(event.target)) closeGroups();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeGroups();
+  });
+
   function getPanelId(button) {
     if (!(button instanceof HTMLElement)) return '';
     return button.dataset.panelId || PANEL_BY_TAB_ID[button.id] || '';
@@ -54,6 +84,7 @@
 
     panel.hidden = false;
     activeTabId = button.id || null;
+    syncActiveGroup(button);
 
     if (persist && activeTabId) {
       try {
@@ -70,6 +101,11 @@
         source,
       },
     }));
+
+    if (source === 'click') {
+      const group = button.closest('.tab-group');
+      if (group) group.open = false;
+    }
 
     return true;
   }
@@ -119,6 +155,7 @@
     activate,
     activateById,
     getActiveTabId: () => activeTabId,
+    closeGroups,
   };
 
   window.queueMicrotask(restoreSavedTab);
