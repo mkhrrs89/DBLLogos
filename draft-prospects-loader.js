@@ -35,9 +35,15 @@
   tabBtn.setAttribute('aria-selected', 'false');
   tabBtn.textContent = 'Draft Prospects';
 
-  if (playerGroupMenu) playerGroupMenu.append(tabBtn);
-  else if (rivalsTab) rivalsTab.after(tabBtn);
-  else tabBar?.append(tabBtn);
+  if (playerGroupMenu) {
+    const collegesTab = playerGroupMenu.querySelector('#collegesTabBtn');
+    if (collegesTab) playerGroupMenu.insertBefore(tabBtn, collegesTab);
+    else playerGroupMenu.append(tabBtn);
+  } else if (rivalsTab) {
+    rivalsTab.after(tabBtn);
+  } else {
+    tabBar?.append(tabBtn);
+  }
 
   const panel = document.createElement('section');
   panel.id = 'draftProspectsPanel';
