@@ -1,0 +1,234 @@
+.ratings-panel {
+  min-width: 0;
+  border: 0;
+}
+
+.ratings-header {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.ratings-header h2,
+.ratings-section-heading h3,
+.ratings-influence-card h4,
+.ratings-player-heading h4 {
+  margin: 0;
+}
+
+.ratings-wrap {
+  display: grid;
+  gap: 22px;
+}
+
+.ratings-wrap.empty-state {
+  min-height: 220px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.018);
+}
+
+.ratings-guide,
+.ratings-rankings {
+  min-width: 0;
+}
+
+.ratings-section-heading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.ratings-section-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.ratings-influence-grid,
+.ratings-player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.ratings-influence-card,
+.ratings-player-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.025);
+}
+
+.ratings-influence-card {
+  padding: 11px;
+}
+
+.ratings-influence-card h4 {
+  font-size: 0.92rem;
+}
+
+.ratings-direction {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.ratings-influence-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.ratings-influence-chip {
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.08);
+  font-size: 0.67rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.ratings-influence-chip.is-negative {
+  background: rgba(210, 92, 92, 0.09);
+}
+
+.ratings-player-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 11px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.ratings-player-heading h4 {
+  font-size: 0.92rem;
+}
+
+.ratings-player-heading span {
+  color: var(--muted);
+  font-size: 0.62rem;
+  text-align: right;
+}
+
+.ratings-player-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ratings-player-item {
+  display: grid;
+  grid-template-columns: 24px 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--line);
+  padding-right: 9px;
+}
+
+.ratings-player-item:last-child {
+  border-bottom: 0;
+}
+
+.ratings-player-rank {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 5px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.13);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.ratings-player-photo {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(255,255,255,0.035);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.ratings-player-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.ratings-player-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ratings-player-copy strong,
+.ratings-player-copy span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ratings-player-copy strong {
+  font-size: 0.78rem;
+}
+
+.ratings-player-copy span {
+  color: var(--muted);
+  font-size: 0.61rem;
+}
+
+.ratings-player-score {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ratings-rankings-empty {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 600px) {
+  .ratings-influence-grid,
+  .ratings-player-grid {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .ratings-player-item {
+    grid-template-columns: 22px 48px minmax(0, 1fr) auto;
+    min-height: 48px;
+    gap: 6px;
+  }
+
+  .ratings-player-photo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .ratings-player-copy strong {
+    font-size: 0.76rem;
+  }
+}
