@@ -15,6 +15,7 @@
     rankingsTabBtn: 'rankingsPanel',
     allTimeLeadersTabBtn: 'allTimeLeadersPanel',
     teamLeadersTabBtn: 'teamLeadersPanel',
+    ratingsTabBtn: 'ratingsPanel',
     playersOfMonthTabBtn: 'playersOfMonthPanel',
     hallOfFameTabBtn: 'hallOfFamePanel',
     recordsTabBtn: 'recordsPanel',
