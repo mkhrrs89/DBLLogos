@@ -158,5 +158,6 @@
     closeGroups,
   };
 
+  syncActiveGroup(tabBar.querySelector('.tab-btn.active'));
   window.queueMicrotask(restoreSavedTab);
 })();
