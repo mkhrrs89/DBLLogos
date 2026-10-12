@@ -223,7 +223,7 @@
 (() => {
   if (document.querySelector('script[data-dbl-draft-loader]')) return;
   const script = document.createElement('script');
-  script.src = './draft-prospects-loader.js?v=20261012-grouped-nav';
+  script.src = './draft-prospects-loader.js?v=20261012-grouped-nav-v2';
   script.dataset.dblDraftLoader = 'true';
   document.body.append(script);
 })();
