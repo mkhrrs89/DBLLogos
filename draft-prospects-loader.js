@@ -26,6 +26,7 @@
   document.head.append(fullscreenStyle);
 
   const tabBar = document.querySelector('.tab-bar');
+  const playerGroupMenu = document.querySelector('.tab-group-menu[data-tab-group="players"]');
   const rivalsTab = document.getElementById('rivalsTabBtn');
   const tabBtn = document.createElement('button');
   tabBtn.id = 'draftProspectsTabBtn';
@@ -34,7 +35,8 @@
   tabBtn.setAttribute('aria-selected', 'false');
   tabBtn.textContent = 'Draft Prospects';
 
-  if (rivalsTab) rivalsTab.after(tabBtn);
+  if (playerGroupMenu) playerGroupMenu.append(tabBtn);
+  else if (rivalsTab) rivalsTab.after(tabBtn);
   else tabBar?.append(tabBtn);
 
   const panel = document.createElement('section');
