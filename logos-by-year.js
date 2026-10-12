@@ -24,6 +24,11 @@
   yearSelect.before(previousYearBtn);
   yearSelect.after(nextYearBtn);
 
+  const logoCount = document.createElement('span');
+  logoCount.className = 'logos-by-year-count';
+  logoCount.setAttribute('aria-live', 'polite');
+  nextYearBtn.after(logoCount);
+
   const otherPanelIds = [
     'logosPanel',
     'colorSchemesPanel',
@@ -98,6 +103,7 @@
     yearSelect.disabled = true;
     logoBox.replaceChildren();
     updateYearNavigation();
+    updateLogoCount();
   });
 
   if (statusMessage) {
@@ -219,45 +225,132 @@
     logoBox.replaceChildren();
 
     if (!timeline || !Number.isFinite(selectedYear) || !Array.isArray(timeline.rows)) {
+      updateLogoCount();
       return;
     }
 
-    const logos = [];
+    // One slot per team active in the selected year. Missing or failed images
+    // must not silently remove a franchise from the gallery.
+    const teams = [];
     for (const row of timeline.rows) {
       const entry = row?.entriesByYear instanceof Map
         ? row.entriesByYear.get(selectedYear)
         : null;
-      const url = normalizeUrl(entry?.primaryLogoURL);
-      if (!entry || !url) continue;
+      if (!entry) continue;
 
-      logos.push({
-        url,
-        teamName: typeof entry.teamName === 'string' ? entry.teamName : '',
+      const teamName = typeof entry.teamName === 'string' && entry.teamName.trim()
+        ? entry.teamName.trim()
+        : (row.latestLocation || `Team ${row.tid ?? '?'}`);
+
+      teams.push({
+        teamName,
         tid: Number.isFinite(row?.tid) ? row.tid : Number.MAX_SAFE_INTEGER,
+        urls: getLogoCandidates(row, selectedYear, entry),
       });
     }
 
-    logos.sort((a, b) => (
+    teams.sort((a, b) => (
       a.teamName.localeCompare(b.teamName)
       || a.tid - b.tid
     ));
 
     const fragment = document.createDocumentFragment();
-    for (const logo of logos) {
-      const image = document.createElement('img');
-      image.src = logo.url;
-      image.alt = '';
-      image.loading = 'eager';
-      image.decoding = 'async';
-      image.setAttribute('aria-hidden', 'true');
-      image.addEventListener('error', () => image.remove(), { once: true });
-      fragment.appendChild(image);
+    for (const team of teams) {
+      fragment.appendChild(buildLogoItem(team));
+    }
+    logoBox.appendChild(fragment);
+    updateLogoCount();
+  }
+
+  function getLogoCandidates(row, year, currentEntry) {
+    const seen = new Set();
+    const urls = [];
+    const add = (value) => {
+      const url = normalizeUrl(value);
+      if (url && !seen.has(url)) {
+        seen.add(url);
+        urls.push(url);
+      }
+    };
+
+    // Try the selected season's full-size image, normalized fallback and small
+    // image first. Then fall back to older seasons, but never future designs.
+    const entries = [currentEntry];
+    for (const [entryYear, entry] of [...row.entriesByYear.entries()]
+      .filter(([entryYear]) => Number(entryYear) < year && Number.isFinite(Number(entryYear)))
+      .sort((a, b) => Number(b[0]) - Number(a[0]))) {
+      if (entry) entries.push(entry);
     }
 
-    logoBox.appendChild(fragment);
+    for (const entry of entries) {
+      add(entry.primaryLogoURL);
+      add(entry.fallbackLogoURL);
+      add(entry.smallLogoURL);
+    }
+    return urls;
+  }
+
+  function buildLogoItem(team) {
+    const item = document.createElement('div');
+    item.className = 'logos-by-year-item';
+    item.title = team.teamName;
+
+    if (!team.urls.length) {
+      showMissingLogo(item, team.teamName);
+      return item;
+    }
+
+    const image = document.createElement('img');
+    image.alt = `${team.teamName} logo, ${selectedYear}`;
+    image.loading = 'eager';
+    image.decoding = 'async';
+    image.referrerPolicy = 'no-referrer';
+
+    let candidateIndex = 0;
+    const tryNextUrl = () => {
+      if (!item.isConnected && candidateIndex > 0) return;
+      if (candidateIndex >= team.urls.length) {
+        image.remove();
+        showMissingLogo(item, team.teamName);
+        updateLogoCount();
+        return;
+      }
+      image.src = team.urls[candidateIndex++];
+    };
+
+    image.addEventListener('error', tryNextUrl);
+    item.appendChild(image);
+    tryNextUrl();
+    return item;
+  }
+
+  function showMissingLogo(item, teamName) {
+    item.classList.add('logos-by-year-unavailable');
+    item.title = `${teamName} — logo unavailable`;
+
+    const placeholder = document.createElement('div');
+    placeholder.className = 'logos-by-year-placeholder';
+    placeholder.setAttribute('role', 'img');
+    placeholder.setAttribute('aria-label', `${teamName}: logo unavailable`);
+
+    const name = document.createElement('span');
+    name.textContent = teamName;
+    const message = document.createElement('small');
+    message.textContent = 'No logo available';
+    placeholder.append(name, message);
+    item.appendChild(placeholder);
+  }
+
+  function updateLogoCount() {
+    const total = logoBox.childElementCount;
+    const unavailable = logoBox.querySelectorAll('.logos-by-year-unavailable').length;
+    logoCount.textContent = total
+      ? `${total - unavailable} of ${total} team logos`
+      : '';
   }
 
   function normalizeUrl(value) {
     return typeof value === 'string' ? value.trim() : '';
   }
+
 })();
