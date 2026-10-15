@@ -106,6 +106,7 @@
 
       const generated = [];
       generated.push(...buildSeasonAndCareerNews(playerData.rows));
+      generated.push(...buildDeathNews(playerData.deaths));
 
       showLoading('Scanning games for record performances…');
       generated.push(...await buildSingleGameNews(file, version, playerData));
@@ -142,6 +143,7 @@
     const imageByPid = new Map();
     const imageByName = new Map();
     const seenPlayers = new Set();
+    const deaths = [];
 
     await stream.forEachTopLevelArrayItem(file, 'players', (player) => {
       if (!isCurrent(file, version)) return;
@@ -159,6 +161,41 @@
       }
       if (imageURL && name !== 'Unknown Player') {
         imageByName.set(name.toLocaleLowerCase(), imageURL);
+      }
+
+
+      const diedYear = readOptionalNumber(player?.diedYear);
+      if (Number.isInteger(diedYear) && diedYear > 0) {
+        const ratings = Array.isArray(player?.ratings) ? player.ratings : [];
+        const peakOverall = ratings.reduce((peak, rating) => {
+          const overall = readOptionalNumber(rating?.ovr);
+          return overall === null ? peak : Math.max(peak, overall);
+        }, -Infinity);
+        const stints = [];
+        const seenStints = new Set();
+        for (const stat of Array.isArray(player?.stats) ? player.stats : []) {
+          const tid = readOptionalNumber(stat?.tid);
+          const season = readOptionalNumber(stat?.season);
+          if (tid === null || tid < 0 || !Number.isInteger(season)) continue;
+          const key = tid + "|" + season;
+          if (seenStints.has(key)) continue;
+          seenStints.add(key);
+          stints.push({ tid, season });
+        }
+        deaths.push({
+          diedYear,
+          bornYear: readOptionalNumber(player?.born?.year),
+          retiredYear: readOptionalNumber(player?.retiredYear ?? player?.retired?.year),
+          peakOverall: Number.isFinite(peakOverall) ? peakOverall : null,
+          stints,
+          statsTids: Array.isArray(player?.statsTids)
+            ? player.statsTids.map(readOptionalNumber).filter((tid) => tid !== null && tid >= 0)
+            : [],
+          tid: readOptionalNumber(player?.tid),
+          pid,
+          name,
+          imgURL: imageURL,
+        });
       }
 
       const statsRows = (Array.isArray(player?.stats) ? player.stats : [])
@@ -196,7 +233,83 @@
     });
 
     rows.sort((a, b) => a.season - b.season || a.name.localeCompare(b.name));
-    return { rows, nameByPid, imageByPid, imageByName };
+    return { rows, deaths, nameByPid, imageByPid, imageByName };
+  }
+
+  // BBGM supplies the death year but not an exact death date.
+  function buildDeathNews(deaths) {
+    const timeline = typeof fullTimeline !== 'undefined' ? fullTimeline : null;
+    if (!Array.isArray(deaths) || !Array.isArray(timeline?.rows)) return [];
+
+    const firstYear = Number(timeline.minYear);
+    const lastYear = Number(timeline.maxYear);
+    const rowsByTid = new Map(timeline.rows.map((row) => [Number(row.tid), row]));
+
+    const isClevelandTeamSeason = (tid, season) => {
+      const row = rowsByTid.get(tid);
+      const entry = row?.entriesByYear instanceof Map ? row.entriesByYear.get(season) : null;
+      if (!entry) return false;
+      const location = String(entry.region || '') + ' ' + String(entry.teamName || '');
+      const normalized = location.toLocaleLowerCase().replace(/\s+/g, ' ');
+      return normalized.includes('cleveland') || normalized.includes('crooked river');
+    };
+
+    const result = [];
+    for (const player of deaths) {
+      const year = player.diedYear;
+      if (!Number.isInteger(year) || year < firstYear || year > lastYear) continue;
+
+      // Death immediately retires active BBGM players; a retirement year equal
+      // to the death year must still count as an active-player death.
+      const activeAtDeath = player.retiredYear === null || player.retiredYear >= year;
+      let clevelandAlumnus = player.stints.some(({ tid, season }) => (
+        isClevelandTeamSeason(tid, season)
+      ));
+
+      // statsTids lacks season context. Only use it for franchises that have
+      // always been Cleveland/Crooked River, to avoid false relocation matches.
+      if (!clevelandAlumnus) {
+        clevelandAlumnus = player.statsTids.some((tid) => {
+          const entries = rowsByTid.get(tid)?.entriesByYear;
+          return entries instanceof Map && entries.size > 0
+            && [...entries.entries()].every(([season]) => isClevelandTeamSeason(tid, season));
+        });
+      }
+
+      if (!activeAtDeath && !clevelandAlumnus && !(player.peakOverall >= 60)) continue;
+
+      const latestStint = player.stints
+        .filter(({ season }) => season <= year)
+        .sort((a, b) => b.season - a.season)[0];
+      const teamTid = latestStint?.tid ?? (
+        activeAtDeath && player.tid !== null && player.tid >= 0 ? player.tid : null
+      );
+      const logoSeason = latestStint?.season ?? year;
+      const lastTeamName = teamTid === null ? '' : teamInfoFor(teamTid, logoSeason).name;
+      const age = player.bornYear !== null && year >= player.bornYear
+        ? year - player.bornYear
+        : null;
+      const ageText = age === null ? '' : ' at age ' + age;
+      const peakText = player.peakOverall === null
+        ? ''
+        : ' Peak overall rating: ' + player.peakOverall + '.';
+      const detail = activeAtDeath
+        ? 'The ' + (lastTeamName ? lastTeamName + ' ' : '') + 'player died in ' + year + ' while still active.'
+        : clevelandAlumnus
+          ? 'The former Cleveland/Crooked River player died in ' + year + '.' + peakText
+          : 'The retired player died in ' + year + '.' + peakText;
+
+      result.push(makeItem({
+        season: year,
+        order: 2100000000,
+        type: 'In memoriam',
+        headline: player.name + ' dies' + ageText + '.',
+        detail,
+        key: 'player-death|' + year + '|' + (player.pid ?? (player.name + '|' + (player.bornYear ?? ''))),
+        logoSeason,
+      }, { ...player, tid: teamTid }));
+    }
+    return result;
   }
 
   function buildSeasonAndCareerNews(rows) {
@@ -491,7 +604,7 @@
       const empty = document.createElement('div');
       empty.className = 'empty-copy';
       const paragraph = document.createElement('p');
-      paragraph.textContent = 'No record-related news was found in this league file.';
+      paragraph.textContent = 'No record or player news was found in this league file.';
       empty.appendChild(paragraph);
       wrap.appendChild(empty);
       return;
@@ -568,7 +681,7 @@
 
     const teamLogo = document.createElement('div');
     teamLogo.className = 'news-team-logo';
-    const team = teamInfoFor(item.tid, item.season);
+    const team = teamInfoFor(item.tid, item.logoSeason ?? item.season);
     if (team.logoURL) {
       const image = document.createElement('img');
       image.src = team.logoURL;
@@ -596,7 +709,7 @@
   }
 
   function renderEmpty() {
-    showLoading('Load or re-upload a league file to generate record news.');
+    showLoading('Load or re-upload a league file to generate news.');
   }
 
   function readStat(row, key) {

@@ -18,8 +18,13 @@
 
   restoreSavedNews();
 
+  const hasActiveLeagueFile = () => Boolean(
+    (fileInput.files && fileInput.files.length)
+    || window.DBLLeagueFileHub?.getCurrentFile?.(),
+  );
+
   tabBtn.addEventListener('click', () => {
-    if (fileInput.files && fileInput.files.length) return;
+    if (hasActiveLeagueFile()) return;
 
     // news.js renders its upload prompt first when the original File object is
     // no longer available after a browser/app restart. Restore the saved feed
@@ -91,6 +96,7 @@
   }
 
   async function restoreSavedNews() {
+    if (hasActiveLeagueFile()) return false;
     // First try the old synchronous cache so existing successful saves still
     // restore instantly after this update.
     const legacy = loadLegacySavedNews();
@@ -109,7 +115,7 @@
         request.onerror = () => reject(request.error || new Error('Could not restore News feed.'));
       });
 
-      if (!saved?.html || !Number(saved?.count)) return false;
+      if (!saved?.html || !Number(saved?.count) || hasActiveLeagueFile()) return false;
       applySavedNews(saved);
       return true;
     } catch (error) {
