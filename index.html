@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="./styles.css?v=20261012-grouped-nav" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
+    <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
     <link rel="stylesheet" href="./logos-by-team.css" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
     <link rel="stylesheet" href="./team-leaders.css?v=20261003-cleveland-leaders" />
@@ -122,6 +123,7 @@
             <summary class="tab-group-toggle">Stats &amp; History</summary>
             <div class="tab-group-menu" data-tab-group="history">
               <button id="rankingsTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Teams</button>
+              <button id="championGridTabBtn" class="tab-btn" type="button" aria-selected="false">Champion Grid</button>
               <button id="allTimeLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">All-Time Leaders</button>
               <button id="teamLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">Team Leaders</button>
               <button id="playersOfMonthTabBtn" class="tab-btn" type="button" aria-selected="false">Players of the Month</button>
@@ -312,6 +314,13 @@
             <div class="empty-copy">
               <p>Load a league file to rank every team season.</p>
             </div>
+          </div>
+        </section>
+
+        <section id="championGridPanel" class="panel champion-grid-panel" hidden>
+          <h2>Champion Grid</h2>
+          <div class="champion-grid-scroll" role="region" aria-label="Champions from 1910 through 1979" tabindex="0">
+            <div id="championGrid" class="champion-grid"></div>
           </div>
         </section>
 
@@ -601,6 +610,7 @@
     <script src="./large-file-loader.js?v=20260825-hof-fallback"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
+    <script src="./champion-grid.js?v=20261015-v1"></script>
     <script src="./color-schemes.js?v=20260922-f3dc9b-cream"></script>
     <script src="./all-time-leaders.js?v=20260926-ws-average-fix"></script>
     <script src="./team-leaders.js?v=20261003-cleveland-leaders"></script>

@@ -13,6 +13,7 @@
     bannersTabBtn: 'bannersPanel',
     uniformsTabBtn: 'uniformsPanel',
     rankingsTabBtn: 'rankingsPanel',
+    championGridTabBtn: 'championGridPanel',
     allTimeLeadersTabBtn: 'allTimeLeadersPanel',
     teamLeadersTabBtn: 'teamLeadersPanel',
     ratingsTabBtn: 'ratingsPanel',

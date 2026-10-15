@@ -1,0 +1,60 @@
+.champion-grid-panel {
+  padding: 14px;
+  min-width: 0;
+}
+.champion-grid-panel h2 { margin: 0 0 14px; }
+.champion-grid-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.champion-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 2px;
+  min-width: 800px;
+  padding: 2px;
+  background: var(--line);
+}
+.champion-grid-cell {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  padding: 7px 5px 5px;
+  background: var(--panel);
+  color: inherit;
+}
+.champion-grid-cell.is-preleague {
+  background: #090909;
+  color: #bcbcbc;
+}
+.champion-grid-year {
+  flex: none;
+  display: block;
+  font-size: clamp(11px, 1vw, 14px);
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.champion-grid-logo {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  object-fit: contain;
+  margin-top: 3px;
+}
+@media (max-width: 680px) {
+  .champion-grid-panel { padding: 10px; }
+  .champion-grid { min-width: 760px; }
+  .champion-grid-cell { padding: 5px 3px 4px; }
+  .champion-grid-year { font-size: 11px; }
+}
