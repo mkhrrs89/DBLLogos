@@ -1,0 +1,48 @@
+.headshot-backgrounds-grid {
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 14px 12px;
+}
+.headshot-background-card {
+  min-width: 0;
+}
+.headshot-background-frame {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  min-height: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.025);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.headshot-background-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.headshot-background-card .banner-url-input {
+  min-width: 0;
+}
+.headshot-backgrounds-status,
+.saved-links-status {
+  font-size: 0.84rem;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+.headshot-backgrounds-status:empty,
+.saved-links-status:empty {
+  display: none;
+}
+.saved-links-section {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 680px) {
+  .headshot-backgrounds-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 14px 10px;
+  }
+}

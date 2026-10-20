@@ -1396,6 +1396,15 @@ function setActiveTab(tabName) {
   recordsPanel.hidden = !isRecords;
 }
 
+// Reload existing link views after a Settings backup import without
+// changing or clearing the currently loaded league file.
+window.addEventListener('dbl:saved-links-imported', () => {
+  savedBannersByYear = loadSavedBanners();
+  savedUniformsByYear = loadSavedUniforms();
+  renderBanners(fullTimeline);
+  renderUniforms(fullTimeline);
+});
+
 function loadSavedBanners() {
   try {
     const raw = localStorage.getItem(SAVED_BANNERS_KEY);

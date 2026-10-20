@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
     <link rel="stylesheet" href="./logos-by-team.css" />
+    <link rel="stylesheet" href="./headshot-backgrounds.css?v=20261020-headshots" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
     <link rel="stylesheet" href="./team-leaders.css?v=20261003-cleveland-leaders" />
     <link rel="stylesheet" href="./ratings.css?v=20261012-ratings" />
@@ -127,6 +128,7 @@
               <button id="logosByTeamTabBtn" class="tab-btn" type="button" aria-selected="false">Logos by Team</button>
               <button id="colorSchemesTabBtn" class="tab-btn" type="button" aria-selected="false">Color Schemes</button>
               <button id="bannersTabBtn" class="tab-btn" type="button" aria-selected="false">Banners</button>
+              <button id="headshotBackgroundsTabBtn" class="tab-btn" type="button" aria-selected="false">Headshot Backgrounds</button>
               <button id="uniformsTabBtn" class="tab-btn" type="button" aria-selected="false">Uniforms</button>
             </div>
           </details>
@@ -289,6 +291,20 @@
               <p>Load a league file to create banner slots.</p>
             </div>
           </div>
+        </section>
+
+        <section id="headshotBackgroundsPanel" class="panel banners-panel headshot-backgrounds-panel" hidden>
+          <div class="banners-header">
+            <h2>Headshot Backgrounds</h2>
+            <p class="subtle">One 2:3 portrait background per year, 1916–2045. Saved independently of your league files.</p>
+            <div class="banner-actions">
+              <input id="headshotBackgroundsImportFile" class="visually-hidden-file-input" type="file" accept=".json,application/json" />
+              <button id="importHeadshotBackgroundsBtn" class="action-btn" type="button">Import links</button>
+              <button id="exportHeadshotBackgroundsBtn" class="action-btn" type="button">Export links</button>
+            </div>
+            <p id="headshotBackgroundsStatus" class="headshot-backgrounds-status" role="status" aria-live="polite"></p>
+          </div>
+          <div id="headshotBackgroundsWrap" class="banners-wrap banner-grid headshot-backgrounds-grid"></div>
         </section>
 
         <section id="uniformsPanel" class="panel banners-panel" hidden>
@@ -592,6 +608,18 @@
               </button>
             </div>
           </div>
+          <div class="settings-section saved-links-section">
+            <div class="settings-section-heading">
+              <h3>Saved links backup</h3>
+              <p>Export or import banners, uniforms, and headshot-background links together. League files are not included or affected.</p>
+            </div>
+            <div class="banner-actions">
+              <input id="savedLinksImportFile" class="visually-hidden-file-input" type="file" accept=".json,application/json" />
+              <button id="importSavedLinksBtn" class="action-btn" type="button">Import saved links</button>
+              <button id="exportSavedLinksBtn" class="action-btn" type="button">Export saved links</button>
+            </div>
+            <p id="savedLinksStatus" class="saved-links-status" role="status" aria-live="polite"></p>
+          </div>
         </section>
       </main>
     </div>
@@ -618,10 +646,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script src="./league-file-hub.js?v=20260923-persistent-file"></script>
-    <script src="./app.js?v=20261016-tid-default"></script>
+    <script src="./app.js?v=20261020-saved-links-refresh"></script>
     <script src="./large-file-loader.js?v=20260825-hof-fallback"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
+    <script src="./headshot-backgrounds.js?v=20261020-headshots"></script>
     <script src="./champion-grid.js?v=20261015-v1"></script>
     <script src="./color-schemes.js?v=20260922-f3dc9b-cream"></script>
     <script src="./all-time-leaders.js?v=20260926-ws-average-fix"></script>
@@ -639,6 +668,7 @@
     <script src="./rivals.js?v=20261012-grouped-nav-v2"></script>
     <script src="./colleges.js?v=20260928-grouped-assignments"></script>
     <script src="./settings.js?v=20260921-dark-newspaper"></script>
-    <script src="./tab-router.js?v=20261012-grouped-nav-v2"></script>
+    <script src="./saved-links-backup.js?v=20261020-headshots"></script>
+    <script src="./tab-router.js?v=20261020-headshot-tab"></script>
   </body>
 </html>

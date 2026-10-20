@@ -11,6 +11,7 @@
     logosByTeamTabBtn: 'logosByTeamPanel',
     colorSchemesTabBtn: 'colorSchemesPanel',
     bannersTabBtn: 'bannersPanel',
+    headshotBackgroundsTabBtn: 'headshotBackgroundsPanel',
     uniformsTabBtn: 'uniformsPanel',
     rankingsTabBtn: 'rankingsPanel',
     championGridTabBtn: 'championGridPanel',
