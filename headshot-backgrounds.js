@@ -113,7 +113,7 @@
     const borderColors = {
       confirmed: '#22b8a5',
       unsure: '#e8c542',
-      disliked: '#e04a52',
+      disliked: '#ff1a1a',
     };
     const color = borderColors[current] || '';
     frame.dataset.reviewStatus = current;
