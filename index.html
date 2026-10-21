@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
     <link rel="stylesheet" href="./logos-by-team.css" />
-    <link rel="stylesheet" href="./headshot-backgrounds.css?v=20261020-headshots" />
+    <link rel="stylesheet" href="./headshot-backgrounds.css?v=20261021-border-ratings" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
     <link rel="stylesheet" href="./team-leaders.css?v=20261003-cleveland-leaders" />
     <link rel="stylesheet" href="./ratings.css?v=20261012-ratings" />
@@ -297,6 +297,12 @@
           <div class="banners-header">
             <h2>Headshot Backgrounds</h2>
             <p class="subtle">One 2:3 portrait background per year, 1916–2045. Saved independently of your league files.</p>
+            <div class="headshot-background-legend" aria-label="Tap an image to cycle border ratings">
+              <span><i class="swatch" style="--swatch:#22b8a5" aria-hidden="true"></i>Teal: Confirmed</span>
+              <span><i class="swatch" style="--swatch:#e8c542" aria-hidden="true"></i>Yellow: Unsure</span>
+              <span><i class="swatch" style="--swatch:#e04a52" aria-hidden="true"></i>Red: Dislike</span>
+              <span>Tap again to return to no selection.</span>
+            </div>
             <div class="banner-actions">
               <input id="headshotBackgroundsImportFile" class="visually-hidden-file-input" type="file" accept=".json,application/json" />
               <button id="importHeadshotBackgroundsBtn" class="action-btn" type="button">Import links</button>
@@ -611,7 +617,7 @@
           <div class="settings-section saved-links-section">
             <div class="settings-section-heading">
               <h3>Saved links backup</h3>
-              <p>Export or import banners, uniforms, and headshot-background links together. League files are not included or affected.</p>
+              <p>Export or import banners, uniforms, headshot-background links, and their border ratings together. League files are not included or affected.</p>
             </div>
             <div class="banner-actions">
               <input id="savedLinksImportFile" class="visually-hidden-file-input" type="file" accept=".json,application/json" />
@@ -650,7 +656,7 @@
     <script src="./large-file-loader.js?v=20260825-hof-fallback"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
-    <script src="./headshot-backgrounds.js?v=20261020-headshots"></script>
+    <script src="./headshot-backgrounds.js?v=20261021-border-ratings"></script>
     <script src="./champion-grid.js?v=20261015-v1"></script>
     <script src="./color-schemes.js?v=20260922-f3dc9b-cream"></script>
     <script src="./all-time-leaders.js?v=20260926-ws-average-fix"></script>
@@ -668,7 +674,7 @@
     <script src="./rivals.js?v=20261012-grouped-nav-v2"></script>
     <script src="./colleges.js?v=20260928-grouped-assignments"></script>
     <script src="./settings.js?v=20260921-dark-newspaper"></script>
-    <script src="./saved-links-backup.js?v=20261020-headshots"></script>
+    <script src="./saved-links-backup.js?v=20261021-border-ratings"></script>
     <script src="./tab-router.js?v=20261020-headshot-tab"></script>
   </body>
 </html>

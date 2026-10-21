@@ -2,6 +2,14 @@
   const FIRST_YEAR = 1916;
   const LAST_YEAR = 2045;
   const STORAGE_KEY = 'dbl-logo-headshot-backgrounds:v1';
+  const STATUS_STORAGE_KEY = 'dbl-logo-headshot-background-statuses:v1';
+  const STATUS_CYCLE = ['', 'confirmed', 'unsure', 'disliked'];
+  const STATUS_LABELS = {
+    '': 'No selection',
+    confirmed: 'Confirmed',
+    unsure: 'Unsure',
+    disliked: 'Do not like',
+  };
   const FORMAT = 'dbl-headshot-backgrounds';
   const wrap = document.getElementById('headshotBackgroundsWrap');
   const importButton = document.getElementById('importHeadshotBackgroundsBtn');
@@ -25,6 +33,28 @@
     return cleaned;
   }
 
+  function normalizeStatuses(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      throw new Error('Expected an object of year-to-review statuses.');
+    }
+    const cleaned = {};
+    for (const [year, status] of Object.entries(value)) {
+      const numericYear = Number(year);
+      if (!Number.isInteger(numericYear) || numericYear < FIRST_YEAR || numericYear > LAST_YEAR) continue;
+      if (STATUS_CYCLE.includes(status) && status) cleaned[String(numericYear)] = status;
+    }
+    return cleaned;
+  }
+
+  function loadStatuses() {
+    try {
+      return normalizeStatuses(JSON.parse(localStorage.getItem(STATUS_STORAGE_KEY) || '{}'));
+    } catch (error) {
+      console.warn('Could not read saved headshot background statuses.', error);
+      return {};
+    }
+  }
+
   function load() {
     try {
       return normalizeLinks(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
@@ -35,6 +65,19 @@
   }
 
   let linksByYear = load();
+  let statusesByYear = loadStatuses();
+
+  function saveStatuses() {
+    try {
+      localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(statusesByYear));
+      return true;
+    } catch (error) {
+      console.warn('Could not save headshot background statuses.', error);
+      setStatus('Could not save border selections on this device. Export a backup before leaving.');
+      return false;
+    }
+  }
+
   function save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(linksByYear));
@@ -63,6 +106,16 @@
     frame.appendChild(image);
   }
 
+  function applyReviewStatus(frame, key) {
+    const current = statusesByYear[key] || '';
+    const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(current) + 1) % STATUS_CYCLE.length];
+    frame.dataset.reviewStatus = current;
+    frame.setAttribute('aria-label',
+      'Background for ' + key + ': ' + STATUS_LABELS[current]
+      + '. Activate to mark ' + STATUS_LABELS[next] + '.');
+    frame.title = key + ': ' + STATUS_LABELS[current] + ' — tap to mark ' + STATUS_LABELS[next];
+  }
+
   function render() {
     const fragment = document.createDocumentFragment();
     for (let year = FIRST_YEAR; year <= LAST_YEAR; year += 1) {
@@ -74,9 +127,18 @@
       heading.className = 'banner-year';
       heading.textContent = key;
 
-      const frame = document.createElement('div');
+      const frame = document.createElement('button');
+      frame.type = 'button';
       frame.className = 'headshot-background-frame';
-      frame.setAttribute('aria-label', 'Background image for ' + key);
+      applyReviewStatus(frame, key);
+      frame.addEventListener('click', () => {
+        const previous = statusesByYear[key] || '';
+        const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(previous) + 1) % STATUS_CYCLE.length];
+        if (next) statusesByYear[key] = next;
+        else delete statusesByYear[key];
+        applyReviewStatus(frame, key);
+        saveStatuses();
+      });
       setPreview(frame, linksByYear[key] || '', key);
 
       const field = document.createElement('input');
@@ -116,11 +178,13 @@
     const now = new Date().toISOString().replace(/:/g, '-').replace(/\..*$/, '');
     downloadJson({
       format: FORMAT,
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       linksByYear: { ...linksByYear },
+      statusesByYear: { ...statusesByYear },
     }, 'dbl-headshot-background-links-' + now + '.json');
-    setStatus('Exported ' + Object.keys(linksByYear).length + ' headshot background links.');
+    setStatus('Exported ' + Object.keys(linksByYear).length + ' headshot background links and '
+      + Object.keys(statusesByYear).length + ' border selections.');
   });
 
   importButton.addEventListener('click', () => importFile.click());
@@ -132,31 +196,60 @@
       const parsed = JSON.parse(await file.text());
       if (parsed?.format !== FORMAT) throw new Error('Select a Headshot Backgrounds export.');
       const cleaned = normalizeLinks(parsed.linksByYear);
-      // Replace only this collection. Never touch banner/uniform or league data.
-      const prior = linksByYear;
-      linksByYear = cleaned;
-      if (!save()) {
-        linksByYear = prior;
-        return;
+      // Older headshot exports lack statusesByYear. Keep existing selections
+      // intact when one of those files is imported.
+      const containsStatuses = Object.hasOwn(parsed, 'statusesByYear');
+      const importedStatuses = containsStatuses ? normalizeStatuses(parsed.statusesByYear) : null;
+      // Roll back both collections if either write fails, without touching the
+      // banner/uniform collections or uploaded league file.
+      const previousLinks = linksByYear;
+      const previousStatuses = statusesByYear;
+      const previousRawLinks = localStorage.getItem(STORAGE_KEY);
+      const previousRawStatuses = localStorage.getItem(STATUS_STORAGE_KEY);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+        if (containsStatuses) {
+          localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(importedStatuses));
+        }
+      } catch (storageError) {
+        try {
+          if (previousRawLinks === null) localStorage.removeItem(STORAGE_KEY);
+          else localStorage.setItem(STORAGE_KEY, previousRawLinks);
+          if (containsStatuses) {
+            if (previousRawStatuses === null) localStorage.removeItem(STATUS_STORAGE_KEY);
+            else localStorage.setItem(STATUS_STORAGE_KEY, previousRawStatuses);
+          }
+        } catch (rollbackError) {
+          console.warn('Could not fully restore links after failed import.', rollbackError);
+        }
+        linksByYear = previousLinks;
+        statusesByYear = previousStatuses;
+        throw new Error('Could not save imported headshot links and borders on this device.');
       }
+      linksByYear = cleaned;
+      if (containsStatuses) statusesByYear = importedStatuses;
       render();
-      setStatus('Imported ' + Object.keys(cleaned).length + ' headshot background links from ' + file.name + '.');
+      setStatus('Imported ' + Object.keys(cleaned).length + ' headshot background links'
+        + (containsStatuses ? ' and ' + Object.keys(importedStatuses).length + ' border selections' : ' (existing border selections kept)')
+        + ' from ' + file.name + '.');
     } catch (error) {
       setStatus('Import failed: ' + (error?.message || 'Invalid file.'));
     }
   });
 
   window.addEventListener('dbl:saved-links-imported', (event) => {
-    if (!event.detail?.headshotBackgrounds) return;
-    linksByYear = load();
+    if (!event.detail?.headshotBackgrounds && !event.detail?.headshotBackgroundStatuses) return;
+    if (event.detail.headshotBackgrounds) linksByYear = load();
+    if (event.detail.headshotBackgroundStatuses) statusesByYear = loadStatuses();
     render();
-    setStatus('Headshot background links restored from the saved-links backup.');
+    setStatus('Headshot background links and border selections updated from the saved-links backup.');
   });
 
   // React to other browser tabs updating these independent links.
   window.addEventListener('storage', (event) => {
-    if (event.key !== STORAGE_KEY) return;
-    linksByYear = load();
+    if (event.key !== STORAGE_KEY && event.key !== STATUS_STORAGE_KEY) return;
+    if (event.key === STORAGE_KEY) linksByYear = load();
+    if (event.key === STATUS_STORAGE_KEY) statusesByYear = loadStatuses();
     render();
   });
 

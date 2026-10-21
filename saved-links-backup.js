@@ -3,6 +3,7 @@
     banners: 'dbl-logo-banners:v1',
     uniforms: 'dbl-logo-uniforms:v1',
     headshotBackgrounds: 'dbl-logo-headshot-backgrounds:v1',
+    headshotBackgroundStatuses: 'dbl-logo-headshot-background-statuses:v1',
   };
   const FORMAT = 'dbl-saved-links';
   const exportButton = document.getElementById('exportSavedLinksBtn');
@@ -21,11 +22,15 @@
     }
     const cleaned = {};
     for (const [key, url] of Object.entries(value)) {
-      if (typeof url !== 'string' || !url.trim()) continue;
-      if (category === 'headshotBackgrounds') {
+      if (category === 'headshotBackgrounds' || category === 'headshotBackgroundStatuses') {
         const year = Number(key);
         if (!Number.isInteger(year) || year < 1916 || year > 2045) continue;
       }
+      if (category === 'headshotBackgroundStatuses') {
+        if (url === 'confirmed' || url === 'unsure' || url === 'disliked') cleaned[String(Number(key))] = url;
+        continue;
+      }
+      if (typeof url !== 'string' || !url.trim()) continue;
       cleaned[String(key)] = url.trim();
     }
     return cleaned;
@@ -43,7 +48,7 @@
   exportButton.addEventListener('click', () => {
     try {
       const links = Object.fromEntries(Object.entries(KEYS).map(([name, key]) => [name, readMap(key, name)]));
-      const payload = { format: FORMAT, version: 1, exportedAt: new Date().toISOString(), links };
+      const payload = { format: FORMAT, version: 2, exportedAt: new Date().toISOString(), links };
       const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
       const anchor = document.createElement('a');
       anchor.href = url;
@@ -52,7 +57,7 @@
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      report('Exported banners, uniforms, and headshot background links.');
+      report('Exported banners, uniforms, headshot background links, and border selections.');
     } catch (error) {
       report(error?.message || 'Export failed.');
     }
@@ -98,7 +103,12 @@
         throw new Error('Could not save imported links on this device.');
       }
       window.dispatchEvent(new CustomEvent('dbl:saved-links-imported', {
-        detail: { banners: 'banners' in incoming, uniforms: 'uniforms' in incoming, headshotBackgrounds: 'headshotBackgrounds' in incoming },
+        detail: {
+          banners: 'banners' in incoming,
+          uniforms: 'uniforms' in incoming,
+          headshotBackgrounds: 'headshotBackgrounds' in incoming,
+          headshotBackgroundStatuses: 'headshotBackgroundStatuses' in incoming,
+        },
       }));
       report('Imported saved links: ' + Object.keys(incoming).join(', ') + '.');
     } catch (error) {
