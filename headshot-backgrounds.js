@@ -117,9 +117,9 @@
     };
     const color = borderColors[current] || '';
     frame.dataset.reviewStatus = current;
-    // Inline styles back up the stylesheet, keeping the border visible even
-    // when a cached/theme stylesheet overrides the border declarations.
-    frame.style.border = color ? '4px solid ' + color : '4px solid transparent';
+    // A CSS overlay draws over the image instead of changing the frame's
+    // content box: its 2:3 image area never shrinks or letterboxes on selection.
+    frame.style.setProperty('--headshot-rating-border-color', color || 'transparent');
     frame.style.boxShadow = color ? '0 0 0 2px ' + color : 'none';
     frame.setAttribute('aria-label',
       'Background for ' + key + ': ' + STATUS_LABELS[current]
