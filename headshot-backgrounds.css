@@ -89,3 +89,49 @@
   background: transparent;
   border: 3px solid var(--swatch);
 }
+
+
+/* Visible desktop/mouse feedback; keep 2:3 dimensions constant at every state. */
+.headshot-background-frame {
+  position: relative;
+  box-sizing: border-box;
+  border: 4px solid transparent;
+  outline: 1px solid var(--line-strong);
+  isolation: isolate;
+}
+.headshot-background-frame[data-review-status="confirmed"] {
+  border-color: #22b8a5;
+  box-shadow: 0 0 0 2px #22b8a5;
+}
+.headshot-background-frame[data-review-status="unsure"] {
+  border-color: #e8c542;
+  box-shadow: 0 0 0 2px #e8c542;
+}
+.headshot-background-frame[data-review-status="disliked"] {
+  border-color: #e04a52;
+  box-shadow: 0 0 0 2px #e04a52;
+}
+.headshot-background-frame img {
+  pointer-events: none;
+}
+.headshot-background-rating-label {
+  position: absolute;
+  z-index: 2;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  display: block;
+  padding: 5px 3px;
+  color: #fff;
+  background: rgba(0,0,0,0.82);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-align: center;
+  pointer-events: none;
+}
+.headshot-background-rating-label[hidden] {
+  display: none !important;
+}

@@ -93,7 +93,8 @@
   }
 
   function setPreview(frame, url, year) {
-    frame.replaceChildren();
+    // Only replace the image: the status label and its click target must remain.
+    frame.querySelector('img')?.remove();
     if (!url) return;
     const image = document.createElement('img');
     image.src = url;
@@ -109,11 +110,26 @@
   function applyReviewStatus(frame, key) {
     const current = statusesByYear[key] || '';
     const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(current) + 1) % STATUS_CYCLE.length];
+    const borderColors = {
+      confirmed: '#22b8a5',
+      unsure: '#e8c542',
+      disliked: '#e04a52',
+    };
+    const color = borderColors[current] || '';
     frame.dataset.reviewStatus = current;
+    // Inline styles back up the stylesheet, keeping the border visible even
+    // when a cached/theme stylesheet overrides the border declarations.
+    frame.style.border = color ? '4px solid ' + color : '4px solid transparent';
+    frame.style.boxShadow = color ? '0 0 0 2px ' + color : 'none';
     frame.setAttribute('aria-label',
       'Background for ' + key + ': ' + STATUS_LABELS[current]
       + '. Activate to mark ' + STATUS_LABELS[next] + '.');
-    frame.title = key + ': ' + STATUS_LABELS[current] + ' — tap to mark ' + STATUS_LABELS[next];
+    frame.title = key + ': ' + STATUS_LABELS[current] + ' — click to mark ' + STATUS_LABELS[next];
+    const marker = frame.querySelector('.headshot-background-rating-label');
+    if (marker) {
+      marker.textContent = current ? STATUS_LABELS[current] : '';
+      marker.hidden = !current;
+    }
   }
 
   function render() {
@@ -136,10 +152,18 @@
         const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(previous) + 1) % STATUS_CYCLE.length];
         if (next) statusesByYear[key] = next;
         else delete statusesByYear[key];
+        if (!saveStatuses()) {
+          if (previous) statusesByYear[key] = previous;
+          else delete statusesByYear[key];
+        }
         applyReviewStatus(frame, key);
-        saveStatuses();
       });
+      const ratingLabel = document.createElement('span');
+      ratingLabel.className = 'headshot-background-rating-label';
+      ratingLabel.hidden = true;
+      frame.appendChild(ratingLabel);
       setPreview(frame, linksByYear[key] || '', key);
+      applyReviewStatus(frame, key);
 
       const field = document.createElement('input');
       field.className = 'banner-url-input';
