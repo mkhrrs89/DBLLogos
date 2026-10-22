@@ -24,6 +24,7 @@
     shootoutRecordsTabBtn: 'shootoutRecordsPanel',
     newsTabBtn: 'newsPanel',
     rivalsTabBtn: 'rivalsPanel',
+    financesTabBtn: 'financesPanel',
     draftProspectsTabBtn: 'draftProspectsPanel',
     collegesTabBtn: 'collegesPanel',
     settingsTabBtn: 'settingsPanel',
