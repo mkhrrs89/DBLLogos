@@ -20,6 +20,7 @@
     ratingsTabBtn: 'ratingsPanel',
     playersOfMonthTabBtn: 'playersOfMonthPanel',
     hallOfFameTabBtn: 'hallOfFamePanel',
+    retiredNumbersTabBtn: 'retiredNumbersPanel',
     recordsTabBtn: 'recordsPanel',
     shootoutRecordsTabBtn: 'shootoutRecordsPanel',
     newsTabBtn: 'newsPanel',
