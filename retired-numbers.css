@@ -1,0 +1,106 @@
+/* Retired Numbers — colorways use each entry's historical seasonTeamInfo. */
+.retired-numbers-header {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 16px;
+}
+.retired-numbers-header h2 {
+  margin: 0;
+}
+.retired-numbers-header .subtle {
+  margin: 0;
+}
+.retired-numbers-summary {
+  min-height: 1.2em;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.87rem;
+}
+.retired-numbers-wrap {
+  display: grid;
+  gap: 20px;
+}
+.retired-numbers-team {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.025);
+}
+.retired-numbers-team-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.retired-numbers-team-name {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.3;
+}
+.retired-numbers-team-count {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.retired-numbers-jerseys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px 8px;
+  align-items: flex-start;
+  padding-top: 11px;
+}
+.retired-numbers-jersey {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 82px;
+  max-width: 100%;
+  margin: 0;
+}
+.retired-numbers-jersey svg {
+  display: block;
+  width: 74px;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.retired-numbers-jersey figcaption {
+  color: var(--muted);
+  font-size: 0.71rem;
+  line-height: 1.25;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.retired-numbers-empty {
+  padding-top: 12px;
+  color: var(--muted-2);
+  font-size: 0.85rem;
+}
+.retired-numbers-feedback {
+  padding: 25px 14px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+@media (max-width: 520px) {
+  .retired-numbers-team {
+    padding: 11px 10px;
+  }
+  .retired-numbers-team-name {
+    font-size: 1.02rem;
+  }
+  .retired-numbers-jerseys {
+    gap: 11px 5px;
+  }
+  .retired-numbers-jersey {
+    width: 70px;
+  }
+  .retired-numbers-jersey svg {
+    width: 65px;
+  }
+}

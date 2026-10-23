@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
+    <link rel="stylesheet" href="./retired-numbers.css?v=20261023-v1" />
     <link rel="stylesheet" href="./logos-by-team.css" />
     <link rel="stylesheet" href="./headshot-backgrounds.css?v=20261021-fixed-aspect-overlay" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
@@ -474,7 +475,14 @@
         </section>
 
         <section id="retiredNumbersPanel" class="panel rankings-panel" hidden>
-          <h2>Retired Numbers</h2>
+          <div class="retired-numbers-header">
+            <h2>Retired Numbers</h2>
+            <p class="subtle">Every team's retired jerseys, styled with the colors of each jersey's designated historical year.</p>
+            <p id="retiredNumbersSummary" class="retired-numbers-summary" aria-live="polite"></p>
+          </div>
+          <div id="retiredNumbersWrap" class="retired-numbers-wrap">
+            <p class="subtle">Load a league file to display retired numbers.</p>
+          </div>
         </section>
 
         <section id="recordsPanel" class="panel rankings-panel" hidden>
@@ -669,6 +677,7 @@
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
     <script src="./champion-grid.js?v=20261015-v1"></script>
+    <script src="./retired-numbers.js?v=20261023-v1"></script>
     <script src="./color-schemes.js?v=20260922-f3dc9b-cream"></script>
     <script src="./all-time-leaders.js?v=20260926-ws-average-fix"></script>
     <script src="./team-leaders.js?v=20261003-cleveland-leaders"></script>
