@@ -68,15 +68,6 @@
   height: auto;
   overflow: visible;
 }
-.retired-numbers-jersey figcaption {
-  color: var(--muted);
-  font-size: 0.71rem;
-  line-height: 1.25;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-  max-width: 100%;
-}
 .retired-numbers-empty {
   padding-top: 12px;
   color: var(--muted-2);

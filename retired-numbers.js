@@ -123,7 +123,7 @@
   function makeJersey(team, jersey, playersById) {
     const figure = el('figure', 'retired-numbers-jersey');
     const player = playersById.get(jersey.playerId);
-    const lastName = player?.lastName || 'Unknown';
+    const lastName = (player?.lastName || 'Unknown').toUpperCase();
     const label = [
       team.name + ' #' + jersey.number,
       player?.fullName || 'Player unknown',
@@ -167,9 +167,34 @@
       'stroke-width': 2.2,
     }));
 
+    // Put the player's surname on the front of the jersey above the number.
+    // Size long and multi-part names to fit within the wide torso.
+    const nameSize = lastName.length > 17 ? 5.4
+      : lastName.length > 13 ? 6.2
+      : lastName.length > 10 ? 7
+      : lastName.length > 7 ? 8
+      : 9.5;
+    const nameAttrs = {
+      x: 47,
+      y: 46,
+      fill: jersey.colors.number,
+      'font-family': 'Arial, Helvetica, sans-serif',
+      'font-weight': 800,
+      'font-size': nameSize,
+      'text-anchor': 'middle',
+      'letter-spacing': '0.15',
+    };
+    if (lastName.length > 13) {
+      nameAttrs.textLength = 51;
+      nameAttrs.lengthAdjust = 'spacingAndGlyphs';
+    }
+    const nameText = svgEl('text', nameAttrs);
+    nameText.textContent = lastName;
+    svg.appendChild(nameText);
+
     const numberText = svgEl('text', {
       x: 47,
-      y: 72,
+      y: 79,
       fill: jersey.colors.number,
       'font-family': 'Arial, Helvetica, sans-serif',
       'font-weight': 800,
@@ -181,9 +206,6 @@
     svg.appendChild(numberText);
     figure.appendChild(svg);
 
-    const caption = el('figcaption', null, lastName);
-    caption.title = player?.fullName || 'Player not found in this export';
-    figure.appendChild(caption);
     return figure;
   }
 
