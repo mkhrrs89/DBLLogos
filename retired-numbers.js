@@ -10,6 +10,7 @@
   if (!tabBtn || !panel || !wrap || !stream) return;
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
+  let nameCurveSequence = 0;
   let currentFile = null;
   let version = 0;
   let loadedVersion = -1;
@@ -167,16 +168,22 @@
       'stroke-width': 2.2,
     }));
 
-    // Put the player's surname on the front of the jersey above the number.
-    // Size long and multi-part names to fit within the wide torso.
+    // Follow the upward arch of a classic basketball jersey nameplate.
+    // Every SVG gets a distinct path ID so repeated jerseys don't share paths.
+    const nameCurveId = 'dbl-retired-name-curve-' + (++nameCurveSequence);
+    const defs = svgEl('defs');
+    defs.appendChild(svgEl('path', {
+      id: nameCurveId,
+      d: 'M20 49 Q47 24 74 49',
+    }));
+    svg.appendChild(defs);
+
     const nameSize = lastName.length > 17 ? 5.4
       : lastName.length > 13 ? 6.2
       : lastName.length > 10 ? 7
       : lastName.length > 7 ? 8
       : 9.5;
     const nameAttrs = {
-      x: 47,
-      y: 46,
       fill: jersey.colors.number,
       'font-family': 'Arial, Helvetica, sans-serif',
       'font-weight': 800,
@@ -184,12 +191,18 @@
       'text-anchor': 'middle',
       'letter-spacing': '0.15',
     };
-    if (lastName.length > 13) {
-      nameAttrs.textLength = 51;
+    // Only compress text that might extend past the jersey's chest panel.
+    if (lastName.length * nameSize * 0.65 > 49) {
+      nameAttrs.textLength = 49;
       nameAttrs.lengthAdjust = 'spacingAndGlyphs';
     }
     const nameText = svgEl('text', nameAttrs);
-    nameText.textContent = lastName;
+    const namePath = svgEl('textPath', {
+      href: '#' + nameCurveId,
+      startOffset: '50%',
+    });
+    namePath.textContent = lastName;
+    nameText.appendChild(namePath);
     svg.appendChild(nameText);
 
     const numberText = svgEl('text', {
