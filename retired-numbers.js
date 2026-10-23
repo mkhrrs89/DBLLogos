@@ -120,10 +120,13 @@
     return node;
   }
 
-  function makeJersey(team, jersey) {
+  function makeJersey(team, jersey, playersById) {
     const figure = el('figure', 'retired-numbers-jersey');
+    const player = playersById.get(jersey.playerId);
+    const lastName = player?.lastName || 'Unknown';
     const label = [
       team.name + ' #' + jersey.number,
+      player?.fullName || 'Player unknown',
       jersey.uniformYear ? 'Historical uniform year: ' + jersey.uniformYear : 'Historical uniform year unavailable',
       jersey.retiredYear ? 'Retired: ' + jersey.retiredYear : 'Retirement year unavailable',
     ].join(' • ');
@@ -133,27 +136,29 @@
     svg.appendChild(svgEl('title'));
     svg.firstChild.textContent = label;
 
-    // Vector jersey silhouette; all historical colors come from the season
-    // selected by seasonTeamInfo, rather than the current franchise palette.
+    // Sleeveless basketball singlet: recessed arm openings, narrow shoulder
+    // straps, and a deep round neck rather than short-sleeve/T-shirt shapes.
+    // Historical colors still come exclusively from seasonTeamInfo.
     svg.appendChild(svgEl('path', {
-      d: 'M29 9 L37 4 Q47 13 57 4 L65 9 L88 24 L78 43 L68 37 L68 103 L26 103 L26 37 L16 43 L6 24 Z',
+      d: 'M27 8 L37 5 Q47 24 57 5 L67 8 C63 20 64 26 72 38 L67 44 L67 103 L27 103 L27 44 L22 38 C30 26 31 20 27 8 Z',
       fill: jersey.colors.primary,
       stroke: jersey.colors.secondary,
       'stroke-width': 2.4,
       'stroke-linejoin': 'round',
     }));
     svg.appendChild(svgEl('path', {
-      d: 'M36 6 Q47 26 58 6',
+      d: 'M37 5 Q47 24 57 5',
       fill: 'none',
       stroke: jersey.colors.secondary,
-      'stroke-width': 4.5,
+      'stroke-width': 4,
+      'stroke-linecap': 'round',
     }));
     svg.appendChild(svgEl('path', {
-      d: 'M8 29 L17 37 L26 31 M86 29 L77 37 L68 31',
+      d: 'M27 8 C31 20 30 27 22 38 M67 8 C63 20 64 27 72 38',
       fill: 'none',
       stroke: jersey.colors.tertiary,
-      'stroke-width': 4.2,
-      'stroke-linejoin': 'round',
+      'stroke-width': 3.2,
+      'stroke-linecap': 'round',
     }));
     svg.appendChild(svgEl('path', {
       d: 'M27 96 L67 96',
@@ -176,8 +181,8 @@
     svg.appendChild(numberText);
     figure.appendChild(svg);
 
-    const caption = el('figcaption', null, jersey.uniformYear ? String(jersey.uniformYear) : 'Year unknown');
-    caption.title = 'Uniform design/color year';
+    const caption = el('figcaption', null, lastName);
+    caption.title = player?.fullName || 'Player not found in this export';
     figure.appendChild(caption);
     return figure;
   }
@@ -187,7 +192,7 @@
     wrap.replaceChildren(el('p', 'retired-numbers-feedback', message));
   }
 
-  function showTeams(teams) {
+  function showTeams(teams, playersById = new Map()) {
     const sorted = teams.sort((a, b) =>
       b.jerseys.length - a.jerseys.length
       || a.name.localeCompare(b.name)
@@ -214,7 +219,7 @@
       section.appendChild(header);
       if (team.jerseys.length) {
         const gallery = el('div', 'retired-numbers-jerseys');
-        for (const jersey of team.jerseys) gallery.appendChild(makeJersey(team, jersey));
+        for (const jersey of team.jerseys) gallery.appendChild(makeJersey(team, jersey, playersById));
         section.appendChild(gallery);
       } else {
         section.appendChild(el('div', 'retired-numbers-empty', 'No retired numbers'));
@@ -253,8 +258,34 @@
         }
       });
       if (token !== version || file !== currentFile) return;
+
+      // Retired jerseys refer to players by PID. Read only the names needed
+      // for this view; keep large exports in streaming mode instead of parsing
+      // every player's career into memory.
+      const neededPids = new Set(teams.flatMap((team) =>
+        team.jerseys.map((jersey) => jersey.playerId).filter((pid) => pid !== null)));
+      const playersById = new Map();
+      if (neededPids.size) {
+        try {
+          await stream.forEachTopLevelArrayItem(file, 'players', (player) => {
+            if (token !== version || !neededPids.has(player?.pid)) return;
+            const lastName = typeof player.lastName === 'string' ? player.lastName.trim() : '';
+            if (!lastName) return;
+            const firstName = typeof player.firstName === 'string' ? player.firstName.trim() : '';
+            playersById.set(player.pid, {
+              lastName,
+              fullName: [firstName, lastName].filter(Boolean).join(' '),
+            });
+          });
+        } catch (error) {
+          // Keep existing jersey data visible if a partial export lacks
+          // the players array; unknown names are labeled rather than invented.
+          console.warn('Could not look up retired jersey player names.', error);
+        }
+      }
+      if (token !== version || file !== currentFile) return;
       loadedVersion = token;
-      showTeams(teams);
+      showTeams(teams, playersById);
     } catch (error) {
       if (token !== version) return;
       console.warn('Could not load retired jersey history.', error);
