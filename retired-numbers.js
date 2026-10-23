@@ -136,32 +136,32 @@
     svg.appendChild(svgEl('title'));
     svg.firstChild.textContent = label;
 
-    // Sleeveless basketball singlet: recessed arm openings, narrow shoulder
-    // straps, and a deep round neck rather than short-sleeve/T-shirt shapes.
+    // Wide sleeveless basketball singlet (50% wider torso than the original).
+    // Keep recessed arm openings and the round collar, without sleeves.
     // Historical colors still come exclusively from seasonTeamInfo.
     svg.appendChild(svgEl('path', {
-      d: 'M27 8 L37 5 Q47 24 57 5 L67 8 C63 20 64 26 72 38 L67 44 L67 103 L27 103 L27 44 L22 38 C30 26 31 20 27 8 Z',
+      d: 'M17 8 L32 5 Q47 24 62 5 L77 8 C71 20 72.5 26 84.5 38 L77 44 L77 103 L17 103 L17 44 L9.5 38 C21.5 26 23 20 17 8 Z',
       fill: jersey.colors.primary,
       stroke: jersey.colors.secondary,
       'stroke-width': 2.4,
       'stroke-linejoin': 'round',
     }));
     svg.appendChild(svgEl('path', {
-      d: 'M37 5 Q47 24 57 5',
+      d: 'M32 5 Q47 24 62 5',
       fill: 'none',
       stroke: jersey.colors.secondary,
       'stroke-width': 4,
       'stroke-linecap': 'round',
     }));
     svg.appendChild(svgEl('path', {
-      d: 'M27 8 C31 20 30 27 22 38 M67 8 C63 20 64 27 72 38',
+      d: 'M17 8 C23 20 21.5 27 9.5 38 M77 8 C71 20 72.5 27 84.5 38',
       fill: 'none',
       stroke: jersey.colors.tertiary,
       'stroke-width': 3.2,
       'stroke-linecap': 'round',
     }));
     svg.appendChild(svgEl('path', {
-      d: 'M27 96 L67 96',
+      d: 'M17 96 L77 96',
       fill: 'none',
       stroke: jersey.colors.tertiary,
       'stroke-width': 2.2,
