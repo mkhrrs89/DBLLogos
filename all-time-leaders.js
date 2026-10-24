@@ -3,6 +3,7 @@
   const LEADER_LIMIT = 10;
   const UNKNOWN_POSITION = 'UNK';
   const STAT_DEFINITIONS = [
+    { key: 'gp', title: 'Games Played', valueLabel: 'GP' },
     { key: 'pts', title: 'Points', valueLabel: 'PTS' },
     { key: 'trb', title: 'Rebounds', valueLabel: 'REB' },
     { key: 'ast', title: 'Assists', valueLabel: 'AST' },
@@ -654,7 +655,7 @@
       const name = document.createElement('strong');
       name.textContent = entry.name || 'Unknown Player';
       const meta = document.createElement('span');
-      meta.textContent = buildCareerMeta(entry);
+      meta.textContent = buildCareerMeta(entry, stat);
       details.append(name, meta);
 
       const value = document.createElement('strong');
@@ -670,14 +671,14 @@
     return section;
   }
 
-  function buildCareerMeta(entry) {
+  function buildCareerMeta(entry, stat = {}) {
     const parts = [normalizePlayerPosition(entry?.pos) || UNKNOWN_POSITION];
     if (Number.isFinite(entry.careerStart) && Number.isFinite(entry.careerEnd)) {
       parts.push(entry.careerStart === entry.careerEnd
         ? String(entry.careerStart)
         : `${entry.careerStart}-${entry.careerEnd}`);
     }
-    if (Number.isFinite(entry.gp)) parts.push(`${formatCareerTotal(entry.gp)} GP`);
+    if (stat.key !== 'gp' && Number.isFinite(entry.gp)) parts.push(`${formatCareerTotal(entry.gp)} GP`);
     return parts.join(' · ');
   }
 
