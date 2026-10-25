@@ -56,8 +56,14 @@
   display: flex; align-items: center; gap: 7px;
 }
 .teams-current-photo {
-  width: 46px; height: 51px; flex: 0 0 46px;
-  display: grid; place-items: center;
+  /* The photos are portraits, not square thumbnails. A positioned image and
+     placeholder prevent the fallback from claiming a grid row above the photo. */
+  position: relative;
+  display: block;
+  width: 52px;
+  aspect-ratio: 3 / 4;
+  height: auto;
+  flex: 0 0 52px;
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
@@ -66,7 +72,22 @@
   font-size: .75rem;
   font-weight: 800;
 }
-.teams-current-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.teams-current-photo > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.teams-current-photo > span[hidden] { display: none !important; }
+.teams-current-photo img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+}
 .teams-current-player-details { min-width: 0; }
 .teams-current-player-name { font-size: .73rem; font-weight: 730; line-height: 1.22; overflow-wrap: anywhere; }
 .teams-current-player-rating { color: var(--muted); font-size: .68rem; font-variant-numeric: tabular-nums; margin-top: 3px; }
@@ -101,6 +122,6 @@
   }
   .teams-current-player { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
   .teams-current-player-name { font-size: .72rem; }
-  .teams-current-photo { flex: none; width: 52px; height: 53px; }
+  .teams-current-photo { flex: 0 0 62px; width: 62px; height: auto; }
   .teams-current-player-rating { margin-top: 2px; }
 }

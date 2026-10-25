@@ -155,13 +155,15 @@
     box.appendChild(fallbackNode);
     if (!url) return box;
     const image = document.createElement('img');
-    image.src = url;
     image.alt = alt;
     image.loading = 'lazy';
     image.decoding = 'async';
+    // Register handlers before setting src, including when the URL is cached.
     image.addEventListener('load', () => { fallbackNode.hidden = true; });
     image.addEventListener('error', () => { image.remove(); fallbackNode.hidden = false; });
     box.appendChild(image);
+    image.src = url;
+    if (image.complete && image.naturalWidth > 0) fallbackNode.hidden = true;
     return box;
   }
 
