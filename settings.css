@@ -322,11 +322,6 @@ html[data-theme="newspaper"] .color-scheme-group-header {
   border-color: rgba(58, 46, 31, 0.28);
 }
 
-html[data-theme="newspaper"] .news-item.news-alt-year {
-  background: #e7d6ad;
-  border-color: rgba(58, 46, 31, 0.30);
-}
-
 html[data-theme="newspaper"] .news-season,
 html[data-theme="newspaper"] .career-leader-value,
 html[data-theme="newspaper"] .record-points,
@@ -616,11 +611,6 @@ html[data-theme="dark-newspaper"] .career-leader-heading,
 html[data-theme="dark-newspaper"] .color-scheme-group-header {
   background: #40382b;
   border-color: rgba(239, 226, 195, 0.20);
-}
-
-html[data-theme="dark-newspaper"] .news-item.news-alt-year {
-  background: #393226;
-  border-color: rgba(239, 226, 195, 0.22);
 }
 
 html[data-theme="dark-newspaper"] .news-season,

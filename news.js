@@ -615,6 +615,7 @@
     for (const item of newsItems) {
       const article = document.createElement('article');
       article.className = 'news-item';
+      if (item.type === 'In memoriam') article.classList.add('news-memorial');
 
       const season = document.createElement('div');
       season.className = 'news-season';
