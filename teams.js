@@ -41,6 +41,18 @@
     return /^https?:\/\/\S+$/i.test(valueText) ? valueText : '';
   }
 
+  function normalizeTeamColor(value) {
+    if (typeof value !== 'string') return null;
+    let hex = value.trim();
+    if (!hex.startsWith('#')) hex = '#' + hex;
+    if (/^#[0-9a-f]{3}$/i.test(hex)) {
+      hex = '#' + hex.slice(1).split('').map((digit) => digit + digit).join('');
+    } else if (/^#[0-9a-f]{8}$/i.test(hex)) {
+      hex = hex.slice(0, 7);
+    }
+    return /^#[0-9a-f]{6}$/i.test(hex) ? hex.toUpperCase() : null;
+  }
+
   function getAttributeForYear(value, year, fallback) {
     if (!Array.isArray(value)) return value ?? fallback;
     let selected = fallback;
@@ -90,6 +102,14 @@
     const region = text(season.region) || text(team.region);
     const name = text(season.name) || text(team.name);
     const totalGames = won + lost + tied + otl;
+    // The current season's uniform/branding palette takes precedence over
+    // the franchise's latest colors (important for relocated/rebranded clubs).
+    const seasonColors = Array.isArray(season.colors) ? season.colors : [];
+    const franchiseColors = Array.isArray(team.colors) ? team.colors : [];
+    const primaryColor = normalizeTeamColor(seasonColors[0])
+      || normalizeTeamColor(franchiseColors[0]);
+    const secondaryColor = normalizeTeamColor(seasonColors[1])
+      || normalizeTeamColor(franchiseColors[1]);
     return {
       tid: number(team.tid, NaN),
       name: (region + ' ' + name).trim() || text(team.abbrev) || 'Unknown Team',
@@ -97,6 +117,7 @@
       logo: webImage(season.imgURL) || webImage(season.imgURLSmall)
         || webImage(team.imgURL) || webImage(team.imgURLSmall),
       won, lost, tied, otl, gp,
+      primaryColor, secondaryColor,
       pct: totalGames > 0 ? (won + tied * 0.5) / totalGames : 0,
       mov: gp > 0 ? (number(stats.pts) - number(stats.oppPts)) / gp : 0,
       lastTen: Array.isArray(season.lastTen) ? season.lastTen : [],
@@ -189,6 +210,8 @@
     const fragment = document.createDocumentFragment();
     teams.forEach((team, index) => {
       const row = el('div', 'teams-current-row');
+      if (team.primaryColor) row.style.setProperty('--team-primary', team.primaryColor);
+      if (team.secondaryColor) row.style.setProperty('--team-secondary', team.secondaryColor);
       row.setAttribute('aria-label', [
         'Rank ' + (index + 1), team.name, team.won + ' wins',
         team.lost + ' losses', (team.pct * 100).toFixed(1) + ' percent',

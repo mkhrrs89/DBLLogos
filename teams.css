@@ -30,9 +30,12 @@
   padding: 12px 15px;
   border-top: 1px solid var(--line);
   min-height: 103px;
-  background: rgba(255,255,255,.012);
+  background: var(--team-primary, rgba(255,255,255,.012));
+  color: var(--team-secondary, var(--text));
 }
-.teams-current-row:nth-child(even) { background: rgba(255,255,255,.03); }
+.teams-current-row:nth-child(even) {
+  background: var(--team-primary, rgba(255,255,255,.03));
+}
 .teams-current-rank { font-size: 1.05rem; font-weight: 850; font-variant-numeric: tabular-nums; }
 .teams-current-logo {
   /* Keep both the logo image and fallback inside the same fixed square.
@@ -42,7 +45,7 @@
   width: 72px;
   height: 72px;
   overflow: hidden;
-  color: var(--muted);
+  color: var(--team-secondary, var(--muted));
   font-weight: 800;
 }
 .teams-current-logo > span {
@@ -63,7 +66,7 @@
 }
 .teams-current-name { font-size: .96rem; font-weight: 760; line-height: 1.28; overflow-wrap: anywhere; }
 .teams-current-record, .teams-current-pct { text-align: center; font-variant-numeric: tabular-nums; font-weight: 720; font-size: .88rem; white-space: nowrap; }
-.teams-current-pct { color: var(--muted); }
+.teams-current-pct { color: var(--team-secondary, var(--muted)); }
 .teams-current-stars {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -87,7 +90,7 @@
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: rgba(255,255,255,.07);
-  color: var(--muted);
+  color: var(--team-secondary, var(--muted));
   font-size: .75rem;
   font-weight: 800;
 }
@@ -109,8 +112,8 @@
 }
 .teams-current-player-details { min-width: 0; }
 .teams-current-player-name { font-size: .66rem; font-weight: 730; line-height: 1.22; overflow-wrap: anywhere; }
-.teams-current-player-rating { color: var(--muted); font-size: .68rem; font-variant-numeric: tabular-nums; margin-top: 3px; }
-.teams-current-no-player { color: var(--muted); font-size: .76rem; }
+.teams-current-player-rating { color: var(--team-secondary, var(--muted)); font-size: .68rem; font-variant-numeric: tabular-nums; margin-top: 3px; }
+.teams-current-no-player { color: var(--team-secondary, var(--muted)); font-size: .76rem; }
 .teams-current-feedback { margin: 0; padding: 27px 18px; text-align: center; color: var(--muted); }
 
 @media (max-width: 1060px) {
