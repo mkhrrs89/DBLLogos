@@ -92,7 +92,7 @@
   }
   .teams-current-logo { width: 43px; height: 43px; }
   .teams-current-name { font-size: .88rem; }
-  .teams-current-record { grid-column: 4; font-size: .82rem; text-align: right; align-self: end; }
+  .teams-current-record { grid-column: 4; grid-row: 1; font-size: .82rem; text-align: right; align-self: end; }
   .teams-current-pct { grid-column: 4; grid-row: 1; align-self: start; text-align: right; font-size: .73rem; }
   .teams-current-stars {
     grid-row: 2; grid-column: 2 / -1;
