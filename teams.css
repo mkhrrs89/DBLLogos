@@ -89,7 +89,7 @@
   object-position: center center;
 }
 .teams-current-player-details { min-width: 0; }
-.teams-current-player-name { font-size: .73rem; font-weight: 730; line-height: 1.22; overflow-wrap: anywhere; }
+.teams-current-player-name { font-size: .66rem; font-weight: 730; line-height: 1.22; overflow-wrap: anywhere; }
 .teams-current-player-rating { color: var(--muted); font-size: .68rem; font-variant-numeric: tabular-nums; margin-top: 3px; }
 .teams-current-no-player { color: var(--muted); font-size: .76rem; }
 .teams-current-feedback { margin: 0; padding: 27px 18px; text-align: center; color: var(--muted); }
@@ -202,7 +202,7 @@
     height: auto;
   }
   .teams-current-player-name {
-    font-size: .72rem;
+    font-size: .62rem;
     line-height: 1.18;
   }
   .teams-current-player-rating { margin-top: 2px; }
