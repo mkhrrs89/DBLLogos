@@ -23,6 +23,7 @@
     retiredNumbersTabBtn: 'retiredNumbersPanel',
     recordsTabBtn: 'recordsPanel',
     shootoutRecordsTabBtn: 'shootoutRecordsPanel',
+    teamsTabBtn: 'teamsPanel',
     newsTabBtn: 'newsPanel',
     rivalsTabBtn: 'rivalsPanel',
     financesTabBtn: 'financesPanel',

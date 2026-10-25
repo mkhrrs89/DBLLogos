@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="./headshot-backgrounds.css?v=20261021-fixed-aspect-overlay" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
     <link rel="stylesheet" href="./team-leaders.css?v=20261003-cleveland-leaders" />
+    <link rel="stylesheet" href="./teams.css?v=20261025-power-rankings" />
     <link rel="stylesheet" href="./ratings.css?v=20261012-ratings" />
     <link rel="stylesheet" href="./players-of-month.css?v=20261008-players-month" />
     <link rel="stylesheet" href="./records-player-images.css?v=20260926-mobile-records" />
@@ -161,6 +162,7 @@
           <details class="tab-group">
             <summary class="tab-group-toggle">League</summary>
             <div class="tab-group-menu" data-tab-group="league">
+              <button id="teamsTabBtn" class="tab-btn" type="button" aria-selected="false">Teams</button>
               <button id="newsTabBtn" class="tab-btn" type="button" aria-selected="false">News</button>
               <button id="rivalsTabBtn" class="tab-btn" type="button" aria-selected="false">Rivals</button>
               <button id="financesTabBtn" class="tab-btn" type="button" aria-selected="false">Finances</button>
@@ -547,6 +549,22 @@
           </div>
         </section>
 
+        <section id="teamsPanel" class="panel teams-current-panel" hidden>
+          <div class="teams-current-header">
+            <h2>Teams</h2>
+            <p class="subtle">Current-season power rankings, records, and each team's three highest-rated players.</p>
+            <p id="teamsCurrentSummary" class="teams-current-summary" aria-live="polite"></p>
+          </div>
+          <div class="teams-current-table" role="region" aria-label="Current team power rankings">
+            <div class="teams-current-columns" aria-hidden="true">
+              <span>#</span><span>Logo</span><span>Team</span><span>Record</span><span>Win %</span><span>Top 3 Players by Rating</span>
+            </div>
+            <div id="teamsCurrentWrap" class="teams-current-wrap">
+              <p class="teams-current-feedback">Load a league file to see the team power rankings.</p>
+            </div>
+          </div>
+        </section>
+
         <section id="newsPanel" class="panel news-panel" hidden>
           <div class="news-header">
             <h2>News</h2>
@@ -688,6 +706,7 @@
     <script src="./shootout-records.js?v=20260928-full-history"></script>
     <script src="./deferred-heavy-views.js?v=20260926-hof-stability"></script>
     <script src="./hall-of-fame-fallback.js?v=20260926-hof-stability"></script>
+    <script src="./teams.js?v=20261025-power-rankings"></script>
     <script src="./news.js?v=20261014-player-memorials"></script>
     <script src="./news-persistence.js?v=20261014-active-file-cache-guard"></script>
     <script src="./news-year-shading.js?v=20260919-news-day-number"></script>
