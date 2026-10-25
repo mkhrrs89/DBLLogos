@@ -35,13 +35,32 @@
 .teams-current-row:nth-child(even) { background: rgba(255,255,255,.03); }
 .teams-current-rank { font-size: 1.05rem; font-weight: 850; font-variant-numeric: tabular-nums; }
 .teams-current-logo {
-  display: grid; place-items: center;
-  width: 72px; height: 72px;
+  /* Keep both the logo image and fallback inside the same fixed square.
+     Previously they formed separate grid rows, cutting off tall logos. */
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 72px;
   overflow: hidden;
   color: var(--muted);
   font-weight: 800;
 }
-.teams-current-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.teams-current-logo > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.teams-current-logo > span[hidden] { display: none !important; }
+.teams-current-logo > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+}
 .teams-current-name { font-size: .96rem; font-weight: 760; line-height: 1.28; overflow-wrap: anywhere; }
 .teams-current-record, .teams-current-pct { text-align: center; font-variant-numeric: tabular-nums; font-weight: 720; font-size: .88rem; white-space: nowrap; }
 .teams-current-pct { color: var(--muted); }
