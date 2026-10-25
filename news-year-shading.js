@@ -43,7 +43,8 @@
       // Include previously cached News items, while retaining their stored
       // year for the year dividers and chronological grouping.
       story.classList.toggle('news-single-game',
-        type === 'single-game record' || type === 'single-game record chase');
+        type === 'single-game record' || type === 'single-game record chase'
+          || type === 'statistical feat');
 
       const year = getStoryYear(story);
       const existingDivider = story.previousElementSibling?.classList?.contains('news-year-divider')

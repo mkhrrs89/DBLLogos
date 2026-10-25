@@ -108,8 +108,16 @@
       generated.push(...buildSeasonAndCareerNews(playerData.rows));
       generated.push(...buildDeathNews(playerData.deaths));
 
+      // BBGM keeps historical notable performances separately in playerFeats.
+      // Resolve their game days during the existing game scan so no second
+      // expensive pass through the exported games archive is necessary.
+      showLoading('Reading stored statistical feats…');
+      const featsByGame = new Map();
+      generated.push(...await buildStatisticalFeatNews(file, version, playerData, featsByGame));
+      if (!isCurrent(file, version)) return;
+
       showLoading('Scanning games for record performances…');
-      generated.push(...await buildSingleGameNews(file, version, playerData));
+      generated.push(...await buildSingleGameNews(file, version, playerData, featsByGame));
       if (!isCurrent(file, version)) return;
 
       generated.sort(compareNewsItems);
@@ -459,7 +467,90 @@
     }
   }
 
-  async function buildSingleGameNews(file, version, playerData) {
+
+  // These are BBGM's own stored notable performances. Do not derive a second
+  // set of feats from game box scores or impose modern scoring thresholds.
+  async function buildStatisticalFeatNews(file, version, playerData, featsByGame) {
+    const result = [];
+
+    await stream.forEachTopLevelArrayItem(file, 'playerFeats', (feat) => {
+      if (!isCurrent(file, version) || !feat || typeof feat !== 'object') return;
+      const season = readOptionalNumber(feat.season);
+      if (!Number.isInteger(season) || season <= 0) return;
+
+      const pid = readOptionalNumber(feat.pid);
+      const tid = readOptionalNumber(feat.tid);
+      const oppTid = readOptionalNumber(feat.oppTid);
+      const gid = readOptionalNumber(feat.gid);
+      const fid = readOptionalNumber(feat.fid);
+      const name = getPlayerName(feat) !== 'Unknown Player'
+        ? getPlayerName(feat)
+        : (pid === null ? 'Unknown Player' : playerData.nameByPid.get(pid) || 'Unknown Player');
+      const statline = feat.stats || {};
+      const points = readStat(statline, 'pts');
+      const rebounds = readStat(statline, 'trb');
+      const assists = readStat(statline, 'ast');
+      const steals = readStat(statline, 'stl');
+      const blocks = readStat(statline, 'blk');
+      const parts = [
+        Number.isFinite(points) ? formatNumber(points) + ' PTS' : '',
+        Number.isFinite(rebounds) ? formatNumber(rebounds) + ' REB' : '',
+        Number.isFinite(assists) ? formatNumber(assists) + ' AST' : '',
+        Number.isFinite(steals) && steals >= 5 ? formatNumber(steals) + ' STL' : '',
+        Number.isFinite(blocks) && blocks >= 5 ? formatNumber(blocks) + ' BLK' : '',
+      ].filter(Boolean);
+      const tripleDouble = numberOrZero(statline.td) > 0;
+      const quadrupleDouble = numberOrZero(statline.qd) > 0;
+      const fiveByFive = numberOrZero(statline.fxf) > 0;
+      const featName = quadrupleDouble ? 'a quadruple-double'
+        : fiveByFive ? 'a five-by-five'
+        : tripleDouble ? 'a triple-double'
+        : 'a standout game';
+      const headline = parts.length
+        ? name + ' records ' + featName + ': ' + parts.join(', ') + '.'
+        : name + ' records ' + featName + '.';
+
+      const team = teamNameFor(tid, season);
+      const opponent = teamNameFor(oppTid, season);
+      const resultLabel = typeof feat.result === 'string' ? feat.result.trim().toUpperCase() : '';
+      const score = typeof feat.score === 'string' ? feat.score.trim() : '';
+      const details = [
+        team && opponent ? team + ' vs. ' + opponent : team || (opponent ? 'vs. ' + opponent : ''),
+        [resultLabel, score].filter(Boolean).join(' '),
+        feat.playoffs ? 'Playoffs' : 'Regular season',
+        numberOrZero(feat.overtimes) > 0 ? 'OT' + (feat.overtimes > 1 ? ' (' + feat.overtimes + ')' : '') : '',
+      ].filter(Boolean);
+
+      const item = makeItem({
+        season,
+        day: null,
+        gameId: gid,
+        order: readOrder(gid, fid ?? result.length),
+        type: 'Statistical feat',
+        headline,
+        detail: details.join(' · '),
+        key: 'statistical-feat|' + (fid !== null
+          ? fid
+          : season + '|' + (gid ?? 'unknown') + '|' + (pid ?? name)),
+      }, { pid, tid, name, imgURL: resolvePlayerImage(feat, pid, name, playerData) });
+
+      result.push(item);
+      if (gid !== null) {
+        const key = String(gid);
+        if (!featsByGame.has(key)) featsByGame.set(key, []);
+        featsByGame.get(key).push(item);
+      }
+    });
+
+    return result;
+  }
+
+  function numberOrZero(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  async function buildSingleGameNews(file, version, playerData, featsByGame = new Map()) {
     const result = [];
     const records = new Map();
     let gameCounter = 0;
@@ -493,6 +584,10 @@
       if (currentSeason !== null && season !== currentSeason) flushNear();
       currentSeason = season;
       const gid = game?.gid ?? game?.id ?? gameCounter;
+      // Historical feats don't contain the day, but matching saved games do.
+      for (const featItem of featsByGame.get(String(gid)) || []) {
+        if (Number.isFinite(day)) featItem.day = day;
+      }
       const order = readOrder(gid, gameCounter);
 
       for (const teamEntry of getGameTeams(game)) {
@@ -616,7 +711,8 @@
       const article = document.createElement('article');
       article.className = 'news-item';
       if (item.type === 'In memoriam') article.classList.add('news-memorial');
-      if (item.type === 'Single-game record' || item.type === 'Single-game record chase') {
+      if (item.type === 'Single-game record' || item.type === 'Single-game record chase'
+        || item.type === 'Statistical feat') {
         article.classList.add('news-single-game');
       }
 
@@ -629,10 +725,13 @@
       seasonYear.textContent = String(item.season);
       season.appendChild(seasonYear);
 
-      if (Number.isFinite(item.day)) {
+      if (Number.isFinite(item.day) || (item.type === 'Statistical feat' && Number.isFinite(item.gameId))) {
         const day = document.createElement('span');
         day.className = 'news-day';
-        day.textContent = `Day ${item.day}`;
+        // Older stored feats sometimes outlive the corresponding game log.
+        day.textContent = Number.isFinite(item.day)
+          ? `Day ${item.day}`
+          : `Game #${item.gameId}`;
         season.appendChild(day);
       }
 
