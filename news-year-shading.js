@@ -40,6 +40,10 @@
       // memorials get the same treatment as newly generated death stories.
       const type = story.querySelector('.news-type')?.textContent?.trim()?.toLowerCase();
       story.classList.toggle('news-memorial', type === 'in memoriam');
+      // Include previously cached News items, while retaining their stored
+      // year for the year dividers and chronological grouping.
+      story.classList.toggle('news-single-game',
+        type === 'single-game record' || type === 'single-game record chase');
 
       const year = getStoryYear(story);
       const existingDivider = story.previousElementSibling?.classList?.contains('news-year-divider')

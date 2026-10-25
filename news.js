@@ -616,6 +616,9 @@
       const article = document.createElement('article');
       article.className = 'news-item';
       if (item.type === 'In memoriam') article.classList.add('news-memorial');
+      if (item.type === 'Single-game record' || item.type === 'Single-game record chase') {
+        article.classList.add('news-single-game');
+      }
 
       const season = document.createElement('div');
       season.className = 'news-season';

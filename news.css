@@ -87,6 +87,12 @@ html[data-theme="dark-newspaper"] .news-item.news-memorial {
   color: var(--accent);
 }
 
+/* Hide only the per-story year on single-game records and chases.
+   It remains in the markup so existing year dividers still work. */
+.news-item.news-single-game .news-season-year {
+  display: none;
+}
+
 .news-day {
   font-size: 0.72rem;
   line-height: 1.1;
