@@ -35,7 +35,7 @@
   align-items: center;
   padding: 5px 16px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   background: rgba(255,255,255,0.018);
 }
 
@@ -234,7 +234,7 @@ html[data-theme="dark-newspaper"] .news-item.news-memorial {
     row-gap: 5px;
     align-items: start;
     padding: 8px 9px;
-    border-radius: 14px;
+    border-radius: 0;
   }
 
   .news-season {
