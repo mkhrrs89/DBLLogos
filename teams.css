@@ -122,6 +122,6 @@
   }
   .teams-current-player { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
   .teams-current-player-name { font-size: .72rem; }
-  .teams-current-photo { flex: 0 0 62px; width: 62px; height: auto; }
+  .teams-current-photo { flex: none; width: 62px; height: auto; }
   .teams-current-player-rating { margin-top: 2px; }
 }
