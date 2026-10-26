@@ -41,6 +41,63 @@
     return surname || 'Unknown surname';
   }
 
+  function finiteStat(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+
+  function careerPerformance(stats) {
+    let wsTotal = 0;
+    let wsWithMinutes = 0;
+    let wsMinutes = 0;
+    let perMinutes = 0;
+    let perWeighted = 0;
+    let sawWinShares = false;
+
+    for (const row of Array.isArray(stats) ? stats : []) {
+      if (row?.playoffs) continue;
+      const minutes = finiteStat(row?.min);
+      const directWs = finiteStat(row?.ws);
+      const offensive = finiteStat(row?.ows);
+      const defensive = finiteStat(row?.dws);
+      // Modern and historical exports can use either a single WS field
+      // or the component OWS/DWS fields (the latter in this league).
+      const ws = directWs !== null ? directWs
+        : offensive !== null || defensive !== null
+          ? (offensive ?? 0) + (defensive ?? 0) : null;
+      if (ws !== null) {
+        wsTotal += ws;
+        sawWinShares = true;
+        if (minutes !== null && minutes > 0) {
+          wsWithMinutes += ws;
+          wsMinutes += minutes;
+        }
+      }
+
+      const per = finiteStat(row?.per);
+      if (minutes !== null && minutes > 0 && per !== null) {
+        perWeighted += per * minutes;
+        perMinutes += minutes;
+      }
+    }
+
+    return {
+      totalWs: sawWinShares ? wsTotal : null,
+      ws48: wsMinutes > 0 ? 48 * wsWithMinutes / wsMinutes : null,
+      per: perMinutes > 0 ? perWeighted / perMinutes : null,
+    };
+  }
+
+  function averageAvailable(values) {
+    const valid = values.filter(value => value !== null && Number.isFinite(value));
+    return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
+  }
+
+  function formatMetric(value, decimals = 1) {
+    return value === null || !Number.isFinite(value) ? '—' : value.toFixed(decimals);
+  }
+
   function makePlayer(player) {
     const pid = pidOf(player?.pid);
     if (pid === null) return null;
@@ -61,8 +118,10 @@
         peakYear = Number.isInteger(year) ? year : null;
       }
     }
+    const performance = careerPerformance(player?.stats);
     return {
       pid, name, surname: surnameOf(lastName || name.split(/\s+/).slice(-1)[0]),
+      ...performance,
       imgURL: /^https?:\/\/\S+$/i.test(asText(player.imgURL)) ? asText(player.imgURL) : '',
       peakOvr, peakYear,
       relatives: Array.isArray(player.relatives)
@@ -128,6 +187,10 @@
         members, combined,
         average: withRating.length ? combined / withRating.length : 0,
         best: members[0].peakOvr ?? 0,
+        totalWs: members.some(member => member.totalWs !== null)
+          ? members.reduce((sum, member) => sum + (member.totalWs ?? 0), 0) : null,
+        avgWs48: averageAvailable(members.map(member => member.ws48)),
+        avgPer: averageAvailable(members.map(member => member.per)),
         branch: 1, branchCount: 1,
       });
     }
@@ -156,6 +219,21 @@
       let difference = 0;
       if (mode === 'average') difference = b.average - a.average;
       else if (mode === 'best') difference = b.best - a.best;
+      else if (mode === 'totalWs' && a.totalWs !== null && b.totalWs !== null) {
+        difference = b.totalWs - a.totalWs;
+      } else if (mode === 'totalWs') {
+        if (a.totalWs === null && b.totalWs !== null) return 1;
+        if (b.totalWs === null && a.totalWs !== null) return -1;
+      }
+      else if (mode === 'avgWs48' || mode === 'avgPer') {
+        const aValue = a[mode];
+        const bValue = b[mode];
+        // Unavailable career rates sort last, even below negative rates.
+        if (aValue === null || bValue === null) {
+          if (aValue === null && bValue !== null) return 1;
+          if (bValue === null && aValue !== null) return -1;
+        } else difference = bValue - aValue;
+      }
       else if (mode === 'members') difference = b.members.length - a.members.length;
       else if (mode === 'name') difference = a.surname.localeCompare(b.surname);
       else difference = b.combined - a.combined;
@@ -192,6 +270,9 @@
     details.appendChild(name);
     details.appendChild(el('div', 'families-member-ovr',
       member.peakOvr !== null ? 'Peak OVR ' + member.peakOvr : 'OVR unavailable'));
+    details.appendChild(el('div', 'families-member-year',
+      'WS ' + formatMetric(member.totalWs) + ' · WS/48 ' + formatMetric(member.ws48, 3) +
+      ' · PER ' + formatMetric(member.per)));
     if (member.peakYear !== null) details.appendChild(el('div', 'families-member-year', String(member.peakYear)));
     card.appendChild(details);
     return card;
@@ -208,14 +289,27 @@
       (family.branchCount > 1 ? ' · Lineage ' + family.branch + ' of ' + family.branchCount : '')));
     top.appendChild(identity);
     const total = el('div', 'families-score');
-    total.appendChild(el('strong', null, family.combined));
-    total.appendChild(el('span', null, 'Combined peak OVR'));
+    const metric = {
+      combined: [String(family.combined), 'Combined peak OVR'],
+      average: [family.average.toFixed(1), 'Average peak OVR'],
+      best: [String(family.best), 'Best player OVR'],
+      totalWs: [formatMetric(family.totalWs), 'Total WS'],
+      avgWs48: [formatMetric(family.avgWs48, 3), 'Average WS/48'],
+      avgPer: [formatMetric(family.avgPer), 'Average PER'],
+      members: [String(family.members.length), 'Family members'],
+      name: [String(family.combined), 'Combined peak OVR'],
+    }[sort.value] || [String(family.combined), 'Combined peak OVR'];
+    total.appendChild(el('strong', null, metric[0]));
+    total.appendChild(el('span', null, metric[1]));
     top.appendChild(total);
     card.appendChild(top);
 
     const metrics = el('div', 'families-metrics');
     metrics.appendChild(el('span', null, 'Avg peak OVR ' + family.average.toFixed(1)));
     metrics.appendChild(el('span', null, 'Best player OVR ' + family.best));
+    metrics.appendChild(el('span', null, 'Total WS ' + formatMetric(family.totalWs)));
+    metrics.appendChild(el('span', null, 'Avg WS/48 ' + formatMetric(family.avgWs48, 3)));
+    metrics.appendChild(el('span', null, 'Avg PER ' + formatMetric(family.avgPer)));
     card.appendChild(metrics);
 
     const roster = el('div', 'families-members');
@@ -238,6 +332,9 @@
       combined: 'combined peak OVR',
       average: 'average peak OVR',
       best: 'best player peak OVR',
+      totalWs: 'total career win shares',
+      avgWs48: 'average career WS/48',
+      avgPer: 'average career PER',
       members: 'family size',
       name: 'surname',
     }[sort.value] || 'combined peak OVR';

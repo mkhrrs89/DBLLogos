@@ -555,7 +555,7 @@
           <div class="families-header">
             <div>
               <h2>Families</h2>
-              <p class="subtle">Documented relatives from every era, grouped by family surname. Unrelated players with the same last name remain separate.</p>
+              <p class="subtle">Documented relatives from every era, grouped by family surname. Unrelated players with the same last name remain separate. WS and PER use regular-season career totals; career rates are minute-weighted, then averaged equally across family members with available data.</p>
               <p id="familiesSummary" class="families-summary" aria-live="polite"></p>
             </div>
             <label class="families-sort-label" for="familiesSort">
@@ -564,6 +564,9 @@
                 <option value="combined">Combined peak OVR</option>
                 <option value="average">Average peak OVR</option>
                 <option value="best">Best player OVR</option>
+                <option value="avgWs48">Average WS/48</option>
+                <option value="totalWs">Total WS</option>
+                <option value="avgPer">Average PER</option>
                 <option value="members">Most relatives</option>
                 <option value="name">Last name (A–Z)</option>
               </select>
@@ -732,7 +735,7 @@
     <script src="./deferred-heavy-views.js?v=20260926-hof-stability"></script>
     <script src="./hall-of-fame-fallback.js?v=20260926-hof-stability"></script>
     <script src="./teams.js?v=20261026-muted-backgrounds"></script>
-    <script src="./families.js?v=20261026-families-v1"></script>
+    <script src="./families.js?v=20261026-advanced-family-metrics"></script>
     <script src="./news.js?v=20261025-stored-statistical-feats"></script>
     <script src="./news-persistence.js?v=20261014-active-file-cache-guard"></script>
     <script src="./news-year-shading.js?v=20261025-stored-statistical-feats"></script>
