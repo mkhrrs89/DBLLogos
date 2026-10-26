@@ -53,6 +53,19 @@
     return /^#[0-9a-f]{6}$/i.test(hex) ? hex.toUpperCase() : null;
   }
 
+  // Blend the primary color 25% toward its matching neutral gray.
+  // This reduces saturation without shifting the hue or lightness.
+  function mutePrimaryColor(hex) {
+    if (!hex) return null;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+    return '#' + [r, g, b].map(channel =>
+      Math.round(channel * 0.75 + gray * 0.25)
+        .toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+
   function getAttributeForYear(value, year, fallback) {
     if (!Array.isArray(value)) return value ?? fallback;
     let selected = fallback;
@@ -210,7 +223,7 @@
     const fragment = document.createDocumentFragment();
     teams.forEach((team, index) => {
       const row = el('div', 'teams-current-row');
-      if (team.primaryColor) row.style.setProperty('--team-primary', team.primaryColor);
+      if (team.primaryColor) row.style.setProperty('--team-primary', mutePrimaryColor(team.primaryColor));
       if (team.secondaryColor) row.style.setProperty('--team-secondary', team.secondaryColor);
       row.setAttribute('aria-label', [
         'Rank ' + (index + 1), team.name, team.won + ' wins',
