@@ -24,6 +24,7 @@
     recordsTabBtn: 'recordsPanel',
     shootoutRecordsTabBtn: 'shootoutRecordsPanel',
     teamsTabBtn: 'teamsPanel',
+    familiesTabBtn: 'familiesPanel',
     newsTabBtn: 'newsPanel',
     rivalsTabBtn: 'rivalsPanel',
     financesTabBtn: 'financesPanel',

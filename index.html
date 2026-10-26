@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
     <link rel="stylesheet" href="./team-leaders.css?v=20261003-cleveland-leaders" />
     <link rel="stylesheet" href="./teams.css?v=20261025-franchise-row-colors" />
+    <link rel="stylesheet" href="./families.css?v=20261026-families-v1" />
     <link rel="stylesheet" href="./ratings.css?v=20261012-ratings" />
     <link rel="stylesheet" href="./players-of-month.css?v=20261008-players-month" />
     <link rel="stylesheet" href="./records-player-images.css?v=20260926-mobile-records" />
@@ -155,6 +156,7 @@
             <summary class="tab-group-toggle">Players &amp; Scouting</summary>
             <div class="tab-group-menu" data-tab-group="players">
               <button id="ratingsTabBtn" class="tab-btn" type="button" aria-selected="false">Ratings</button>
+              <button id="familiesTabBtn" class="tab-btn" type="button" aria-selected="false">Families</button>
               <button id="collegesTabBtn" class="tab-btn" type="button" aria-selected="false">Colleges</button>
             </div>
           </details>
@@ -549,6 +551,29 @@
           </div>
         </section>
 
+        <section id="familiesPanel" class="panel families-panel" hidden>
+          <div class="families-header">
+            <div>
+              <h2>Families</h2>
+              <p class="subtle">Documented relatives from every era, grouped by family surname. Unrelated players with the same last name remain separate.</p>
+              <p id="familiesSummary" class="families-summary" aria-live="polite"></p>
+            </div>
+            <label class="families-sort-label" for="familiesSort">
+              Rank by
+              <select id="familiesSort" class="sort-select">
+                <option value="combined">Combined peak OVR</option>
+                <option value="average">Average peak OVR</option>
+                <option value="best">Best player OVR</option>
+                <option value="members">Most relatives</option>
+                <option value="name">Last name (A–Z)</option>
+              </select>
+            </label>
+          </div>
+          <div id="familiesWrap" class="families-wrap" aria-live="polite">
+            <p class="families-status">Load a league file to discover player families.</p>
+          </div>
+        </section>
+
         <section id="teamsPanel" class="panel teams-current-panel" hidden>
           <div class="teams-current-header">
             <h2>Teams</h2>
@@ -707,6 +732,7 @@
     <script src="./deferred-heavy-views.js?v=20260926-hof-stability"></script>
     <script src="./hall-of-fame-fallback.js?v=20260926-hof-stability"></script>
     <script src="./teams.js?v=20261026-muted-backgrounds"></script>
+    <script src="./families.js?v=20261026-families-v1"></script>
     <script src="./news.js?v=20261025-stored-statistical-feats"></script>
     <script src="./news-persistence.js?v=20261014-active-file-cache-guard"></script>
     <script src="./news-year-shading.js?v=20261025-stored-statistical-feats"></script>
