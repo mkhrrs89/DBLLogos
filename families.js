@@ -121,6 +121,8 @@
     const performance = careerPerformance(player?.stats);
     return {
       pid, name, surname: surnameOf(lastName || name.split(/\s+/).slice(-1)[0]),
+      // Match the Draft Prospects tab: tid -2 means not yet drafted.
+      isDraftProspect: Number(player?.tid) === -2,
       ...performance,
       imgURL: /^https?:\/\/\S+$/i.test(asText(player.imgURL)) ? asText(player.imgURL) : '',
       peakOvr, peakYear,
@@ -164,8 +166,13 @@
     }
 
     const detected = [];
-    for (const members of groups.values()) {
-      if (members.length < 2) continue;
+    for (const linkedMembers of groups.values()) {
+      if (linkedMembers.length < 2) continue;
+      // Use all relatives to identify a connected family, but never show or
+      // score undrafted prospects. Keep a family with one eligible player if
+      // their documented relatives happen to be prospects.
+      const members = linkedMembers.filter(member => !member.isDraftProspect);
+      if (!members.length) continue;
       members.sort((a, b) =>
         (b.peakOvr ?? -1) - (a.peakOvr ?? -1) || a.name.localeCompare(b.name));
       const surnameCounts = new Map();
@@ -210,7 +217,10 @@
         family.branchCount = branches.length;
       });
     }
-    return { families: detected, totalMembers: linked.size };
+    return {
+      families: detected,
+      totalMembers: detected.reduce((total, family) => total + family.members.length, 0),
+    };
   }
 
   function orderedFamilies() {
@@ -285,7 +295,7 @@
     const identity = el('div', 'families-identity');
     identity.appendChild(el('h3', 'families-name', family.surname + ' family'));
     identity.appendChild(el('div', 'families-family-meta',
-      family.members.length + ' relatives' +
+      family.members.length + (family.members.length === 1 ? ' relative' : ' relatives') +
       (family.branchCount > 1 ? ' · Lineage ' + family.branch + ' of ' + family.branchCount : '')));
     top.appendChild(identity);
     const total = el('div', 'families-score');
