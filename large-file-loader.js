@@ -88,8 +88,18 @@
     let awaitingColon = false;
     let awaitingValue = false;
     let found = false;
+    let lastInputYieldAt = Date.now();
 
     for await (const chunk of decodedChunks(file)) {
+      // Microtasks from streaming alone do not guarantee a browser paint.
+      // Give input events a turn during sustained large imports, but never
+      // add background-tab timer throttling to historical scans.
+      if (typeof document !== 'undefined' && !document.hidden
+        && typeof window.setTimeout === 'function'
+        && Date.now() - lastInputYieldAt >= 24) {
+        await new Promise(resolve => window.setTimeout(resolve, 0));
+        lastInputYieldAt = Date.now();
+      }
       if (found) {
         yield chunk;
         continue;
@@ -557,13 +567,8 @@
 
   const originalReadLeagueFile = readLeagueFile;
 
-  readLeagueFile = async function readLeagueFileLowMemory(file) {
-    if (!isLargeFile(file)) {
-      window.__dblLargeLeagueFile = null;
-      window.__dblLargeLeagueMode = false;
-      return originalReadLeagueFile(file);
-    }
-
+  async function readInitialLeague(file) {
+    // Also used by the main importer to avoid a second stringify/JSON.parse.
     window.__dblLargeLeagueFile = file;
     window.__dblLargeLeagueMode = true;
 
@@ -572,9 +577,20 @@
       throw new Error('No team history could be read from this large league file.');
     }
 
-    // Initial import only needs the team timeline. Player/game-heavy views are
-    // rebuilt on demand so mobile never has to hold the entire decompressed
-    // league export in memory at once.
-    return JSON.stringify({ teams });
+    // The other tabs still use their own low-memory collection scans.
+    return { teams };
+  }
+
+  window.DBLLeagueStream.readInitialLeague = readInitialLeague;
+
+  readLeagueFile = async function readLeagueFileLowMemory(file) {
+    if (!isLargeFile(file)) {
+      window.__dblLargeLeagueFile = null;
+      window.__dblLargeLeagueMode = false;
+      return originalReadLeagueFile(file);
+    }
+
+    // Preserve this legacy string API for existing readers and callers.
+    return JSON.stringify(await readInitialLeague(file));
   };
 })();

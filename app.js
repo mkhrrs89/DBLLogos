@@ -115,10 +115,15 @@ async function loadLeagueFile(file, source = 'upload') {
   setStatus(`${source === 'restore' ? 'Restoring' : 'Loading'} ${fileName}...`, 'info');
 
   try {
-    const text = await readLeagueFile(file);
+    // The large-file reader already parses team objects one at a time.
+    // Pass them directly to the timeline builder rather than serializing
+    // the team history to JSON only to immediately parse it again.
+    const reader = window.DBLLeagueStream;
+    const league = reader?.readInitialLeague && reader.isLargeFile(file)
+      ? await reader.readInitialLeague(file)
+      : JSON.parse(await readLeagueFile(file));
     if (loadVersion !== leagueLoadVersion) return;
 
-    const league = JSON.parse(text);
     const timeline = buildTimelineData(league);
     if (loadVersion !== leagueLoadVersion) return;
 
@@ -388,17 +393,29 @@ function deserializeTimeline(snapshot) {
 }
 
 async function readLeagueFile(file) {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  const isGzip = file.name.endsWith('.gz') || (bytes[0] === 0x1f && bytes[1] === 0x8b);
+  // Use the browser's streaming decompressor on supported devices. It avoids
+  // allocating a second compressed-byte buffer and runs inflate natively.
+  // Keep the pako path for older browsers and decompression failures.
+  const head = new Uint8Array(await file.slice(0, 2).arrayBuffer());
+  const isGzip = file.name.endsWith('.gz') || (head[0] === 0x1f && head[1] === 0x8b);
 
-  if (isGzip) {
-    if (!window.pako) {
-      throw new Error('Gzip support did not load.');
+  if (isGzip && typeof DecompressionStream !== 'undefined'
+    && typeof Response !== 'undefined' && typeof file.stream === 'function') {
+    try {
+      return await new Response(file.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    } catch (error) {
+      // Some browser builds advertise the API but cannot decode this file.
+      // Retry the exact existing pako implementation below.
     }
-    return window.pako.ungzip(bytes, { to: 'string' });
   }
 
+  if (!isGzip && typeof file.text === 'function') return file.text();
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (isGzip) {
+    if (!window.pako) throw new Error('Gzip support did not load.');
+    return window.pako.ungzip(bytes, { to: 'string' });
+  }
   return new TextDecoder().decode(bytes);
 }
 
