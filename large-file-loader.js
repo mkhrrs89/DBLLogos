@@ -184,7 +184,7 @@
     let inString = false;
     let escaped = false;
 
-    const finishItem = async (text, endIndex) => {
+    const finishItem = (text, endIndex) => {
       const tail = text.slice(itemSegmentStart, endIndex);
       const raw = `${itemParts.join('')}${tail}`.trim();
       itemParts = [];
@@ -193,10 +193,16 @@
       nesting = 0;
       inString = false;
       escaped = false;
-      if (!raw) return;
+      if (!raw) return null;
       const value = JSON.parse(raw);
-      await onItem(value, count);
+      const pending = onItem(value, count);
+      // Most consumers use synchronous callbacks. Avoid two microtask hops
+      // for every player/game while retaining ordered async callbacks.
+      if (pending && typeof pending.then === 'function') {
+        return Promise.resolve(pending).then(() => { count += 1; });
+      }
       count += 1;
+      return null;
     };
 
     const processArrayText = async (text, startIndex = 0) => {
@@ -255,14 +261,16 @@
           }
 
           if (char === ']') {
-            await finishItem(text, i);
+            const pending = finishItem(text, i);
+            if (pending) await pending;
             arrayFinished = true;
             return;
           }
         }
 
         if (char === ',' && nesting === 0) {
-          await finishItem(text, i);
+          const pending = finishItem(text, i);
+          if (pending) await pending;
           i += 1;
           itemSegmentStart = i;
           continue;
@@ -310,7 +318,7 @@
     return values;
   }
 
-  async function readTopLevelValue(file, key) {
+  async function readTopLevelValueUncached(file, key) {
     if (!file) return undefined;
 
     let started = false;
@@ -386,6 +394,25 @@
     }
 
     return undefined;
+  }
+
+  // gameAttributes is small but commonly requested by multiple heavy tabs.
+  // Reuse a read for the same File object, including concurrent callers,
+  // without caching giant player/game arrays or decompressed exports.
+  const gameAttributesByFile = new WeakMap();
+  function readTopLevelValue(file, key) {
+    if (!file || key !== 'gameAttributes') {
+      return readTopLevelValueUncached(file, key);
+    }
+    let pending = gameAttributesByFile.get(file);
+    if (!pending) {
+      pending = readTopLevelValueUncached(file, key);
+      gameAttributesByFile.set(file, pending);
+      pending.catch(() => {
+        if (gameAttributesByFile.get(file) === pending) gameAttributesByFile.delete(file);
+      });
+    }
+    return pending;
   }
 
   window.DBLLeagueStream = {

@@ -374,7 +374,9 @@
       return;
     }
     if (loadedVersion === version) {
-      render();
+      // Sorting already renders on change, so keep existing cards/photos when
+      // returning to this tab rather than rebuilding the entire family tree.
+      if (families.length && !wrap.querySelector('.families-card')) render();
       return;
     }
     if (loadingVersion === version) return;

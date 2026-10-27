@@ -143,7 +143,7 @@
 
   tabBtn.addEventListener('click', () => {
     activateColorSchemesTab();
-    render(teams);
+    // The cached cards remain in the DOM; only redraw after data/filter changes.
     refreshPendingFileWhenReady();
   });
 

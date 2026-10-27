@@ -56,7 +56,8 @@
 
   tabBtn.addEventListener('click', () => {
     activateLeadersTab();
-    renderLeaders(leaders);
+    // Saved/current leader cards are already mounted. Loading a new league
+    // still refreshes them through refreshPendingFileWhenReady().
     refreshPendingFileWhenReady();
   });
 

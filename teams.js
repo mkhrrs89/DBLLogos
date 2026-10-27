@@ -271,7 +271,10 @@
       return;
     }
     if (loadedVersion === token && lastData) {
-      render(lastData.teams, lastData.year);
+      // Reuse the existing ranked rows and image elements on tab switches.
+      if (lastData.teams.length && !wrap.querySelector('.teams-current-row')) {
+        render(lastData.teams, lastData.year);
+      }
       return;
     }
     if (loadingVersion === token) return;

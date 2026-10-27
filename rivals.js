@@ -9,6 +9,7 @@
 
   let rivalMap = loadSavedRivals();
   let teams = [];
+  let renderedTimeline = null;
 
   tabBtn.addEventListener('click', () => {
     activateTab();
@@ -58,15 +59,20 @@
     const timeline = getTimeline();
     if (!timeline || !Array.isArray(timeline.rows) || !timeline.rows.length) {
       teams = [];
+      renderedTimeline = null;
       renderEmpty();
       return;
     }
 
+    // Keep existing selects (and the user's focus) on repeat tab visits.
+    // A new loaded league file gives us a different timeline identity.
+    if (renderedTimeline === timeline && wrap.querySelector('.rivals-row')) return;
     teams = timeline.rows
       .map((row, index) => buildTeam(row, index))
       .filter(Boolean)
       .sort((a, b) => a.label.localeCompare(b.label) || a.sortTid - b.sortTid);
 
+    renderedTimeline = timeline;
     render();
   }
 

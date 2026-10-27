@@ -62,11 +62,15 @@ let leagueLoadVersion = 0;
 
 restoreSavedTimeline();
 setActiveTab('logos');
-renderBanners(fullTimeline);
-renderUniforms(fullTimeline);
-renderRankings(fullTimeline);
-renderHallOfFame(fullTimeline);
-renderRecords(fullTimeline);
+// A successful restore already called setTimeline(), which rendered these
+// views. Only draw empty states here when no saved timeline was restored.
+if (!fullTimeline) {
+  renderBanners(null);
+  renderUniforms(null);
+  renderRankings(null);
+  renderHallOfFame(null);
+  renderRecords(null);
+}
 
 logosTabBtn?.addEventListener('click', () => setActiveTab('logos'));
 bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
@@ -170,8 +174,7 @@ activeTeamsOnlyToggle.addEventListener('change', () => {
 
 teamSortModeSelect?.addEventListener('change', () => {
   teamSortMode = teamSortModeSelect.value === 'tid' ? 'tid' : 'alpha';
-  if (!fullTimeline || isLeagueFileCleared) return;
-  setTimeline(fullTimeline);
+  refreshLogoTimeline();
 });
 
 activeTeamsOnlyToggleFullscreen?.addEventListener('change', () => {
@@ -1354,19 +1357,26 @@ function renderTimeline(timeline) {
   return renderTimelineInto(timeline, timelineWrap);
 }
 
+// Logo-only controls must not rebuild Banners, Uniforms, Rankings, Hall of
+// Fame or Records: those views depend on the league file, not logo filtering.
+function refreshLogoTimeline() {
+  if (!fullTimeline || isLeagueFileCleared) return;
+  currentTimeline = getVisibleTimeline(fullTimeline);
+  renderTimeline(currentTimeline);
+  updateStats(currentTimeline);
+  if (!timelineFullscreen.hidden) {
+    renderTimelineInto(currentTimeline, timelineFullscreenWrap);
+  }
+}
+
 function setTimeline(timeline) {
   fullTimeline = timeline;
-  currentTimeline = getVisibleTimeline(timeline);
-  renderTimeline(currentTimeline);
+  refreshLogoTimeline();
   renderBanners(fullTimeline);
   renderUniforms(fullTimeline);
   renderRankings(fullTimeline);
   renderHallOfFame(fullTimeline);
   renderRecords(fullTimeline);
-  updateStats(currentTimeline);
-  if (!timelineFullscreen.hidden) {
-    renderTimelineInto(currentTimeline, timelineFullscreenWrap);
-  }
 }
 
 function setActiveTab(tabName) {
@@ -2075,8 +2085,7 @@ function setActiveTeamsOnlyEnabled(enabled) {
   if (activeTeamsOnlyToggleFullscreen) {
     activeTeamsOnlyToggleFullscreen.checked = enabled;
   }
-  if (!fullTimeline || isLeagueFileCleared) return;
-  setTimeline(fullTimeline);
+  refreshLogoTimeline();
 }
 
 function setUseSmallLogosEnabled(enabled) {
@@ -2087,8 +2096,7 @@ function setUseSmallLogosEnabled(enabled) {
   if (smallLogosToggleFullscreen) {
     smallLogosToggleFullscreen.checked = enabled;
   }
-  if (!fullTimeline || isLeagueFileCleared) return;
-  setTimeline(fullTimeline);
+  refreshLogoTimeline();
 }
 
 function renderTimelineInto(timeline, targetWrap) {

@@ -29,7 +29,9 @@
   tabBtn.addEventListener('click', () => {
     activateTab();
     if (items.length && loadedVersion === fileVersion) {
-      render(items);
+      // Hidden tabs retain their DOM. Rebuilding thousands of news cards on
+      // each click also triggers unnecessary full-feed persistence writes.
+      if (!wrap.querySelector('.news-item')) render(items);
     } else {
       buildNews();
     }
