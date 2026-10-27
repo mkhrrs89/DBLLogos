@@ -25,13 +25,21 @@
   let loadedVersion = 0;
   let loadingVersion = 0;
   let items = [];
+  let renderEpoch = 0;
+  // Split potentially thousands of card constructions into short tasks.
+  // The feed stays detached until complete, so there is only one DOM commit.
+  const NEWS_RENDER_BATCH_SIZE = 64;
+  let indexedTimeline = null;
+  let rowsByTid = new Map();
 
   tabBtn.addEventListener('click', () => {
     activateTab();
     if (items.length && loadedVersion === fileVersion) {
       // Hidden tabs retain their DOM. Rebuilding thousands of news cards on
       // each click also triggers unnecessary full-feed persistence writes.
-      if (!wrap.querySelector('.news-item')) render(items);
+      if (!wrap.querySelector('.news-item') && loadingVersion !== fileVersion) {
+        void render(items);
+      }
     } else {
       buildNews();
     }
@@ -49,6 +57,7 @@
   const acceptLeagueFile = (file) => {
     if (!file || pendingFile === file) return;
     fileVersion += 1;
+    renderEpoch += 1;
     pendingFile = file;
     loadedVersion = 0;
     loadingVersion = 0;
@@ -67,6 +76,7 @@
 
   clearBtn?.addEventListener('click', () => {
     fileVersion += 1;
+    renderEpoch += 1;
     pendingFile = null;
     loadedVersion = 0;
     loadingVersion = 0;
@@ -124,9 +134,10 @@
 
       generated.sort(compareNewsItems);
       items = dedupeItems(generated);
+      if (!await render(items) || !isCurrent(file, version)) return;
       loadedVersion = version;
-      render(items);
     } catch (error) {
+      if (!isCurrent(file, version)) return;
       console.error('Could not build record news.', error);
       showLoading('Could not build News from this league file.');
     } finally {
@@ -611,13 +622,14 @@
             }
 
             if (value > previous.value) {
+              const teamLabel = teamNameFor(tid, season);
               result.push(makeItem({
                 season,
                 day,
                 order,
                 type: 'Single-game record',
                 headline: `${name} set a new single-game ${stat.label} record with ${formatNumber(value)}.`,
-                detail: `${teamNameFor(tid, season)}${teamNameFor(tid, season) ? ' · ' : ''}Previous record: ${formatNumber(previous.value)} by ${previous.name}.`,
+                detail: `${teamLabel}${teamLabel ? ' · ' : ''}Previous record: ${formatNumber(previous.value)} by ${previous.name}.`,
                 key: `game-record|${season}|${stat.key}|${gid}|${pid ?? name}|${value}`,
               }, { name, pid, tid, imgURL: playerImageURL }));
               records.set(stat.key, { value, name, pid, season, gid });
@@ -694,9 +706,11 @@
     return result;
   }
 
-  function render(newsItems) {
-    wrap.replaceChildren();
+  async function render(newsItems) {
+    const epoch = ++renderEpoch;
+    const version = fileVersion;
     if (!Array.isArray(newsItems) || !newsItems.length) {
+      wrap.replaceChildren();
       wrap.className = 'news-wrap empty-state';
       const empty = document.createElement('div');
       empty.className = 'empty-copy';
@@ -707,9 +721,16 @@
       return;
     }
 
-    wrap.className = 'news-wrap';
     const fragment = document.createDocumentFragment();
-    for (const item of newsItems) {
+    for (let index = 0; index < newsItems.length; index += 1) {
+      if (epoch !== renderEpoch || version !== fileVersion) return false;
+      // A lightweight timeout lets touch/scroll input run between batches.
+      // Avoid requestAnimationFrame: background tabs can suspend its callbacks.
+      if (index > 0 && index % NEWS_RENDER_BATCH_SIZE === 0) {
+        await delay(0);
+        if (epoch !== renderEpoch || version !== fileVersion) return false;
+      }
+      const item = newsItems[index];
       const article = document.createElement('article');
       article.className = 'news-item';
       if (item.type === 'In memoriam') article.classList.add('news-memorial');
@@ -761,7 +782,12 @@
       article.append(season, visuals, content);
       fragment.appendChild(article);
     }
-    wrap.appendChild(fragment);
+    if (epoch !== renderEpoch || version !== fileVersion) return false;
+    // One atomic insertion keeps the Year-divider observer and News cache
+    // from walking or saving partially assembled story lists.
+    wrap.className = 'news-wrap';
+    wrap.replaceChildren(fragment);
+    return true;
   }
 
   function buildNewsVisuals(item) {
@@ -803,6 +829,7 @@
   }
 
   function showLoading(message) {
+    renderEpoch += 1;
     wrap.className = 'news-wrap empty-state';
     wrap.replaceChildren();
     const empty = document.createElement('div');
@@ -887,7 +914,19 @@
       if (typeof fullTimeline === 'undefined' || !Array.isArray(fullTimeline?.rows)) {
         return { name: '', logoURL: '' };
       }
-      const row = fullTimeline.rows.find((candidate) => Number(candidate?.tid) === tid);
+      // Thousands of News stories may reference the same historical teams.
+      // Resolve franchise IDs once per loaded timeline instead of searching
+      // the complete franchise list for every story and record detail.
+      if (indexedTimeline !== fullTimeline) {
+        indexedTimeline = fullTimeline;
+        rowsByTid = new Map();
+        for (const candidate of fullTimeline.rows) {
+          const candidateTid = Number(candidate?.tid);
+          // Match Array.find: the first row wins if IDs appear twice.
+          if (!rowsByTid.has(candidateTid)) rowsByTid.set(candidateTid, candidate);
+        }
+      }
+      const row = rowsByTid.get(tid);
       if (!row) return { name: '', logoURL: '' };
 
       let entry = row.entriesByYear instanceof Map ? row.entriesByYear.get(season) : null;

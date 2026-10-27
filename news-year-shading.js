@@ -30,10 +30,15 @@
   }
 
   function decorateFeed() {
-    const stories = newsWrap.querySelectorAll('.news-item');
-    let previousYear = null;
+    // Temporarily ignore the dividers we insert ourselves. Without this,
+    // every feed render invokes a second full scan of thousands of stories.
+    // External News replacements and saved-feed restores remain observed.
+    observer.disconnect();
+    try {
+      const stories = newsWrap.querySelectorAll('.news-item');
+      let previousYear = null;
 
-    for (const story of stories) {
+      for (const story of stories) {
       // Remove any old alternating-year classes left in saved HTML.
       story.classList.remove('news-alt-year');
       // The persisted feed contains the exact news type label, so old saved
@@ -59,6 +64,9 @@
         existingDivider.remove();
       }
       if (year) previousYear = year;
+      }
+    } finally {
+      observer.observe(newsWrap, { childList: true });
     }
   }
 
