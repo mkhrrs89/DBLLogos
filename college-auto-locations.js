@@ -1047,6 +1047,133 @@
     knownSchools[state].push(...names);
   }
 
+
+  // Supplement the historical directory with exact school aliases actually
+  // found in DBL league exports. Real schools, confidently located regional
+  // names and clearly indicated foreign schools are supported; ambiguous
+  // generic names intentionally remain unassigned.
+  const extraNames = {
+    'Alabama': 'Bishop State;Bishop State Community College;Talladega College',
+    'Alaska': 'Aleutian State;Denali Univ.;Fairbanks Univ.;Kenai Peninsula College;Kodiak College;Nome College;Ilisagvik College;Iḷisaġvik College;Sheldon Jackson College;Sheldon Jackson Coll.;Copper Valley Coll.',
+    'Arizona': 'Grand Canyon State;Yuma State;Diné College;Dine College;Sierra Vista (SVU)',
+    'California': 'Los Angeles (UCLA);Southern Cal (USC);Bakersfield Coll.;Chico State;Compton Junior College;Foothill College;Harvey Mudd;Harvey Mudd College;Pomona College;College of the Canyons;Redlands Univ.;San Bernardino State;Santa Clara State;Santa Monica Coll.;Santa Monica College;Ventura Coll.;Ventura College;Ventura State',
+    'Colorado': 'Boulder State;Fort Lewis Coll.;Fort Lewis College;Greeley College;Red Rocks College',
+    'Connecticut': 'Connecticut State;Charter Oak State;Post Univ.',
+    'District of Columbia': 'Howard Univ.;George Washington Univ.',
+    'Florida': 'Broward;Broward College;Clearwater Univ.;Daytona State;Duval State;Edward Waters;Full Sail Univ.;Full Sail University;Lynn Univ.;Lynn University;Miami Dade Coll.;Miami Dade College;Miami Univ. (FL);Tampa Univ.',
+    'Georgia': 'Savannah State;Valdosta State;Shorter College',
+    'Hawaii': 'Hawaiian Pacific;Honolulu Univ.;Kapi’olani College;Kapiolani College;Pacific Buddhist Academy',
+    'Idaho': 'Pocatello State;Nez Pierce Tribal College;Nez Perce Tribal College;Declo College',
+    'Illinois': 'Bronzeville Coll.;DuPage CC;College of DuPage;Elmhurst Univ.;Harper College;Judson Univ.;Judson University;Knox College;Lake Forest;Lake Forest College;North Park Univ.;North Park University;Roosevelt Univ.;Roosevelt University;South Loop Univ.;Waukegan College',
+    'Indiana': 'Earlham Coll.;Earlham College;Evansville Coll.;Indiana Univ.;Terre Haute State;Univ. of Indiana',
+    'Iowa': 'Grinnell Coll.;Grinnell College',
+    'Kansas': 'Haskell Nations Univ.;Haskell Indian Nations University',
+    'Kentucky': 'Kentucky Univ.;Louisville Univ.;Spalding Univ.',
+    'Louisiana': 'Louisiana State (LSU);Southern Univ.;Evangeline College',
+    'Maine': 'Bowdoin Coll.;Bowdoin College',
+    'Maryland': 'Baltimore Univ.;Johns Hopkins Univ.;Towson Univ.;Naval Academy;Navy Acad.',
+    'Massachusetts': 'Amherst Coll.;Amherst College;Boston Univ.;Bridgewater State;Clark Univ.;Fitchburg State;Springfield Coll.;Springfield College;Suffolk Univ.;Tufts Univ.;Westfield State;Williams College;Univ. of Boston',
+    'Michigan': 'Mackinaw State;Northern Michigan;Northern Michigan Univ.;Kalamazoo College',
+    'Minnesota': 'Gustavus Adolphus;Moorhead State',
+    'Mississippi': 'Magnolia State;Rust College;Jackson State',
+    'Missouri': 'Mizzou State;St. Louis Univ.;Drury Univ.;Rockhurst Univ.',
+    'Montana': 'Big Sky State;Helena State;Rocky Mountain Coll.;Rocky Mountain College',
+    'Nebraska': 'Doane Coll.',
+    'Nevada': 'Northern Las Vegas (UNLV);Nevada State',
+    'New Jersey': 'Rowan Univ.;Stockton Univ.',
+    'New Mexico': 'Mesalands CC;Mesalands College;Zia Sun Academy',
+    'New York': 'Empire State Univ.;Brooklyn Coll.;Brooklyn Univ.;Buffalo State;Hunter College;Ithaca College;Long Island Univ.;Manhattan Univ.;New York (NYU);New York Univ. (NYU);Niagara Univ.;Pace Univ.;Pratt Institute;Queens Coll.;Queens College;Skidmore;Skidmore College;Yeshiva Univ.;Univ. @ Albany',
+    'North Carolina': 'Charlotte Univ.;Mars Hill Univ.;Raleigh State',
+    'North Dakota': 'Bismarck State;Bismarck State College;Cankdeska Cikana;Cankdeska Cikana Community College',
+    'Ohio': 'Akron Univ.;Baldwin Wallace;Baldwin Wallace Univ.;Cincinnati Univ.;Dayton Univ.;Denison Univ.;Heidelberg;Heidelberg University;Miami Univ.;Ohio Central;Ohio Univ.',
+    'Oklahoma': 'Broken Arrow;Tulsa Univ.',
+    'Oregon': 'George Fox;George Fox Univ.;Lewis & Clark;Lewis and Clark College;Pacific Univ. (OR)',
+    'Pennsylvania': 'Bucknell Univ.;Lehigh Univ.;PennWest California;Pitt Univ.;Slippery Rock Univ.;Gettysburg College',
+    'Rhode Island': 'Bryant Univ.;Roger Williams',
+    'South Carolina': 'Palmetto State',
+    'South Dakota': 'Dakota State;Dakota State University;Oglala College;Oglala Lakota College;Sioux Falls Univ.;Sinte Gleska;Sinte Gleska University;Sisseton Wahpeton;Sisseton Wahpeton College',
+    'Tennessee': 'Belmont Univ.;Memphis Univ.;Rhodes College',
+    'Texas': 'Dallas Univ.;Del Mar Univ.;Houston Univ.;Lamar Univ.;Midland Coll.;Our Lady of the Lake;San Antonio Univ.;Sul Ross;Sul Ross State;Southern Methodist (SMU);Texas Christian (TCU);Southwest Texas Univ.',
+    'Utah': 'Deseret State;Salt Lake Univ.',
+    'Vermont': 'Bennington Coll.;Bennington College;Green Mountain State',
+    'Virginia': 'Richmond Univ.',
+    'Washington': 'Everett CC;Everett Community College;Green River College;Olympia Univ.;Skagit Valley;Walla Walla;Walla Walla Community College;Wenatchee Valley;Wenatchee Valley College',
+    'West Virginia': 'Bluefield State',
+    'Wisconsin': 'Rhinelander College',
+    'Wyoming': 'Casper College;Cheyenne State',
+    'International': 'Ateneo De Manila;Auckland Univ. (New Zealand);Australian Nat’l Univ.;Bahçeşehir Univ. (Turkey);Banjoj Luka (Yugoslavia);Barcelona (Spain);Beogradu (Yugoslavia);Bond Univ. (Australia);Brock Univ.;Carleton Univ.;Charles Univ. (Czech);Curtin Univ.;Córdoba (Spain);Dalhousie Univ.;Euskal Herriko (Euskadi);Flinders (Australia);Graz Universität (Austria);Griffith Univ.;Guadalajara Univ. (Mexico);Kaunas Univ.;Kragujevcu (Yugoslavia);La Trobe (Australia);Laurentian Univ.;Ljubljana (Yugoslavia);Lviv Polytechnic (Ukraine);Macquarie (Australia);McGill Univ.;McMaster Univ.;Melbourne State;Monash (Australia);Mostaru (Yugoslavia);National Univ. of Mexico;New South Wales (UNSW);Nizhny Novgorod (Russia);Nišu (Yugoslavia);Novom Sadu (Yugoslavia);NUUPES (Ukraine);Queen’s Univ.;Ryerson Univ.;Simon Fraser;Simon Fraser Univ.;Slask Wroctaw (Poland);St. Francis Xavier;St. Francis Xavier University;Thunder Bay Coll.;Thunder Bay College;Toronto Univ.;Université Laval;Université de Montréal;Univ. de Montréal;Univ. of Alberta;Univ. of British Columbia;Univ. of Calgary;Univ. of Manitoba;Univ. of Ontario;Univ. of Ottowa;Univ. of Ottawa;Univ. of Quebec;Univ. of Saskatchewan;Univ. of Windsor;Univ. of WInnipeg;Univ. of Winnipeg;University of Toronto;University of Ottawa;University of Manitoba;University of British Columbia;University of Alberta;University of Saskatchewan;York Univ.;York University (Canada);Victoria Univ. of Wellington;Wollongong;Johannesburg Univ.;Philippine Normal;San Beda Univ.;Labrador Western;Univ. of Birmingham;Univ. of Loughborough;Univ. of Manchester;Univ. of Sheffield'
+  };
+  for (const [location, names] of Object.entries(extraNames)) {
+    if (!knownSchools[location]) knownSchools[location] = [];
+    knownSchools[location].push(...names.split(';'));
+  }
+
+  // Foreign names without a country suffix also occur in historic exports.
+  knownSchools.International.push(
+    'Univ. de Buenos Aires', 'Universitat de Barcelona',
+    'Universität Wien (Vienna)', 'Univ. of Santo Thomas',
+    'Univ. of Luxembourg', 'Univ. of Melbourne',
+    'University of Melbourne', 'Univ. of Sydney',
+    'University of Sydney', 'Univ. of Adelaide',
+    'University of Adelaide', 'Univ. of Manchester',
+    'University of Manchester', 'Univ. of Sheffield',
+    'University of Sheffield', 'Universidad de Córdoba',
+    'Queen’s University (Canada)', 'University of Limerick',
+    'Univ. of Limerick', 'La Trobe University',
+    'University of Queensland', 'University of Alberta',
+    'Univ. of Zurich', 'Univ. of Milan',
+    'University of Wollongong', 'University of Montreal',
+    'University of Winnipeg', 'University of Birmingham',
+    'University of Loughborough'
+  );
+
+  // City-first school names with a distinctive US place: "Bismarck State",
+  // "Chicago Univ.", "Terre Haute State". Do NOT use this rule for generic
+  // lone place names or homonymous places such as Springfield/Portland.
+  const cityNames = {
+    'Alaska':'Fairbanks;Anchorage;Juneau;Nome;Kodiak;Kenai',
+    'Arizona':'Phoenix;Tucson;Tempe;Yuma;Flagstaff',
+    'California':'Los Angeles;San Francisco;San Diego;San Jose;Sacramento;Bakersfield;Fresno;Santa Clara;Santa Monica;Ventura;Long Beach;San Bernardino;Redlands',
+    'Colorado':'Boulder;Denver;Greeley;Colorado Springs',
+    'Connecticut':'Hartford;New Haven',
+    'Florida':'Tampa;Clearwater;Daytona',
+    'Hawaii':'Honolulu;Hilo',
+    'Idaho':'Boise;Pocatello;Idaho Falls',
+    'Illinois':'Chicago;Waukegan;Naperville',
+    'Indiana':'Terre Haute;Indianapolis',
+    'Iowa':'Des Moines;Cedar Rapids;Iowa City',
+    'Kansas':'Wichita;Topeka',
+    'Kentucky':'Louisville',
+    'Louisiana':'Baton Rouge;New Orleans;Shreveport',
+    'Maryland':'Baltimore;Annapolis',
+    'Massachusetts':'Boston;Worcester;Fitchburg',
+    'Michigan':'Detroit;Kalamazoo;Lansing;Ann Arbor',
+    'Minnesota':'Minneapolis;Saint Paul',
+    'Mississippi':'Hattiesburg;Biloxi',
+    'Missouri':'St Louis;Saint Louis',
+    'Montana':'Helena;Billings;Missoula;Bozeman',
+    'Nebraska':'Omaha',
+    'Nevada':'Las Vegas;Reno',
+    'New Mexico':'Albuquerque;Santa Fe',
+    'New York':'Brooklyn;Queens;Buffalo;Syracuse;Yonkers;Ithaca',
+    'North Carolina':'Raleigh;Charlotte;Durham;Asheville',
+    'North Dakota':'Bismarck;Fargo;Minot;Grand Forks',
+    'Ohio':'Cincinnati;Cleveland;Akron;Dayton;Toledo;Youngstown',
+    'Oklahoma':'Tulsa;Norman;Broken Arrow;Oklahoma City',
+    'Oregon':'Eugene;Corvallis',
+    'Pennsylvania':'Pittsburgh;Philadelphia;Allentown;Scranton',
+    'Rhode Island':'Providence',
+    'South Dakota':'Sioux Falls;Rapid City;Pierre;Spearfish',
+    'Tennessee':'Memphis;Nashville;Chattanooga;Knoxville',
+    'Texas':'Houston;Dallas;San Antonio;Fort Worth;El Paso;Lubbock;Amarillo',
+    'Utah':'Salt Lake City;Provo;Ogden',
+    'Virginia':'Norfolk;Roanoke',
+    'Washington':'Seattle;Spokane;Tacoma;Olympia;Walla Walla;Wenatchee',
+    'West Virginia':'Morgantown;Wheeling',
+    'Wisconsin':'Milwaukee;Green Bay;Rhinelander',
+    'Wyoming':'Cheyenne;Casper;Laramie'
+  };
+
   const aliases = new Map();
   const normalize = name => String(name || '').normalize('NFKC')
     .toLowerCase()
@@ -1066,8 +1193,82 @@
     }
   }
 
+  // Match harmless written variants of known schools without fuzzy matching:
+  // "Univ. of Kentucky", "Bucknell Univ.", "Amherst Coll." and so on.
+  // Ambiguous generated variants are suppressed rather than guessed.
+  const collisions = new Set();
+  const addAlias = (key, location) => {
+    if (!key || collisions.has(key)) return;
+    if (aliases.has(key) && aliases.get(key) !== location) {
+      aliases.delete(key);
+      collisions.add(key);
+      return;
+    }
+    aliases.set(key, location);
+  };
+  for (const [location, names] of Object.entries(knownSchools)) {
+    for (const name of names) {
+      const key = normalize(name);
+      if (key.startsWith('university of ')) {
+        const suffix = key.slice('university of '.length);
+        addAlias('univ of ' + suffix, location);
+        addAlias('u of ' + suffix, location);
+      }
+      if (key.endsWith(' university')) {
+        addAlias(key.slice(0, -' university'.length) + ' univ', location);
+      }
+      if (key.endsWith(' college')) {
+        addAlias(key.slice(0, -' college'.length) + ' coll', location);
+      }
+      if (key.endsWith(' community college')) {
+        addAlias(key.slice(0, -' community college'.length) + ' cc', location);
+      }
+    }
+  }
+
+  const cities = new Map();
+  for (const [location, value] of Object.entries(cityNames)) {
+    for (const city of value.split(';')) {
+      const key = normalize(city);
+      if (cities.has(key) && cities.get(key) !== location) cities.set(key, null);
+      else if (!cities.has(key)) cities.set(key, location);
+    }
+  }
+  const cityKeys = [...cities.keys()].sort((a, b) => b.length - a.length);
+  const states = Object.keys(knownSchools)
+    .filter(x => x !== 'International' && x !== 'District of Columbia')
+    .sort((a, b) => b.length - a.length);
+  const schoolType = /^(?:state(?: (?:univ|university|college|coll|tech|technical))?|univ|university|u|college|coll|tech|technical|institute|inst|community college|cc|junior college|academy|polytechnic)(?: |$)/;
+  const countryTag = /\((?:australia|new zealand|turkey|yugoslavia|serbia|croatia|slovenia|bosnia|poland|russia|siberia|ukraine|germany|france|italy|spain|czech|austria|switzerland|ireland|mexico|philippines|euskadi|svalbard|canada)\)\s*$/i;
+
+  const inferLocation = name => {
+    const raw = String(name || '').trim();
+    if (countryTag.test(raw)) return 'International';
+    const key = normalize(raw);
+    // Match a full state name at the beginning, not a substring in a
+    // surname. Explicit Washington College/Univ could mean MD/MO; likewise
+    // California University is historically a Pennsylvania school.
+    for (const state of states) {
+      const prefix = normalize(state) + ' ';
+      if (!key.startsWith(prefix)) continue;
+      const rest = key.slice(prefix.length);
+      if ((state === 'Washington' || state === 'California')
+          && !rest.startsWith('state ' ) && rest !== 'state') return null;
+      if (schoolType.test(rest)) return state;
+    }
+    for (const city of cityKeys) {
+      if (!cities.get(city) || !key.startsWith(city + ' ')) continue;
+      if (schoolType.test(key.slice(city.length + 1))) return cities.get(city);
+    }
+    return null;
+  };
+
   window.DBLKnownCollegeStates = Object.freeze({
-    lookup(name) { return aliases.get(normalize(name)) || null; },
+    lookup(name) {
+      const key = normalize(name);
+      if (collisions.has(key)) return null;
+      return aliases.get(key) || inferLocation(name);
+    },
     aliasCount: aliases.size,
   });
 })();
