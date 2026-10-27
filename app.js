@@ -59,6 +59,8 @@ let hallOfFameView = 'details';
 let hallOfFameSortKey = 'goatScore';
 let hallOfFameSortDirection = 'desc';
 let leagueLoadVersion = 0;
+// Build large history grids when their tabs open, not while hidden.
+const deferredHistoryViews = new Set();
 
 restoreSavedTimeline();
 setActiveTab('logos');
@@ -215,6 +217,7 @@ function clearLoadedLeagueFile() {
   timelineWrap.className = 'timeline-wrap empty-state';
   timelineWrap.innerHTML = '<div class="empty-copy"><p>No league file loaded yet.</p></div>';
   resetStats();
+  deferredHistoryViews.clear();
   renderBanners(null);
   renderUniforms(null);
   renderRankings(null);
@@ -1369,12 +1372,34 @@ function refreshLogoTimeline() {
   }
 }
 
+// Keep the original history data and draw it on demand without generating
+// thousands of hidden banner, uniform and ranking elements at startup.
+function refreshDeferredHistoryView(panelId) {
+  if (!deferredHistoryViews.has(panelId)) return;
+  deferredHistoryViews.delete(panelId);
+  if (panelId === 'bannersPanel') renderBanners(fullTimeline);
+  else if (panelId === 'uniformsPanel') renderUniforms(fullTimeline);
+  else if (panelId === 'rankingsPanel') renderRankings(fullTimeline);
+}
+function invalidateHistoryViews() {
+  for (const [id, panel] of [
+    ['bannersPanel', bannersPanel],
+    ['uniformsPanel', uniformsPanel],
+    ['rankingsPanel', rankingsPanel],
+  ]) {
+    deferredHistoryViews.add(id);
+    if (!panel.hidden) refreshDeferredHistoryView(id);
+  }
+}
+// Includes the router's restored tab, which does not fire a normal click.
+window.addEventListener('dbl:tab-change', event => {
+  refreshDeferredHistoryView(event.detail?.panelId);
+});
+
 function setTimeline(timeline) {
   fullTimeline = timeline;
   refreshLogoTimeline();
-  renderBanners(fullTimeline);
-  renderUniforms(fullTimeline);
-  renderRankings(fullTimeline);
+  invalidateHistoryViews();
   renderHallOfFame(fullTimeline);
   renderRecords(fullTimeline);
 }
@@ -1404,6 +1429,9 @@ function setActiveTab(tabName) {
   rankingsPanel.hidden = !isRankings;
   hallOfFamePanel.hidden = !isHallOfFame;
   recordsPanel.hidden = !isRecords;
+  if (isBanners) refreshDeferredHistoryView('bannersPanel');
+  if (isUniforms) refreshDeferredHistoryView('uniformsPanel');
+  if (isRankings) refreshDeferredHistoryView('rankingsPanel');
 }
 
 // Reload existing link views after a Settings backup import without

@@ -1391,3 +1391,22 @@ body.fullscreen-open {
     max-width: 100%;
   }
 }
+
+/* Historical cards remain fully mounted and searchable. Compatible browsers
+   defer only their offscreen styling, layout and paint (no pagination). */
+@media screen {
+  @supports (content-visibility: auto) {
+    .ranking-row {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 90px;
+    }
+    .hof-card {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 255px;
+    }
+    .banner-card {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 250px;
+    }
+  }
+}

@@ -300,3 +300,18 @@ html[data-theme="dark-newspaper"] .news-item.news-memorial {
     line-height: 1.3;
   }
 }
+
+/* Skip layout and painting for stories far outside the viewport, without
+   removing them from the DOM, accessibility tree, search or saved feeds.
+   The remembered intrinsic size minimizes scroll-position changes. */
+@media screen {
+  @supports (content-visibility: auto) {
+    .news-item {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 110px;
+    }
+    @media (max-width: 470px) {
+      .news-item { contain-intrinsic-size: auto 142px; }
+    }
+  }
+}

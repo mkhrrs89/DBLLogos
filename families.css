@@ -171,3 +171,14 @@
   .families-member-name { font-size: .67rem; }
   .families-score span { font-size: .55rem; }
 }
+
+/* Preserve all family cards and photos while postponing expensive offscreen
+   layout/paint until each card approaches the viewport. */
+@media screen {
+  @supports (content-visibility: auto) {
+    .families-card {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 245px;
+    }
+  }
+}
