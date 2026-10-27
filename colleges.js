@@ -3,6 +3,7 @@
   // Clearing a recognized school must stay cleared on subsequent imports.
   // Keep this separate from the existing user-assignment storage.
   const AUTO_EXCLUSIONS_KEY = 'zengm-companion-college-auto-exclusions:v1';
+  const HIDE_ASSIGNED_KEY = 'zengm-companion-colleges-hide-assigned:v1';
   const tabBtn = document.getElementById('collegesTabBtn');
   const panel = document.getElementById('collegesPanel');
   const wrap = document.getElementById('collegesWrap');
@@ -72,6 +73,7 @@
   let assignments = loadAssignments();
   let autoExclusions = loadAutoExclusions();
   let recentlyAutoAssigned = 0;
+  let hideAssigned = loadHideAssigned();
   let colleges = [];
   let pendingFile = null;
   let fileVersion = 0;
@@ -249,10 +251,40 @@
       wrap.appendChild(groupedAssignments);
     }
 
+    // This filter applies ONLY to the editable state-selection rows below.
+    // The totals above and the complete state-grouped summary stay untouched.
+    const visibleColleges = hideAssigned
+      ? colleges.filter(college => !isValidLocation(assignments[college]))
+      : colleges;
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'colleges-list-toolbar';
+
+    const filterLabel = document.createElement('label');
+    filterLabel.className = 'colleges-filter-label';
+    const filterToggle = document.createElement('input');
+    filterToggle.type = 'checkbox';
+    filterToggle.checked = hideAssigned;
+    filterToggle.id = 'hideAssignedCollegesToggle';
+    const filterText = document.createElement('span');
+    filterText.textContent = 'Hide assigned colleges';
+    filterLabel.append(filterToggle, filterText);
+    filterToggle.addEventListener('change', () => {
+      hideAssigned = filterToggle.checked;
+      saveHideAssigned();
+      render();
+    });
+
+    const shownCount = document.createElement('span');
+    shownCount.className = 'colleges-filter-count';
+    shownCount.textContent = `Showing ${visibleColleges.length.toLocaleString()} of ${colleges.length.toLocaleString()} colleges`;
+    toolbar.append(filterLabel, shownCount);
+    wrap.appendChild(toolbar);
+
     const list = document.createElement('div');
     list.className = 'colleges-list';
 
-    for (const college of colleges) {
+    for (const college of visibleColleges) {
       const row = document.createElement('div');
       row.className = 'college-row';
 
@@ -297,6 +329,15 @@
 
       row.append(name, select);
       list.appendChild(row);
+    }
+
+    if (!visibleColleges.length) {
+      const empty = document.createElement('p');
+      empty.className = 'college-list-empty';
+      empty.textContent = hideAssigned
+        ? 'Every college has a location assigned. Turn off “Hide assigned colleges” to review or change assignments.'
+        : 'No colleges to display.';
+      list.appendChild(empty);
     }
 
     wrap.appendChild(list);
@@ -398,6 +439,22 @@
       localStorage.setItem(AUTO_EXCLUSIONS_KEY, JSON.stringify([...autoExclusions]));
     } catch (error) {
       console.warn('Could not save automatic college exclusions.', error);
+    }
+  }
+
+  function loadHideAssigned() {
+    try {
+      return localStorage.getItem(HIDE_ASSIGNED_KEY) === 'true';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function saveHideAssigned() {
+    try {
+      localStorage.setItem(HIDE_ASSIGNED_KEY, String(hideAssigned));
+    } catch (error) {
+      // Filtering still works for this session if storage is unavailable.
     }
   }
 
