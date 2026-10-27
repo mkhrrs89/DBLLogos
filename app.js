@@ -62,6 +62,9 @@ let leagueLoadVersion = 0;
 // Retain the current timeline row nodes for sort and logo-size changes.
 // A fresh league invalidates this cache to prevent outdated logos.
 const timelineRenderCache = new WeakMap();
+// On very large histories, keep the old rebuild behavior for filtering so
+// detached rows cannot unnecessarily retain tens of thousands of DOM cells.
+const MAX_RETAINED_TIMELINE_CELLS = 12000;
 // Build large history grids when their tabs open, not while hidden.
 const deferredHistoryViews = new Set();
 
@@ -1395,6 +1398,12 @@ function refreshLogoTimeline() {
 // Clone the current table for fullscreen instead of doing every historical
 // logo lookup, cell creation, and HTML parse for a second time.
 function renderFullscreenTimeline() {
+  // Once fullscreen is mounted, use its own row map rather than cloning the
+  // entire table again after every filter or logo change.
+  if (timelineRenderCache.has(timelineFullscreenWrap)) {
+    renderTimelineInto(currentTimeline, timelineFullscreenWrap);
+    return;
+  }
   const existingTable = timelineWrap.querySelector('.timeline-table');
   if (!existingTable) {
     renderTimelineInto(currentTimeline, timelineFullscreenWrap);
@@ -1402,8 +1411,25 @@ function renderFullscreenTimeline() {
   }
   const left = timelineFullscreenWrap.scrollLeft;
   const top = timelineFullscreenWrap.scrollTop;
+  const table = existingTable.cloneNode(true);
   timelineFullscreenWrap.className = 'timeline-wrap';
-  timelineFullscreenWrap.replaceChildren(existingTable.cloneNode(true));
+  timelineFullscreenWrap.replaceChildren(table);
+  const tbody = table.tBodies[0];
+  if (tbody && tbody.rows.length === currentTimeline.rows.length) {
+    const nodes = Array.from(tbody.rows);
+    timelineRenderCache.set(timelineFullscreenWrap, {
+      years: currentTimeline.years,
+      yearCount: currentTimeline.years.length,
+      yearSignature: currentTimeline.years.join(','),
+      rows: currentTimeline.rows.slice(),
+      nodes,
+      tbody,
+      table,
+      nodeStates: new Map(currentTimeline.rows.map((row, i) => [
+        row, { node: nodes[i], smallLogos: useSmallLogos },
+      ])),
+    });
+  }
   timelineFullscreenWrap.scrollLeft = left;
   timelineFullscreenWrap.scrollTop = top;
 }
@@ -2166,63 +2192,131 @@ function setUseSmallLogosEnabled(enabled) {
   refreshLogoTimeline();
 }
 
-// Keep existing DOM nodes when only the sort order or the small-logo
-// selection changes. Active-team filtering still performs a full build
-// because that changes which rows exist in the table.
+// Timeline row construction is shared by first load and incremental filters.
+// Reuse the same row nodes across TID/A-Z sorting, logo switches and
+// active/all filtering; build an extra row only when it first becomes visible.
+// Detached historic rows remain in the per-timeline cache for later toggles.
+function updateTimelineRowLogos(row, tr, years) {
+  let carryPrimary = '';
+  let carrySmall = '';
+  let carryFallback = '';
+  years.forEach((year, index) => {
+    const entry = row.entriesByYear.get(year);
+    if (entry?.primaryLogoURL) carryPrimary = entry.primaryLogoURL;
+    if (entry?.smallLogoURL) carrySmall = entry.smallLogoURL;
+    if (entry?.fallbackLogoURL) carryFallback = entry.fallbackLogoURL;
+    if (!row.entriesByYear.has(year) || year < row.firstSeason || year > row.lastSeason) return;
+
+    const logo = useSmallLogos
+      ? entry?.smallLogoURL || carrySmall || entry?.fallbackLogoURL || carryFallback
+      : entry?.primaryLogoURL || carryPrimary || entry?.fallbackLogoURL || carryFallback;
+    const td = tr.cells[index + 1];
+    const img = td.querySelector('img');
+    if (logo && img) {
+      if (img.getAttribute('src') !== logo) img.setAttribute('src', logo);
+    } else if (logo) {
+      td.className = 'logo-cell';
+      td.innerHTML = `<div class="logo-card"><img src="${escapeAttribute(logo)}" alt="${escapeAttribute(row.latestLocation)} logo, ${year}" loading="lazy" referrerpolicy="no-referrer" /></div>`;
+    } else if (img) {
+      td.className = 'empty-cell';
+      td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
+    }
+  });
+}
+
+function createTimelineRow(row, years) {
+  const tr = document.createElement('tr');
+
+  const rowHeader = document.createElement('th');
+  rowHeader.className = 'row-header';
+  rowHeader.scope = 'row';
+  const tidLabel = row.tid === null || row.tid === undefined ? '' : `
+        <span class="row-tid">TID ${escapeHtml(row.tid)}</span>`;
+  rowHeader.innerHTML = `
+    <div class="row-label">
+      <div class="row-title">
+        <strong>${escapeHtml(row.latestLocation)}</strong>${tidLabel}
+      </div>
+      <span class="row-years">${row.firstSeason}–${row.lastSeason}</span>
+    </div>
+  `;
+  tr.appendChild(rowHeader);
+
+  let carryForwardPrimaryLogo = '';
+  let carryForwardSmallLogo = '';
+  let carryForwardFallbackLogo = '';
+
+  // Parse all year cells for a franchise in one HTML operation instead of
+  // constructing and parsing every single cell separately. The DOM markup,
+  // lazy-loaded images, empty cells and carry-forward rules are unchanged.
+  const cellMarkup = [];
+  for (const year of years) {
+    const seasonEntry = row.entriesByYear.get(year);
+    const isActiveYear = row.entriesByYear.has(year);
+
+    if (seasonEntry?.primaryLogoURL) {
+      carryForwardPrimaryLogo = seasonEntry.primaryLogoURL;
+    }
+    if (seasonEntry?.smallLogoURL) {
+      carryForwardSmallLogo = seasonEntry.smallLogoURL;
+    }
+    if (seasonEntry?.fallbackLogoURL) {
+      carryForwardFallbackLogo = seasonEntry.fallbackLogoURL;
+    }
+
+    const withinFranchiseSpan = year >= row.firstSeason && year <= row.lastSeason;
+    if (!withinFranchiseSpan || !isActiveYear) {
+      cellMarkup.push('<td class="empty-cell"><div class="empty-card" aria-hidden="true"></div></td>');
+      continue;
+    }
+
+    const logoToShow = useSmallLogos
+      ? seasonEntry?.smallLogoURL || carryForwardSmallLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo
+      : seasonEntry?.primaryLogoURL || carryForwardPrimaryLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo;
+    if (logoToShow) {
+      cellMarkup.push(`<td class="logo-cell"><div class="logo-card"><img src="${escapeAttribute(logoToShow)}" alt="${escapeAttribute(row.latestLocation)} logo, ${year}" loading="lazy" referrerpolicy="no-referrer" /></div></td>`);
+    } else {
+      cellMarkup.push('<td class="empty-cell"><div class="empty-card" aria-hidden="true"></div></td>');
+    }
+  }
+  tr.insertAdjacentHTML('beforeend', cellMarkup.join(''));
+
+  return tr;
+}
+
 function tryReuseTimelineTable(timeline, targetWrap) {
   const previous = timelineRenderCache.get(targetWrap);
   if (!previous || previous.years !== timeline.years
       || previous.yearCount !== timeline.years.length
-      || previous.rows.length !== timeline.rows.length) return false;
+      || previous.yearSignature !== timeline.years.join(',')
+      || previous.table.parentNode !== targetWrap) return false;
+  if (timeline.rows.length !== previous.rows.length
+      && Math.max(previous.nodeStates.size, timeline.rows.length)
+        * timeline.years.length > MAX_RETAINED_TIMELINE_CELLS) return false;
 
-  const rowNodes = new Map();
-  previous.rows.forEach((row, index) => {
-    rowNodes.set(row, previous.nodes[index]);
-  });
-  if (rowNodes.size !== timeline.rows.length
-      || timeline.rows.some(row => !rowNodes.has(row))) return false;
-
-  if (previous.smallLogos !== useSmallLogos) {
-    for (const row of timeline.rows) {
-      const tr = rowNodes.get(row);
-      let carryPrimary = '';
-      let carrySmall = '';
-      let carryFallback = '';
-      timeline.years.forEach((year, index) => {
-        const entry = row.entriesByYear.get(year);
-        if (entry?.primaryLogoURL) carryPrimary = entry.primaryLogoURL;
-        if (entry?.smallLogoURL) carrySmall = entry.smallLogoURL;
-        if (entry?.fallbackLogoURL) carryFallback = entry.fallbackLogoURL;
-        if (!row.entriesByYear.has(year) || year < row.firstSeason || year > row.lastSeason) return;
-        const logo = useSmallLogos
-          ? entry?.smallLogoURL || carrySmall || entry?.fallbackLogoURL || carryFallback
-          : entry?.primaryLogoURL || carryPrimary || entry?.fallbackLogoURL || carryFallback;
-        const td = tr.cells[index + 1];
-        const img = td.querySelector('img');
-        if (logo && img) {
-          // Preserve existing image elements and their loading state.
-          if (img.getAttribute('src') !== logo) img.setAttribute('src', logo);
-        } else if (logo) {
-          td.className = 'logo-cell';
-          td.innerHTML = `<div class="logo-card"><img src="${escapeAttribute(logo)}" alt="${escapeAttribute(row.latestLocation)} logo, ${year}" loading="lazy" referrerpolicy="no-referrer" /></div>`;
-        } else if (img) {
-          td.className = 'empty-cell';
-          td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
-        }
-      });
+  const nextNodes = [];
+  for (const row of timeline.rows) {
+    let state = previous.nodeStates.get(row);
+    if (!state) {
+      state = { node: createTimelineRow(row, timeline.years), smallLogos: useSmallLogos };
+      previous.nodeStates.set(row, state);
+    } else if (state.smallLogos !== useSmallLogos) {
+      updateTimelineRowLogos(row, state.node, timeline.years);
+      state.smallLogos = useSmallLogos;
     }
+    nextNodes.push(state.node);
   }
 
-  const nextNodes = timeline.rows.map(row => rowNodes.get(row));
-  if (nextNodes.some((node, index) => previous.nodes[index] !== node)) {
-    // Moving nodes keeps their photos and native lazy-loading state alive.
+  if (nextNodes.length !== previous.nodes.length
+      || nextNodes.some((node, index) => previous.nodes[index] !== node)) {
     const ordered = document.createDocumentFragment();
     nextNodes.forEach(node => ordered.appendChild(node));
-    previous.tbody.appendChild(ordered);
+    // Replace only tbody's children, preserving the table, header, scroll
+    // position and previously loaded image nodes for filtered-out franchises.
+    previous.tbody.replaceChildren(ordered);
   }
   previous.rows = timeline.rows.slice();
   previous.nodes = nextNodes;
-  previous.smallLogos = useSmallLogos;
   return true;
 }
 
@@ -2261,78 +2355,24 @@ function renderTimelineInto(timeline, targetWrap) {
   table.appendChild(thead);
 
   const tbody = document.createElement('tbody');
-  const renderedRowNodes = [];
-
-  for (const row of rows) {
-    const tr = document.createElement('tr');
-
-    const rowHeader = document.createElement('th');
-    rowHeader.className = 'row-header';
-    rowHeader.scope = 'row';
-    const tidLabel = row.tid === null || row.tid === undefined ? '' : `
-          <span class="row-tid">TID ${escapeHtml(row.tid)}</span>`;
-    rowHeader.innerHTML = `
-      <div class="row-label">
-        <div class="row-title">
-          <strong>${escapeHtml(row.latestLocation)}</strong>${tidLabel}
-        </div>
-        <span class="row-years">${row.firstSeason}–${row.lastSeason}</span>
-      </div>
-    `;
-    tr.appendChild(rowHeader);
-
-    let carryForwardPrimaryLogo = '';
-    let carryForwardSmallLogo = '';
-    let carryForwardFallbackLogo = '';
-
-    // Parse all year cells for a franchise in one HTML operation instead of
-    // constructing and parsing every single cell separately. The DOM markup,
-    // lazy-loaded images, empty cells and carry-forward rules are unchanged.
-    const cellMarkup = [];
-    for (const year of years) {
-      const seasonEntry = row.entriesByYear.get(year);
-      const isActiveYear = row.entriesByYear.has(year);
-
-      if (seasonEntry?.primaryLogoURL) {
-        carryForwardPrimaryLogo = seasonEntry.primaryLogoURL;
-      }
-      if (seasonEntry?.smallLogoURL) {
-        carryForwardSmallLogo = seasonEntry.smallLogoURL;
-      }
-      if (seasonEntry?.fallbackLogoURL) {
-        carryForwardFallbackLogo = seasonEntry.fallbackLogoURL;
-      }
-
-      const withinFranchiseSpan = year >= row.firstSeason && year <= row.lastSeason;
-      if (!withinFranchiseSpan || !isActiveYear) {
-        cellMarkup.push('<td class="empty-cell"><div class="empty-card" aria-hidden="true"></div></td>');
-        continue;
-      }
-
-      const logoToShow = useSmallLogos
-        ? seasonEntry?.smallLogoURL || carryForwardSmallLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo
-        : seasonEntry?.primaryLogoURL || carryForwardPrimaryLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo;
-      if (logoToShow) {
-        cellMarkup.push(`<td class="logo-cell"><div class="logo-card"><img src="${escapeAttribute(logoToShow)}" alt="${escapeAttribute(row.latestLocation)} logo, ${year}" loading="lazy" referrerpolicy="no-referrer" /></div></td>`);
-      } else {
-        cellMarkup.push('<td class="empty-cell"><div class="empty-card" aria-hidden="true"></div></td>');
-      }
-    }
-    tr.insertAdjacentHTML('beforeend', cellMarkup.join(''));
-
-    tbody.appendChild(tr);
-    renderedRowNodes.push(tr);
-  }
+  const renderedRowNodes = rows.map(row => createTimelineRow(row, years));
+  const rowFragment = document.createDocumentFragment();
+  renderedRowNodes.forEach(node => rowFragment.appendChild(node));
+  tbody.appendChild(rowFragment);
 
   table.appendChild(tbody);
   targetWrap.replaceChildren(table);
   timelineRenderCache.set(targetWrap, {
     years,
     yearCount: years.length,
+    yearSignature: years.join(','),
     rows: rows.slice(),
     nodes: renderedRowNodes,
     tbody,
-    smallLogos: useSmallLogos,
+    table,
+    nodeStates: new Map(rows.map((row, index) => [
+      row, { node: renderedRowNodes[index], smallLogos: useSmallLogos },
+    ])),
   });
 }
 
