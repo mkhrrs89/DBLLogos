@@ -59,6 +59,9 @@ let hallOfFameView = 'details';
 let hallOfFameSortKey = 'goatScore';
 let hallOfFameSortDirection = 'desc';
 let leagueLoadVersion = 0;
+// Retain the current timeline row nodes for sort and logo-size changes.
+// A fresh league invalidates this cache to prevent outdated logos.
+const timelineRenderCache = new WeakMap();
 // Build large history grids when their tabs open, not while hidden.
 const deferredHistoryViews = new Set();
 
@@ -172,7 +175,7 @@ mobileFullscreenBtn.addEventListener('click', () => {
   if (!currentTimeline || isLeagueFileCleared) return;
   timelineFullscreen.hidden = false;
   document.body.classList.add('fullscreen-open');
-  renderTimelineInto(currentTimeline, timelineFullscreenWrap);
+  renderFullscreenTimeline();
 });
 
 activeTeamsOnlyToggle.addEventListener('change', () => {
@@ -218,6 +221,8 @@ function clearLoadedLeagueFile() {
   isLeagueFileCleared = true;
   currentTimeline = null;
   fullTimeline = null;
+  timelineRenderCache.delete(timelineWrap);
+  timelineRenderCache.delete(timelineFullscreenWrap);
   closeFullscreenTimeline();
   timelineWrap.className = 'timeline-wrap empty-state';
   timelineWrap.innerHTML = '<div class="empty-copy"><p>No league file loaded yet.</p></div>';
@@ -1384,9 +1389,23 @@ function refreshLogoTimeline() {
   currentTimeline = getVisibleTimeline(fullTimeline);
   renderTimeline(currentTimeline);
   updateStats(currentTimeline);
-  if (!timelineFullscreen.hidden) {
+  if (!timelineFullscreen.hidden) renderFullscreenTimeline();
+}
+
+// Clone the current table for fullscreen instead of doing every historical
+// logo lookup, cell creation, and HTML parse for a second time.
+function renderFullscreenTimeline() {
+  const existingTable = timelineWrap.querySelector('.timeline-table');
+  if (!existingTable) {
     renderTimelineInto(currentTimeline, timelineFullscreenWrap);
+    return;
   }
+  const left = timelineFullscreenWrap.scrollLeft;
+  const top = timelineFullscreenWrap.scrollTop;
+  timelineFullscreenWrap.className = 'timeline-wrap';
+  timelineFullscreenWrap.replaceChildren(existingTable.cloneNode(true));
+  timelineFullscreenWrap.scrollLeft = left;
+  timelineFullscreenWrap.scrollTop = top;
 }
 
 // Keep the original history data and draw it on demand without generating
@@ -1415,6 +1434,9 @@ window.addEventListener('dbl:tab-change', event => {
 
 function setTimeline(timeline) {
   fullTimeline = timeline;
+  // Treat even same-object reloads as potential logo/link updates.
+  timelineRenderCache.delete(timelineWrap);
+  timelineRenderCache.delete(timelineFullscreenWrap);
   refreshLogoTimeline();
   invalidateHistoryViews();
   renderHallOfFame(fullTimeline);
@@ -2144,13 +2166,76 @@ function setUseSmallLogosEnabled(enabled) {
   refreshLogoTimeline();
 }
 
+// Keep existing DOM nodes when only the sort order or the small-logo
+// selection changes. Active-team filtering still performs a full build
+// because that changes which rows exist in the table.
+function tryReuseTimelineTable(timeline, targetWrap) {
+  const previous = timelineRenderCache.get(targetWrap);
+  if (!previous || previous.years !== timeline.years
+      || previous.yearCount !== timeline.years.length
+      || previous.rows.length !== timeline.rows.length) return false;
+
+  const rowNodes = new Map();
+  previous.rows.forEach((row, index) => {
+    rowNodes.set(row, previous.nodes[index]);
+  });
+  if (rowNodes.size !== timeline.rows.length
+      || timeline.rows.some(row => !rowNodes.has(row))) return false;
+
+  if (previous.smallLogos !== useSmallLogos) {
+    for (const row of timeline.rows) {
+      const tr = rowNodes.get(row);
+      let carryPrimary = '';
+      let carrySmall = '';
+      let carryFallback = '';
+      timeline.years.forEach((year, index) => {
+        const entry = row.entriesByYear.get(year);
+        if (entry?.primaryLogoURL) carryPrimary = entry.primaryLogoURL;
+        if (entry?.smallLogoURL) carrySmall = entry.smallLogoURL;
+        if (entry?.fallbackLogoURL) carryFallback = entry.fallbackLogoURL;
+        if (!row.entriesByYear.has(year) || year < row.firstSeason || year > row.lastSeason) return;
+        const logo = useSmallLogos
+          ? entry?.smallLogoURL || carrySmall || entry?.fallbackLogoURL || carryFallback
+          : entry?.primaryLogoURL || carryPrimary || entry?.fallbackLogoURL || carryFallback;
+        const td = tr.cells[index + 1];
+        const img = td.querySelector('img');
+        if (logo && img) {
+          // Preserve existing image elements and their loading state.
+          if (img.getAttribute('src') !== logo) img.setAttribute('src', logo);
+        } else if (logo) {
+          td.className = 'logo-cell';
+          td.innerHTML = `<div class="logo-card"><img src="${escapeAttribute(logo)}" alt="${escapeAttribute(row.latestLocation)} logo, ${year}" loading="lazy" referrerpolicy="no-referrer" /></div>`;
+        } else if (img) {
+          td.className = 'empty-cell';
+          td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
+        }
+      });
+    }
+  }
+
+  const nextNodes = timeline.rows.map(row => rowNodes.get(row));
+  if (nextNodes.some((node, index) => previous.nodes[index] !== node)) {
+    // Moving nodes keeps their photos and native lazy-loading state alive.
+    const ordered = document.createDocumentFragment();
+    nextNodes.forEach(node => ordered.appendChild(node));
+    previous.tbody.appendChild(ordered);
+  }
+  previous.rows = timeline.rows.slice();
+  previous.nodes = nextNodes;
+  previous.smallLogos = useSmallLogos;
+  return true;
+}
+
 function renderTimelineInto(timeline, targetWrap) {
   const { years, rows } = timeline;
   if (!rows.length) {
+    timelineRenderCache.delete(targetWrap);
     targetWrap.className = 'timeline-wrap empty-state';
     targetWrap.innerHTML = '<div class="empty-copy"><p>No active teams found in this league file.</p></div>';
     return;
   }
+
+  if (tryReuseTimelineTable(timeline, targetWrap)) return;
 
   targetWrap.className = 'timeline-wrap';
 
@@ -2176,6 +2261,7 @@ function renderTimelineInto(timeline, targetWrap) {
   table.appendChild(thead);
 
   const tbody = document.createElement('tbody');
+  const renderedRowNodes = [];
 
   for (const row of rows) {
     const tr = document.createElement('tr');
@@ -2199,8 +2285,11 @@ function renderTimelineInto(timeline, targetWrap) {
     let carryForwardSmallLogo = '';
     let carryForwardFallbackLogo = '';
 
+    // Parse all year cells for a franchise in one HTML operation instead of
+    // constructing and parsing every single cell separately. The DOM markup,
+    // lazy-loaded images, empty cells and carry-forward rules are unchanged.
+    const cellMarkup = [];
     for (const year of years) {
-      const td = document.createElement('td');
       const seasonEntry = row.entriesByYear.get(year);
       const isActiveYear = row.entriesByYear.has(year);
 
@@ -2215,36 +2304,36 @@ function renderTimelineInto(timeline, targetWrap) {
       }
 
       const withinFranchiseSpan = year >= row.firstSeason && year <= row.lastSeason;
-
       if (!withinFranchiseSpan || !isActiveYear) {
-        td.className = 'empty-cell';
-        td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
-      } else {
-        const logoToShow = useSmallLogos
-          ? seasonEntry?.smallLogoURL || carryForwardSmallLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo
-          : seasonEntry?.primaryLogoURL || carryForwardPrimaryLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo;
-        if (logoToShow) {
-          td.className = 'logo-cell';
-          td.innerHTML = `
-            <div class="logo-card">
-              <img src="${escapeAttribute(logoToShow)}" alt="${escapeAttribute(row.latestLocation)} logo, ${year}" loading="lazy" referrerpolicy="no-referrer" />
-            </div>
-          `;
-        } else {
-          td.className = 'empty-cell';
-          td.innerHTML = '<div class="empty-card" aria-hidden="true"></div>';
-        }
+        cellMarkup.push('<td class="empty-cell"><div class="empty-card" aria-hidden="true"></div></td>');
+        continue;
       }
 
-      tr.appendChild(td);
+      const logoToShow = useSmallLogos
+        ? seasonEntry?.smallLogoURL || carryForwardSmallLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo
+        : seasonEntry?.primaryLogoURL || carryForwardPrimaryLogo || seasonEntry?.fallbackLogoURL || carryForwardFallbackLogo;
+      if (logoToShow) {
+        cellMarkup.push(`<td class="logo-cell"><div class="logo-card"><img src="${escapeAttribute(logoToShow)}" alt="${escapeAttribute(row.latestLocation)} logo, ${year}" loading="lazy" referrerpolicy="no-referrer" /></div></td>`);
+      } else {
+        cellMarkup.push('<td class="empty-cell"><div class="empty-card" aria-hidden="true"></div></td>');
+      }
     }
+    tr.insertAdjacentHTML('beforeend', cellMarkup.join(''));
 
     tbody.appendChild(tr);
+    renderedRowNodes.push(tr);
   }
 
   table.appendChild(tbody);
-  targetWrap.innerHTML = '';
-  targetWrap.appendChild(table);
+  targetWrap.replaceChildren(table);
+  timelineRenderCache.set(targetWrap, {
+    years,
+    yearCount: years.length,
+    rows: rows.slice(),
+    nodes: renderedRowNodes,
+    tbody,
+    smallLogos: useSmallLogos,
+  });
 }
 
 function closeFullscreenTimeline() {
