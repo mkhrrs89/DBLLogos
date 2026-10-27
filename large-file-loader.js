@@ -171,7 +171,7 @@
     }
   }
 
-  async function forEachTopLevelArrayItem(file, key, onItem) {
+  async function scanTopLevelArrayItems(file, key, onItem) {
     if (!file || typeof onItem !== 'function') return 0;
 
     let count = 0;
@@ -195,7 +195,7 @@
       escaped = false;
       if (!raw) return null;
       const value = JSON.parse(raw);
-      const pending = onItem(value, count);
+      const pending = onItem(value, count, raw);
       // Most consumers use synchronous callbacks. Avoid two microtask hops
       // for every player/game while retaining ordered async callbacks.
       if (pending && typeof pending.then === 'function') {
@@ -413,6 +413,136 @@
       });
     }
     return pending;
+  }
+
+  // Reuse small, complete collections across tabs without storing an entire
+  // expanded league file. Each File is keyed by identity, so a new upload
+  // gets fresh results; abandoned files are collectible with the WeakMap.
+  const MAX_REPLAY_BYTES_PER_COLLECTION = 2 * 1024 * 1024;
+  const MAX_REPLAY_BYTES_PER_FILE = 6 * 1024 * 1024;
+  const MAX_REPLAY_ITEMS = 6000;
+  const SHARED_COLLECTION_KEYS = new Set([
+    'teams', 'teamStats', 'players', 'retiredPlayers',
+    'releasedPlayers', 'freeAgents', 'games', 'events', 'playerFeats',
+  ]);
+  const collectionStateByFile = new WeakMap();
+
+  function getCollectionState(file) {
+    let state = collectionStateByFile.get(file);
+    if (!state) {
+      state = { completed: new Map(), pending: new Map(), bytes: 0 };
+      collectionStateByFile.set(file, state);
+    }
+    return state;
+  }
+
+  async function replayCollection(rows, onItem) {
+    // Parse afresh for each caller: a callback may edit its row, and that
+    // must never change the data seen by any other tab.
+    for (let i = 0; i < rows.length; i += 1) {
+      const pending = onItem(JSON.parse(rows[i]), i);
+      if (pending && typeof pending.then === 'function') await pending;
+    }
+    return rows.length;
+  }
+
+  function forEachTopLevelArrayItem(file, key, onItem) {
+    if (!file || typeof onItem !== 'function') return Promise.resolve(0);
+    if (!SHARED_COLLECTION_KEYS.has(key)) {
+      return scanTopLevelArrayItems(file, key, onItem);
+    }
+
+    const state = getCollectionState(file);
+    const replay = state.completed.get(key);
+    if (replay) return replayCollection(replay, onItem);
+
+    let job = state.pending.get(key);
+    // A reader joining before parsing begins can share the exact scan.
+    // Later readers use their own scan rather than missing early rows.
+    if (!job || job.started) {
+      job = {
+        started: false, listeners: [], rows: [], bytes: 0,
+        cacheable: true,
+      };
+      state.pending.set(key, job);
+      const ownJob = job;
+
+      // Queue the start by one microtask to coalesce callers originating from
+      // the same load event, without adding a visible timer delay.
+      Promise.resolve().then(async () => {
+        ownJob.started = true;
+        return scanTopLevelArrayItems(file, key, (item, index, raw) => {
+          if (ownJob.cacheable) {
+            const nextBytes = ownJob.bytes + raw.length * 2;
+            if (nextBytes > MAX_REPLAY_BYTES_PER_COLLECTION
+                || ownJob.rows.length >= MAX_REPLAY_ITEMS
+                || nextBytes + state.bytes > MAX_REPLAY_BYTES_PER_FILE) {
+              ownJob.cacheable = false;
+              ownJob.rows = [];
+              ownJob.bytes = 0;
+            } else {
+              ownJob.rows.push(raw);
+              ownJob.bytes = nextBytes;
+            }
+          }
+
+          const promises = [];
+          const active = ownJob.listeners.filter(listener => listener.active);
+          for (let i = 0; i < active.length; i += 1) {
+            const listener = active[i];
+            try {
+              // Distinct parsed objects keep each consumer isolated, just as
+              // if it had read the file separately.
+              const value = i === 0 ? item : JSON.parse(raw);
+              const pending = listener.onItem(value, index);
+              if (pending && typeof pending.then === 'function') {
+                promises.push(Promise.resolve(pending).catch(error => {
+                  listener.active = false;
+                  listener.reject(error);
+                }));
+              }
+            } catch (error) {
+              listener.active = false;
+              listener.reject(error);
+            }
+          }
+
+          const checkListeners = () => {
+            if (!ownJob.listeners.some(listener => listener.active)) {
+              // No consumer remains; stop scanning and discard partial cache.
+              throw new Error('Shared league scan has no remaining consumers.');
+            }
+          };
+          if (promises.length) {
+            return Promise.all(promises).then(checkListeners);
+          }
+          checkListeners();
+          return null;
+        });
+      }).then(count => {
+        if (ownJob.cacheable
+            && !state.completed.has(key)
+            && ownJob.bytes + state.bytes <= MAX_REPLAY_BYTES_PER_FILE) {
+          state.completed.set(key, ownJob.rows);
+          state.bytes += ownJob.bytes;
+        }
+        for (const listener of ownJob.listeners) {
+          if (listener.active) listener.resolve(count);
+        }
+      }).catch(error => {
+        for (const listener of ownJob.listeners) {
+          if (listener.active) listener.reject(error);
+        }
+      }).finally(() => {
+        if (state.pending.get(key) === ownJob) state.pending.delete(key);
+        ownJob.listeners.length = 0;
+        ownJob.rows = [];
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      job.listeners.push({ onItem, resolve, reject, active: true });
+    });
   }
 
   window.DBLLeagueStream = {
