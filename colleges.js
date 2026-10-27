@@ -1,5 +1,8 @@
 (() => {
   const STORAGE_KEY = 'zengm-companion-college-locations:v1';
+  // Clearing a recognized school must stay cleared on subsequent imports.
+  // Keep this separate from the existing user-assignment storage.
+  const AUTO_EXCLUSIONS_KEY = 'zengm-companion-college-auto-exclusions:v1';
   const tabBtn = document.getElementById('collegesTabBtn');
   const panel = document.getElementById('collegesPanel');
   const wrap = document.getElementById('collegesWrap');
@@ -20,6 +23,7 @@
     'Colorado',
     'Connecticut',
     'Delaware',
+    'District of Columbia',
     'Florida',
     'Georgia',
     'Hawaii',
@@ -66,6 +70,8 @@
   ];
 
   let assignments = loadAssignments();
+  let autoExclusions = loadAutoExclusions();
+  let recentlyAutoAssigned = 0;
   let colleges = [];
   let pendingFile = null;
   let fileVersion = 0;
@@ -96,6 +102,7 @@
     loadedVersion = -1;
     loadingVersion = -1;
     colleges = [];
+    recentlyAutoAssigned = 0;
 
     if (!panel.hidden) {
       void buildColleges();
@@ -117,6 +124,7 @@
     loadedVersion = -1;
     loadingVersion = -1;
     colleges = [];
+    recentlyAutoAssigned = 0;
     renderEmpty('Load a league file to list its colleges. Your saved college locations are preserved.');
   });
 
@@ -173,6 +181,9 @@
       colleges = Array.from(names).sort((a, b) => (
         a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true })
       ));
+      // Only fill previously unassigned names. Saved/manual choices and
+      // schools explicitly cleared by the user always take precedence.
+      recentlyAutoAssigned = applyAutomaticLocations(colleges);
       loadedVersion = version;
       render();
     } catch (error) {
@@ -228,7 +239,8 @@
 
     const count = document.createElement('p');
     count.className = 'colleges-count';
-    count.textContent = `${colleges.length.toLocaleString()} colleges · ${assignedCount.toLocaleString()} assigned · ${(colleges.length - assignedCount).toLocaleString()} unassigned`;
+    count.textContent = `${colleges.length.toLocaleString()} colleges · ${assignedCount.toLocaleString()} assigned · ${(colleges.length - assignedCount).toLocaleString()} unassigned` +
+      (recentlyAutoAssigned ? ` · ${recentlyAutoAssigned.toLocaleString()} automatically matched` : '');
     summary.appendChild(count);
     wrap.appendChild(summary);
 
@@ -268,8 +280,16 @@
       select.addEventListener('change', () => {
         if (isValidLocation(select.value)) {
           assignments[college] = select.value;
+          // Manual selection takes precedence over any automatic match.
+          if (autoExclusions.delete(college)) saveAutoExclusions();
         } else {
           delete assignments[college];
+          // Remember explicit unassignment so another file load doesn't
+          // immediately undo the user's choice.
+          if (window.DBLKnownCollegeStates?.lookup(college)) {
+            autoExclusions.add(college);
+            saveAutoExclusions();
+          }
         }
         saveAssignments();
         render();
@@ -342,6 +362,43 @@
 
   function isValidLocation(value) {
     return LOCATIONS.includes(value);
+  }
+
+  function applyAutomaticLocations(availableColleges) {
+    const lookup = window.DBLKnownCollegeStates?.lookup;
+    if (typeof lookup !== 'function') return 0;
+    let added = 0;
+    for (const college of availableColleges) {
+      // Object.hasOwnProperty.call avoids false positives for school names
+      // such as "constructor" or "toString".
+      if (Object.prototype.hasOwnProperty.call(assignments, college)
+          || autoExclusions.has(college)) continue;
+      const location = lookup(college);
+      if (!isValidLocation(location)) continue;
+      assignments[college] = location;
+      added++;
+    }
+    if (added) saveAssignments(); // One write for the entire loaded league.
+    return added;
+  }
+
+  function loadAutoExclusions() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(AUTO_EXCLUSIONS_KEY) || '[]');
+      return new Set(Array.isArray(parsed)
+        ? parsed.filter(name => typeof name === 'string' && name.trim()) : []);
+    } catch (error) {
+      console.warn('Could not restore excluded automatic colleges.', error);
+      return new Set();
+    }
+  }
+
+  function saveAutoExclusions() {
+    try {
+      localStorage.setItem(AUTO_EXCLUSIONS_KEY, JSON.stringify([...autoExclusions]));
+    } catch (error) {
+      console.warn('Could not save automatic college exclusions.', error);
+    }
   }
 
   function loadAssignments() {
