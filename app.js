@@ -18,6 +18,9 @@ const SAVED_TIMELINE_KEY = 'dbl-logo-timeline:v1';
 const SAVED_BANNERS_KEY = 'dbl-logo-banners:v1';
 const SAVED_UNIFORMS_KEY = 'dbl-logo-uniforms:v1';
 const SCORING_RECORD_LIMIT = 100;
+const homeTabBtn = document.getElementById('homeTabBtn');
+const homePanel = document.getElementById('homePanel');
+const leagueControlsPanel = document.getElementById('leagueControlsPanel');
 const logosTabBtn = document.getElementById('logosTabBtn');
 const bannersTabBtn = document.getElementById('bannersTabBtn');
 const uniformsTabBtn = document.getElementById('uniformsTabBtn');
@@ -69,7 +72,7 @@ const MAX_RETAINED_TIMELINE_CELLS = 12000;
 const deferredHistoryViews = new Set();
 
 restoreSavedTimeline();
-setActiveTab('logos');
+setActiveTab('home');
 // A successful restore already called setTimeline(), which rendered these
 // views. Only draw empty states here when no saved timeline was restored.
 if (!fullTimeline) {
@@ -80,6 +83,7 @@ if (!fullTimeline) {
   renderRecords(null);
 }
 
+homeTabBtn?.addEventListener('click', () => setActiveTab('home'));
 logosTabBtn?.addEventListener('click', () => setActiveTab('logos'));
 bannersTabBtn?.addEventListener('click', () => setActiveTab('banners'));
 uniformsTabBtn?.addEventListener('click', () => setActiveTab('uniforms'));
@@ -1470,24 +1474,29 @@ function setTimeline(timeline) {
 }
 
 function setActiveTab(tabName) {
+  const isHome = tabName === 'home';
   const isLogos = tabName === 'logos';
   const isBanners = tabName === 'banners';
   const isUniforms = tabName === 'uniforms';
   const isRankings = tabName === 'rankings';
   const isHallOfFame = tabName === 'hallOfFame';
   const isRecords = tabName === 'records';
+  homeTabBtn?.classList.toggle('active', isHome);
   logosTabBtn?.classList.toggle('active', isLogos);
   bannersTabBtn?.classList.toggle('active', isBanners);
   uniformsTabBtn?.classList.toggle('active', isUniforms);
   rankingsTabBtn?.classList.toggle('active', isRankings);
   hallOfFameTabBtn?.classList.toggle('active', isHallOfFame);
   recordsTabBtn?.classList.toggle('active', isRecords);
+  homeTabBtn?.setAttribute('aria-selected', String(isHome));
   logosTabBtn?.setAttribute('aria-selected', String(isLogos));
   bannersTabBtn?.setAttribute('aria-selected', String(isBanners));
   uniformsTabBtn?.setAttribute('aria-selected', String(isUniforms));
   rankingsTabBtn?.setAttribute('aria-selected', String(isRankings));
   hallOfFameTabBtn?.setAttribute('aria-selected', String(isHallOfFame));
   recordsTabBtn?.setAttribute('aria-selected', String(isRecords));
+  if (homePanel) homePanel.hidden = !isHome;
+  if (leagueControlsPanel) leagueControlsPanel.hidden = isHome;
   logosPanel.hidden = !isLogos;
   bannersPanel.hidden = !isBanners;
   uniformsPanel.hidden = !isUniforms;

@@ -13,7 +13,7 @@
         document.documentElement.dataset.theme = 'orange';
       }
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20261027-offscreen-card-layout" />
+    <link rel="stylesheet" href="./styles.css?v=20261029-home-startup" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -124,10 +124,11 @@
 
       <main class="page">
         <nav class="tab-bar panel" aria-label="Main views">
+          <button id="homeTabBtn" class="tab-btn active" type="button" aria-selected="true">Home</button>
           <details class="tab-group">
             <summary class="tab-group-toggle">Franchise &amp; Design</summary>
             <div class="tab-group-menu" data-tab-group="design">
-              <button id="logosTabBtn" class="tab-btn active" type="button" aria-selected="true">Logos</button>
+              <button id="logosTabBtn" class="tab-btn" type="button" aria-selected="false">Logos</button>
               <button id="logosByYearTabBtn" class="tab-btn" type="button" aria-selected="false">Logos by Year</button>
               <button id="logosByTeamTabBtn" class="tab-btn" type="button" aria-selected="false">Logos by Team</button>
               <button id="colorSchemesTabBtn" class="tab-btn" type="button" aria-selected="false">Color Schemes</button>
@@ -179,7 +180,9 @@
           </details>
         </nav>
 
-        <section class="panel controls-panel">
+        <section id="homePanel" class="panel home-panel"></section>
+
+        <section id="leagueControlsPanel" class="panel controls-panel" hidden>
           <div class="upload-block">
             <input
               id="leagueFile"
@@ -212,7 +215,7 @@
           </div>
         </section>
 
-        <section id="logosPanel" class="panel timeline-panel">
+        <section id="logosPanel" class="panel timeline-panel" hidden>
           <div class="timeline-toolbar">
             <div class="timeline-heading">
               <h2>Timeline</h2>
@@ -717,7 +720,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script src="./league-file-hub.js?v=20260923-persistent-file"></script>
-    <script src="./app.js?v=20261027-filter-row-reuse"></script>
+    <script src="./app.js?v=20261029-home-startup"></script>
     <script src="./large-file-loader.js?v=20261027-direct-team-import"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
@@ -744,6 +747,6 @@
     <script src="./colleges.js?v=20261027-hide-assigned-filter"></script>
     <script src="./settings.js?v=20260921-dark-newspaper"></script>
     <script src="./saved-links-backup.js?v=20261021-border-ratings"></script>
-    <script src="./tab-router.js?v=20261022-retired-numbers-tab"></script>
+    <script src="./tab-router.js?v=20261029-home-startup"></script>
   </body>
 </html>

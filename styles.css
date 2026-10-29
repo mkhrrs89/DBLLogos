@@ -1410,3 +1410,18 @@ body.fullscreen-open {
     }
   }
 }
+
+
+/* Home is a standalone tab before all navigation groups. Its content area
+   intentionally has no widgets yet; shared league controls return elsewhere. */
+.tab-bar > #homeTabBtn {
+  min-height: 36px;
+  font-weight: 750;
+}
+.home-panel {
+  min-height: 54vh;
+}
+/* .controls-panel normally uses display:grid, so honor the hidden attribute. */
+#leagueControlsPanel[hidden] {
+  display: none;
+}

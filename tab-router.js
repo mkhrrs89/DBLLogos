@@ -6,6 +6,7 @@
 
   const ACTIVE_TAB_KEY = 'zengm-companion-active-tab:v1';
   const PANEL_BY_TAB_ID = {
+    homeTabBtn: 'homePanel',
     logosTabBtn: 'logosPanel',
     logosByYearTabBtn: 'logosByYearPanel',
     logosByTeamTabBtn: 'logosByTeamPanel',
@@ -34,7 +35,7 @@
   };
 
   let activeTabId = null;
-  let restoreObserver = null;
+  const controlsPanel = document.getElementById('leagueControlsPanel');
 
   function getGroups() {
     return Array.from(tabBar.querySelectorAll('.tab-group'));
@@ -89,6 +90,9 @@
     });
 
     panel.hidden = false;
+    // Home is intentionally blank. Keep the shared league-upload controls on
+    // every other view, without clearing the current league or saved settings.
+    if (controlsPanel) controlsPanel.hidden = panelId === 'homePanel';
     activeTabId = button.id || null;
     syncActiveGroup(button);
 
@@ -121,29 +125,10 @@
     return activate(button, options);
   }
 
-  function restoreSavedTab() {
-    let savedTabId = '';
-    try {
-      savedTabId = sessionStorage.getItem(ACTIVE_TAB_KEY) || '';
-    } catch (error) {
-      savedTabId = '';
-    }
-
-    if (!savedTabId || savedTabId === 'logosTabBtn') return;
-    if (activateById(savedTabId, { persist: false, source: 'restore' })) return;
-
-    if (restoreObserver) restoreObserver.disconnect();
-    restoreObserver = new MutationObserver(() => {
-      if (!activateById(savedTabId, { persist: false, source: 'restore' })) return;
-      restoreObserver.disconnect();
-      restoreObserver = null;
-    });
-    restoreObserver.observe(tabBar, { childList: true, subtree: true });
-
-    window.setTimeout(() => {
-      restoreObserver?.disconnect();
-      restoreObserver = null;
-    }, 5000);
+  function openHomeAtStartup() {
+    // Always start on Home, even if a different tab was saved earlier in
+    // sessionStorage. Manual tab navigation and persistence still work.
+    activateById('homeTabBtn', { persist: false, source: 'startup' });
   }
 
   tabBar.addEventListener('click', (event) => {
@@ -165,5 +150,5 @@
   };
 
   syncActiveGroup(tabBar.querySelector('.tab-btn.active'));
-  window.queueMicrotask(restoreSavedTab);
+  window.queueMicrotask(openHomeAtStartup);
 })();
