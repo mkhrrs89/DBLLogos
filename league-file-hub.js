@@ -20,8 +20,10 @@
     };
   }
 
-  function notify(source) {
-    const snapshot = getSnapshot(source);
+  function notify(source, previousFile = null) {
+    // Preserve the outgoing File object for the update-history comparison.
+    // It is not copied or persisted again; subscribers stream it as needed.
+    const snapshot = { ...getSnapshot(source), previousFile };
     window.queueMicrotask(() => {
       for (const subscriber of subscribers) {
         try {
@@ -40,10 +42,11 @@
   function publish(file, source = 'upload') {
     if (!(file instanceof Blob)) return null;
 
+    const previousFile = currentFile;
     currentFile = normalizeFile(file);
     version += 1;
     stateEpoch += 1;
-    notify(source);
+    notify(source, previousFile);
 
     if (source !== 'restore') {
       void persistFile(currentFile);

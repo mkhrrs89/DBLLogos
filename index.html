@@ -14,7 +14,7 @@
       }
     </script>
     <link rel="stylesheet" href="./styles.css?v=20261029-home-startup" />
-    <link rel="stylesheet" href="./home.css?v=20261029-two-highlight-sections" />
+    <link rel="stylesheet" href="./home.css?v=20261029-home-update-history" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -197,6 +197,13 @@
           </section>
           <section class="panel home-bracket-container" aria-label="Season playoff bracket">
             <div id="homeStageContent" class="home-stage-content"></div>
+          </section>
+          <section class="panel home-updates-container" aria-label="Changes since the last league file">
+            <header class="home-updates-heading">
+              <h3>Since Last Update</h3>
+              <p>Games, playoff movement, league news, trades, player feats and more.</p>
+            </header>
+            <div id="homeUpdatesContent" class="home-updates-content" aria-live="polite"></div>
           </section>
         </section>
 
@@ -737,10 +744,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
-    <script src="./league-file-hub.js?v=20260923-persistent-file"></script>
+    <script src="./league-file-hub.js?v=20261029-previous-file-comparison"></script>
     <script src="./app.js?v=20261029-home-startup"></script>
     <script src="./large-file-loader.js?v=20261027-direct-team-import"></script>
     <script src="./home.js?v=20261029-two-highlight-sections"></script>
+    <script src="./home-updates.js?v=20261029-first-version"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>

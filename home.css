@@ -270,3 +270,100 @@ html[data-theme="dark-newspaper"] .home-highlights-name {
   .home-playoff-team { gap: 5px; min-height: 44px; padding: 5px 4px; }
   .home-playoff-logo { flex-basis: 30px; width: 30px; height: 30px; }
 }
+/* Since Last Update: a separate, persistent Home news digest. */
+.home-updates-container {
+  margin-top: 12px;
+  min-width: 0;
+  padding: 16px clamp(15px, 2.2vw, 28px) 22px;
+}
+.home-updates-heading h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.home-updates-heading p {
+  margin: 5px 0 14px;
+  font-size: 0.79rem;
+  color: var(--muted);
+}
+.home-updates-status,
+.home-updates-source {
+  margin: 0 0 14px;
+  font-size: 0.81rem;
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.home-updates-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 17px;
+}
+.home-updates-total {
+  display: inline-flex;
+  gap: 5px;
+  align-items: baseline;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.home-updates-total strong {
+  color: var(--text);
+  font-size: 0.88rem;
+}
+.home-updates-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.home-updates-group {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: rgba(127, 127, 127, 0.025);
+  border-radius: var(--radius-sm);
+}
+.home-updates-group h4 {
+  color: var(--text);
+  font-size: 0.87rem;
+  margin: 0 0 5px;
+}
+.home-updates-count {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.home-updates-group ul {
+  margin: 0;
+  padding-left: 17px;
+  line-height: 1.48;
+  font-size: 0.77rem;
+}
+.home-updates-group li {
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+.home-updates-more {
+  margin-top: 6px;
+  font-size: 0.77rem;
+}
+.home-updates-more summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 700;
+}
+.home-updates-more ul {
+  margin-top: 8px;
+}
+@media (max-width: 720px) {
+  .home-updates-container {
+    margin-top: 10px;
+    padding: 12px 13px 16px;
+  }
+  .home-updates-grid { grid-template-columns: 1fr; }
+  .home-updates-group { padding: 10px 11px; }
+}
