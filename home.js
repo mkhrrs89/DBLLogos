@@ -505,20 +505,24 @@
       'home-highlights-name' + (prominent ? '' : ' home-highlights-name-secondary'),
       name);
   }
-  function addInlineHighlights(list, label, entries) {
-    const line = document.createElement('li');
-    line.className = 'home-highlights-line';
-    line.appendChild(textElement('span', 'home-highlights-label', label + ' '));
+  function addInlineHighlights(column, label, entries) {
+    const group = document.createElement('div');
+    group.className = 'home-highlights-line';
+    group.appendChild(textElement('p', 'home-highlights-label', label));
     if (!entries.length) {
-      line.appendChild(textElement('span', 'home-highlights-empty', 'Not available yet'));
+      group.appendChild(textElement('p', 'home-highlights-empty', 'Not available yet'));
     } else {
-      entries.forEach((entry, index) => {
-        if (index) line.appendChild(document.createTextNode(', '));
-        line.appendChild(highlightedName(entry.name));
-        line.appendChild(document.createTextNode(' ' + entry.value));
-      });
+      const list = document.createElement('ul');
+      list.className = 'home-highlights-leaders';
+      for (const entry of entries) {
+        const item = document.createElement('li');
+        item.appendChild(highlightedName(entry.name));
+        item.appendChild(document.createTextNode(' ' + entry.value));
+        list.appendChild(item);
+      }
+      group.appendChild(list);
     }
-    list.appendChild(line);
+    column.appendChild(group);
   }
   function addHighlightBullets(column, entries) {
     if (!entries.length) {
@@ -549,14 +553,12 @@
       .sort((a, b) => (b.wins / (b.wins + b.losses)) - (a.wins / (a.wins + a.losses))
         || b.wins - a.wins || a.abbrev.localeCompare(b.abbrev)).slice(0, 3);
     const left = createHighlightsColumn();
-    const leaderList = document.createElement('ul');
-    addInlineHighlights(leaderList, 'Best regular season:',
+    addInlineHighlights(left, 'Best regular season:',
       sortedTeams.map(t => ({ name: t.abbrev, value: t.wins + '-' + t.losses })));
-    addInlineHighlights(leaderList, 'Win Shares / 48 Minutes leaders:',
+    addInlineHighlights(left, 'Win Shares / 48 Minutes leaders:',
       summary.ws48.map(p => ({ name: p.name, value: p.value.toFixed(3) + ' WS/48' })));
-    addInlineHighlights(leaderList, 'Scoring leaders:',
+    addInlineHighlights(left, 'Scoring leaders:',
       summary.scoring.map(p => ({ name: p.name, value: p.value.toFixed(1) + ' ppg' })));
-    left.appendChild(leaderList);
 
     const stories = createHighlightsColumn();
     stories.classList.add('home-highlights-stories');
