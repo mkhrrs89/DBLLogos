@@ -494,9 +494,9 @@
     }
     return { addPlayer, finish };
   }
-  function createHighlightsColumn(heading) {
+  function createHighlightsColumn(heading, className = 'home-highlights-column') {
     const column = document.createElement('div');
-    column.className = 'home-highlights-column';
+    column.className = className;
     if (heading) column.appendChild(textElement('h3', '', heading));
     return column;
   }
@@ -556,7 +556,9 @@
     addInlineHighlights(left, 'Scoring leaders:',
       summary.scoring.map(p => ({ name: p.name, value: p.value.toFixed(1) + ' ppg' })));
 
-    const middle = createHighlightsColumn('Climbing the charts this year:');
+    const stories = createHighlightsColumn();
+    stories.classList.add('home-highlights-stories');
+    const middle = createHighlightsColumn('Climbing the charts this year:', 'home-highlights-story');
     addHighlightBullets(middle, summary.climbs.map(c => ({
       name: c.name,
       parts: [
@@ -572,7 +574,7 @@
       ]
     })));
 
-    const right = createHighlightsColumn('Season records broken:');
+    const right = createHighlightsColumn('Season records broken:', 'home-highlights-story');
     addHighlightBullets(right, summary.records.map(r => ({
       name: r.current.name,
       parts: [
@@ -585,7 +587,8 @@
     })));
     const grid = document.createElement('div');
     grid.className = 'home-highlights-grid';
-    grid.append(left, middle, right);
+    stories.append(middle, right);
+    grid.append(left, stories);
     highlights.replaceChildren(grid);
   }
 

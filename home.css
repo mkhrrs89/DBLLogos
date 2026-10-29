@@ -23,7 +23,8 @@
 .home-highlights-content { min-width: 0; }
 .home-highlights-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Two subsections: season leaders and the combined records stories. */
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
   gap: clamp(14px, 2.3vw, 28px);
 }
 .home-highlights-column {
@@ -36,6 +37,11 @@
 .home-highlights-column + .home-highlights-column {
   border-left: 1px solid var(--line);
   padding-left: clamp(14px, 2.3vw, 28px);
+}
+.home-highlights-story + .home-highlights-story {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 12px;
 }
 .home-highlights-column h3 {
   font-size: 0.85rem;
