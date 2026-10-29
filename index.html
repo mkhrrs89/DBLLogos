@@ -14,7 +14,7 @@
       }
     </script>
     <link rel="stylesheet" href="./styles.css?v=20261029-home-startup" />
-    <link rel="stylesheet" href="./home.css?v=20261029-playoff-injuries" />
+    <link rel="stylesheet" href="./home.css?v=20261029-separated-home-cards" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -182,7 +182,7 @@
         </nav>
 
         <section id="homePanel" class="panel home-panel" aria-label="Delta Basketball League home">
-          <header class="home-league-heading">
+          <header class="panel home-league-heading">
             <h2>DELTA BASKETBALL LEAGUE</h2>
             <div class="home-season-stage" aria-live="polite">
               <span id="homeSeason">— Season</span>
@@ -190,7 +190,9 @@
               <span id="homeStage" class="home-stage-name">No league file loaded</span>
             </div>
           </header>
-          <div id="homeStageContent" class="home-stage-content"></div>
+          <section class="panel home-bracket-container" aria-label="Season playoff bracket">
+            <div id="homeStageContent" class="home-stage-content"></div>
+          </section>
         </section>
 
         <section id="leagueControlsPanel" class="panel controls-panel" hidden>
