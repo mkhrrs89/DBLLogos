@@ -82,6 +82,43 @@
       accent: teamColor(row) || teamColor(team) };
   }
 
+  // Only current injuries count. Historical injury entries and ratings from
+  // past seasons must not create a playoff availability marker.
+  function hasQualifyingInjury(player, season) {
+    const injury = player?.injury;
+    const gamesRemaining = asInteger(injury?.gamesRemaining);
+    if (gamesRemaining === null || gamesRemaining <= 0
+        || asText(injury?.type).toLowerCase() === 'healthy') return false;
+    const ratings = Array.isArray(player?.ratings) ? player.ratings : [];
+    for (let i = ratings.length - 1; i >= 0; i--) {
+      if (asInteger(ratings[i]?.season) === season) {
+        return Number(ratings[i]?.ovr) > 50;
+      }
+    }
+    return false;
+  }
+
+  // A team can appear in multiple playoff rounds: update every occurrence.
+  function updateInjuryMarkers(teamRows, count) {
+    if (!teamRows || count <= 0) return;
+    const description = count + ' injured player' + (count === 1 ? '' : 's')
+      + ' with an overall rating above 50';
+    for (const row of teamRows) {
+      const name = row.querySelector('.home-playoff-name');
+      if (!name) continue;
+      let marker = name.querySelector('.home-playoff-injuries');
+      if (!marker) {
+        marker = document.createElement('span');
+        marker.className = 'home-playoff-injuries';
+        marker.setAttribute('role', 'img');
+        name.appendChild(marker);
+      }
+      marker.textContent = '+'.repeat(count);
+      marker.setAttribute('aria-label', description);
+      marker.title = description;
+    }
+  }
+
   function participantRow(participant, seasonTeams) {
     const tid = asInteger(participant?.tid);
     const team = seasonTeams.get(tid) || {};
@@ -89,6 +126,7 @@
     const seed = asInteger(participant?.seed);
     const line = document.createElement('div');
     line.className = 'home-playoff-team';
+    if (tid !== null && tid >= 0) line.dataset.teamTid = String(tid);
     if (team.accent) line.style.setProperty('--home-team-accent', team.accent);
 
     const logoFrame = document.createElement('span');
@@ -285,6 +323,31 @@
       });
       if (!isCurrent()) return;
       renderBracket(seriesRecord, attrs, seasonTeams, season);
+
+      // Keep the bracket visible while the (potentially large) players array
+      // streams. Update the compact + markers as qualifying players arrive.
+      const rowsByTeam = new Map();
+      for (const row of content.querySelectorAll('.home-playoff-team[data-team-tid]')) {
+        const tid = asInteger(row.dataset.teamTid);
+        if (!rowsByTeam.has(tid)) rowsByTeam.set(tid, []);
+        rowsByTeam.get(tid).push(row);
+      }
+      const injuryCounts = new Map();
+      try {
+        await stream.forEachTopLevelArrayItem(file, 'players', player => {
+          if (!isCurrent()) return;
+          const tid = asInteger(player?.tid);
+          if (tid === null || tid < 0 || !participating.has(tid)
+              || !hasQualifyingInjury(player, season)) return;
+          const count = (injuryCounts.get(tid) || 0) + 1;
+          injuryCounts.set(tid, count);
+          updateInjuryMarkers(rowsByTeam.get(tid), count);
+        });
+      } catch (error) {
+        // An unavailable/corrupt players collection should not destroy the
+        // already successfully rendered playoff bracket.
+        if (isCurrent()) console.warn('Could not load Home playoff injury markers.', error);
+      }
     } catch (error) {
       if (!isCurrent()) return;
       console.warn('Could not load Home playoff bracket.', error);

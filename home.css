@@ -149,6 +149,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.home-playoff-injuries {
+  color: #ef4444;
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.015em;
+  margin-left: 3px;
+  white-space: nowrap;
+}
+
 .home-playoff-record {
   display: block;
   color: var(--muted);
