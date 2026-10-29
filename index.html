@@ -14,6 +14,7 @@
       }
     </script>
     <link rel="stylesheet" href="./styles.css?v=20261029-home-startup" />
+    <link rel="stylesheet" href="./home.css?v=20261029-playoff-bracket" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -180,7 +181,17 @@
           </details>
         </nav>
 
-        <section id="homePanel" class="panel home-panel"></section>
+        <section id="homePanel" class="panel home-panel" aria-label="Delta Basketball League home">
+          <header class="home-league-heading">
+            <h2>DELTA BASKETBALL LEAGUE</h2>
+            <div class="home-season-stage" aria-live="polite">
+              <span id="homeSeason">— Season</span>
+              <span class="home-stage-divider" aria-hidden="true">·</span>
+              <span id="homeStage" class="home-stage-name">No league file loaded</span>
+            </div>
+          </header>
+          <div id="homeStageContent" class="home-stage-content"></div>
+        </section>
 
         <section id="leagueControlsPanel" class="panel controls-panel" hidden>
           <div class="upload-block">
@@ -722,6 +733,7 @@
     <script src="./league-file-hub.js?v=20260923-persistent-file"></script>
     <script src="./app.js?v=20261029-home-startup"></script>
     <script src="./large-file-loader.js?v=20261027-direct-team-import"></script>
+    <script src="./home.js?v=20261029-playoff-bracket"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
