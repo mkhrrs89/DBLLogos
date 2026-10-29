@@ -50,6 +50,14 @@
   color: var(--accent);
   font-weight: 750;
 }
+/* Give names more separation from the body ink in the two newspaper styles,
+   while preserving the original accent color in the Orange theme. */
+html[data-theme="newspaper"] .home-highlights-name {
+  color: #903d3a; /* restrained oxblood on cream newsprint */
+}
+html[data-theme="dark-newspaper"] .home-highlights-name {
+  color: #e6a078; /* warm copper against light ink */
+}
 .home-highlights-column ul { margin: 0; padding-left: 18px; }
 .home-highlights-column li { margin: 0 0 9px; }
 .home-highlights-column li:last-child { margin-bottom: 0; }
