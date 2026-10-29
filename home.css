@@ -46,6 +46,10 @@
 .home-highlights-line { margin: 0 0 12px; }
 .home-highlights-line:last-child { margin-bottom: 0; }
 .home-highlights-label { font-weight: 750; }
+.home-highlights-name {
+  color: var(--accent);
+  font-weight: 750;
+}
 .home-highlights-column ul { margin: 0; padding-left: 18px; }
 .home-highlights-column li { margin: 0 0 9px; }
 .home-highlights-column li:last-child { margin-bottom: 0; }

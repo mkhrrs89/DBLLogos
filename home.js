@@ -430,6 +430,9 @@
     if (heading) column.appendChild(textElement('h3', '', heading));
     return column;
   }
+  function highlightedName(name) {
+    return textElement('strong', 'home-highlights-name', name);
+  }
   function addInlineHighlights(column, label, entries) {
     const line = document.createElement('p');
     line.className = 'home-highlights-line';
@@ -439,7 +442,7 @@
     } else {
       entries.forEach((entry, index) => {
         if (index) line.appendChild(document.createTextNode(', '));
-        line.appendChild(textElement('strong', '', entry.name));
+        line.appendChild(highlightedName(entry.name));
         line.appendChild(document.createTextNode(' ' + entry.value));
       });
     }
@@ -453,8 +456,17 @@
     const list = document.createElement('ul');
     for (const entry of entries) {
       const item = document.createElement('li');
-      item.appendChild(textElement('strong', '', entry.name));
-      item.appendChild(document.createTextNode(entry.description));
+      item.appendChild(highlightedName(entry.name));
+      // Names inside milestone/record descriptions get the same treatment
+      // as the leading player name; surrounding narrative stays neutral.
+      if (Array.isArray(entry.parts)) {
+        for (const part of entry.parts) {
+          if (part.name !== undefined) item.appendChild(highlightedName(part.name));
+          else item.appendChild(document.createTextNode(part.text || ''));
+        }
+      } else {
+        item.appendChild(document.createTextNode(entry.description || ''));
+      }
       list.appendChild(item);
     }
     column.appendChild(list);
@@ -475,19 +487,29 @@
     const middle = createHighlightsColumn('Climbing the charts this year:');
     addHighlightBullets(middle, summary.climbs.map(c => ({
       name: c.name,
-      description: ' moved from No. ' + c.oldRank + ' to No. ' + c.newRank
-        + ' all-time in ' + c.category
-        + (c.passedName ? ', passing ' + c.passedName
-          + (c.others ? ' and ' + c.others + ' other' + (c.others === 1 ? '' : 's') : '') : '') + '.'
+      parts: [
+        { text: ' moved from No. ' + c.oldRank + ' to No. ' + c.newRank
+          + ' all-time in ' + c.category },
+        ...(c.passedName ? [
+          { text: ', passing ' },
+          { name: c.passedName },
+          { text: c.others ? ' and ' + c.others
+            + ' other' + (c.others === 1 ? '' : 's') : '' }
+        ] : []),
+        { text: '.' }
+      ]
     })));
 
     const right = createHighlightsColumn('Season records broken:');
     addHighlightBullets(right, summary.records.map(r => ({
       name: r.current.name,
-      description: ' set a new single-season ' + r.label + ' record with '
-        + r.current.value.toFixed(r.digits) + ' ' + r.unit
-        + ' (previous: ' + r.previous.name + ', '
-        + r.previous.value.toFixed(r.digits) + ' in ' + r.previous.year + ').'
+      parts: [
+        { text: ' set a new single-season ' + r.label + ' record with '
+          + r.current.value.toFixed(r.digits) + ' ' + r.unit + ' (previous: ' },
+        { name: r.previous.name },
+        { text: ', ' + r.previous.value.toFixed(r.digits)
+          + ' in ' + r.previous.year + ').' }
+      ]
     })));
     const grid = document.createElement('div');
     grid.className = 'home-highlights-grid';
