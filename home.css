@@ -50,6 +50,9 @@
   color: var(--accent);
   font-weight: 750;
 }
+.home-highlights-name-secondary {
+  font-weight: 400;
+}
 /* Give names more separation from the body ink in the two newspaper styles,
    while preserving the original accent color in the Orange theme. */
 html[data-theme="newspaper"] .home-highlights-name {

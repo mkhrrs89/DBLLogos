@@ -500,8 +500,10 @@
     if (heading) column.appendChild(textElement('h3', '', heading));
     return column;
   }
-  function highlightedName(name) {
-    return textElement('strong', 'home-highlights-name', name);
+  function highlightedName(name, prominent = true) {
+    return textElement(prominent ? 'strong' : 'span',
+      'home-highlights-name' + (prominent ? '' : ' home-highlights-name-secondary'),
+      name);
   }
   function addInlineHighlights(column, label, entries) {
     const line = document.createElement('p');
@@ -527,11 +529,11 @@
     for (const entry of entries) {
       const item = document.createElement('li');
       item.appendChild(highlightedName(entry.name));
-      // Names inside milestone/record descriptions get the same treatment
-      // as the leading player name; surrounding narrative stays neutral.
+      // Only the player achieving the milestone is bold. Players being
+      // passed (including previous record holders) retain the accent color.
       if (Array.isArray(entry.parts)) {
         for (const part of entry.parts) {
-          if (part.name !== undefined) item.appendChild(highlightedName(part.name));
+          if (part.name !== undefined) item.appendChild(highlightedName(part.name, false));
           else item.appendChild(document.createTextNode(part.text || ''));
         }
       } else {
