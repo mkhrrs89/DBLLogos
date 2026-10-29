@@ -15,6 +15,41 @@
   text-align: center;
   padding: 12px clamp(12px, 2vw, 24px) 14px;
 }
+.home-highlights-container {
+  min-width: 0;
+  margin-top: 12px;
+  padding: 16px clamp(15px, 2.2vw, 28px);
+}
+.home-highlights-content { min-width: 0; }
+.home-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 2.3vw, 28px);
+}
+.home-highlights-column {
+  min-width: 0;
+  text-align: left;
+  line-height: 1.55;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.home-highlights-column + .home-highlights-column {
+  border-left: 1px solid var(--line);
+  padding-left: clamp(14px, 2.3vw, 28px);
+}
+.home-highlights-column h3 {
+  font-size: 0.92rem;
+  line-height: 1.3;
+  margin: 0 0 10px;
+  color: var(--text);
+}
+.home-highlights-line { margin: 0 0 12px; }
+.home-highlights-line:last-child { margin-bottom: 0; }
+.home-highlights-label { font-weight: 750; }
+.home-highlights-column ul { margin: 0; padding-left: 18px; }
+.home-highlights-column li { margin: 0 0 9px; }
+.home-highlights-column li:last-child { margin-bottom: 0; }
+.home-highlights-empty { color: var(--muted); font-style: italic; }
 .home-bracket-container {
   min-width: 0;
   margin-top: 12px;
@@ -195,9 +230,18 @@
   font-size: 0.86rem;
   white-space: nowrap;
 }
+@media (max-width: 900px) {
+  .home-highlights-grid { grid-template-columns: 1fr; gap: 15px; }
+  .home-highlights-column + .home-highlights-column {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 14px 0 0;
+  }
+}
 @media (max-width: 620px) {
   .home-panel { padding: 0; }
   .home-league-heading { padding: 9px 8px 12px; }
+  .home-highlights-container { margin-top: 10px; padding: 12px 13px; }
   .home-bracket-container { margin-top: 10px; padding: 7px 10px 15px; }
   .home-league-heading h2 { font-size: clamp(0.86rem, 3.2vw, 1.5rem); }
   .home-playoff-round { width: 152px; }

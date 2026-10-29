@@ -3,9 +3,12 @@
   const yearNode = document.getElementById('homeSeason');
   const stageNode = document.getElementById('homeStage');
   const content = document.getElementById('homeStageContent');
+  const countNode = document.getElementById('homeSeasonCount');
+  const highlights = document.getElementById('homeHighlightsContent');
   const hub = window.DBLLeagueFileHub;
   const stream = window.DBLLeagueStream;
-  if (!panel || !yearNode || !stageNode || !content || !hub || !stream) return;
+  if (!panel || !yearNode || !countNode || !stageNode || !content
+      || !highlights || !hub || !stream) return;
 
   let activeFile = null;
   let fileVersion = 0;
@@ -38,6 +41,16 @@
       selectedStart = start;
     }
     return selected;
+  }
+  function ordinal(number) {
+    const suffix = number % 100 >= 11 && number % 100 <= 13
+      ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[number % 10] || 'th');
+    return number + suffix;
+  }
+  function seasonNumber(attrs, year) {
+    const first = asInteger(attrs?.startingSeason);
+    return first !== null && year !== null && year >= first
+      ? year - first + 1 : null;
   }
   function bestOfLengths(attrs, season) {
     const value = timelineValue(attrs?.numGamesPlayoffSeries, season);
@@ -273,12 +286,224 @@
     content.replaceChildren(bracket);
   }
 
+
+  // Every highlight is derived from the saved regular-season statistics.
+  // Traded players may have multiple rows for one year; aggregate those
+  // before ranking them, and never count playoff statistics twice.
+  const STAT_KEYS = ['gp', 'pts', 'min', 'ows', 'dws', 'ast', 'blk', 'orb', 'drb', 'stl', 'tp'];
+  const CAREER_METRICS = [
+    { key: 'ws', label: 'win shares' },
+    { key: 'blk', label: 'blocks' },
+    { key: 'ast', label: 'assists' }
+  ];
+  const RECORD_METRICS = [
+    { key: 'ppg', label: 'scoring average', unit: 'PPG', digits: 1 },
+    { key: 'ws', label: 'win shares', unit: 'WS', digits: 1 },
+    { key: 'apg', label: 'assists per game', unit: 'APG', digits: 1 },
+    { key: 'rpg', label: 'rebounds per game', unit: 'RPG', digits: 1 },
+    { key: 'bpg', label: 'blocks per game', unit: 'BPG', digits: 1 },
+    { key: 'spg', label: 'steals per game', unit: 'SPG', digits: 1 },
+    { key: 'points', label: 'points scored', unit: 'points', digits: 0 },
+    { key: 'assists', label: 'assists', unit: 'assists', digits: 0 },
+    { key: 'rebounds', label: 'rebounds', unit: 'rebounds', digits: 0 },
+    { key: 'blocks', label: 'blocks', unit: 'blocks', digits: 0 }
+  ];
+  function emptyStatLine() {
+    return { gp: 0, pts: 0, min: 0, ows: 0, dws: 0, ast: 0,
+      blk: 0, orb: 0, drb: 0, stl: 0, tp: 0 };
+  }
+  function seasonMetrics(stats, year, attrs) {
+    const games = asInteger(timelineValue(attrs?.numGames, year));
+    const eligible = stats.gp >= Math.max(10, Math.ceil((games || 40) / 2));
+    const ws = stats.ows + stats.dws;
+    return {
+      ws, points: stats.pts, assists: stats.ast,
+      rebounds: stats.orb + stats.drb, blocks: stats.blk,
+      ppg: eligible ? stats.pts / stats.gp : null,
+      apg: eligible ? stats.ast / stats.gp : null,
+      rpg: eligible ? (stats.orb + stats.drb) / stats.gp : null,
+      bpg: eligible ? stats.blk / stats.gp : null,
+      spg: eligible ? stats.stl / stats.gp : null,
+      ws48: eligible && stats.min > 0 ? ws * 48 / stats.min : null
+    };
+  }
+  function createHighlightCollector(year, attrs) {
+    const people = [];
+    const historical = new Map();
+    const currentRecords = new Map();
+    const ws48 = [], scoring = [];
+    function offerRecord(bucket, metric, value, person, statsYear) {
+      if (!Number.isFinite(value)) return;
+      const previous = bucket.get(metric);
+      if (!previous || value > previous.value) {
+        bucket.set(metric, { value, name: person.name, year: statsYear });
+      }
+    }
+    function addPlayer(player) {
+      if (!Array.isArray(player?.stats)) return;
+      const seasons = new Map();
+      for (const row of player.stats) {
+        const statsYear = asInteger(row?.season);
+        if (statsYear === null || statsYear > year || row.playoffs || asInteger(row.tid) < 0) continue;
+        let stats = seasons.get(statsYear);
+        if (!stats) {
+          stats = emptyStatLine();
+          seasons.set(statsYear, stats);
+        }
+        for (const key of STAT_KEYS) {
+          const value = Number(row[key]);
+          if (Number.isFinite(value)) stats[key] += value;
+        }
+      }
+      if (!seasons.size) return;
+      const person = {
+        pid: asInteger(player.pid),
+        name: [asText(player.firstName), asText(player.lastName)].filter(Boolean).join(' ') || 'Unknown player',
+        before: { ws: 0, blk: 0, ast: 0 },
+        now: { ws: 0, blk: 0, ast: 0 },
+        playedThisYear: seasons.has(year)
+      };
+      for (const [statsYear, stats] of seasons) {
+        const numbers = seasonMetrics(stats, statsYear, attrs);
+        const bucket = statsYear === year ? currentRecords : historical;
+        for (const metric of RECORD_METRICS) {
+          offerRecord(bucket, metric.key, numbers[metric.key], person, statsYear);
+        }
+        if (statsYear < year) {
+          person.before.ws += numbers.ws;
+          person.before.blk += numbers.blocks;
+          person.before.ast += numbers.assists;
+        }
+        person.now.ws += numbers.ws;
+        person.now.blk += numbers.blocks;
+        person.now.ast += numbers.assists;
+        if (statsYear === year) {
+          if (numbers.ws48 !== null) ws48.push({ name: person.name, value: numbers.ws48 });
+          if (numbers.ppg !== null) scoring.push({ name: person.name, value: numbers.ppg });
+        }
+      }
+      if (person.pid !== null) people.push(person);
+    }
+    function careerClimbs() {
+      const climbs = [];
+      for (const metric of CAREER_METRICS) {
+        const byBefore = [...people].sort((a, b) =>
+          b.before[metric.key] - a.before[metric.key] || a.pid - b.pid);
+        const byNow = [...people].sort((a, b) =>
+          b.now[metric.key] - a.now[metric.key] || a.pid - b.pid);
+        const oldRanks = new Map(byBefore.map((p, i) => [p.pid, i + 1]));
+        const newRanks = new Map(byNow.map((p, i) => [p.pid, i + 1]));
+        const climber = byNow.find(p => {
+          const rank = newRanks.get(p.pid);
+          return p.playedThisYear && rank <= 10 && oldRanks.get(p.pid) > rank;
+        });
+        if (!climber) continue;
+        const oldRank = oldRanks.get(climber.pid), newRank = newRanks.get(climber.pid);
+        const passed = byBefore.filter(p =>
+          oldRanks.get(p.pid) < oldRank && newRanks.get(p.pid) > newRank);
+        // Prefer a notable player who also appeared this season when possible.
+        const notable = passed.find(p => p.playedThisYear) || passed[0];
+        climbs.push({ name: climber.name, category: metric.label,
+          oldRank, newRank, passedName: notable?.name || '',
+          others: Math.max(0, passed.length - 1) });
+      }
+      return climbs;
+    }
+    function finish() {
+      const sortLeaders = rows => rows.sort((a, b) =>
+        b.value - a.value || a.name.localeCompare(b.name)).slice(0, 3);
+      const records = [];
+      for (const metric of RECORD_METRICS) {
+        const previous = historical.get(metric.key), current = currentRecords.get(metric.key);
+        if (previous && current && current.value > previous.value + 1e-7) {
+          records.push({ ...metric, current, previous });
+        }
+      }
+      return { ws48: sortLeaders(ws48), scoring: sortLeaders(scoring),
+        climbs: careerClimbs(), records };
+    }
+    return { addPlayer, finish };
+  }
+  function createHighlightsColumn(heading) {
+    const column = document.createElement('div');
+    column.className = 'home-highlights-column';
+    if (heading) column.appendChild(textElement('h3', '', heading));
+    return column;
+  }
+  function addInlineHighlights(column, label, entries) {
+    const line = document.createElement('p');
+    line.className = 'home-highlights-line';
+    line.appendChild(textElement('span', 'home-highlights-label', label + ' '));
+    if (!entries.length) {
+      line.appendChild(textElement('span', 'home-highlights-empty', 'Not available yet'));
+    } else {
+      entries.forEach((entry, index) => {
+        if (index) line.appendChild(document.createTextNode(', '));
+        line.appendChild(textElement('strong', '', entry.name));
+        line.appendChild(document.createTextNode(' ' + entry.value));
+      });
+    }
+    column.appendChild(line);
+  }
+  function addHighlightBullets(column, entries) {
+    if (!entries.length) {
+      column.appendChild(textElement('p', 'home-highlights-empty', 'No new records to report.'));
+      return;
+    }
+    const list = document.createElement('ul');
+    for (const entry of entries) {
+      const item = document.createElement('li');
+      item.appendChild(textElement('strong', '', entry.name));
+      item.appendChild(document.createTextNode(entry.description));
+      list.appendChild(item);
+    }
+    column.appendChild(list);
+  }
+  function renderHighlights(standings, summary) {
+    const sortedTeams = [...standings]
+      .filter(team => team.wins !== null && team.losses !== null && team.wins + team.losses > 0)
+      .sort((a, b) => (b.wins / (b.wins + b.losses)) - (a.wins / (a.wins + a.losses))
+        || b.wins - a.wins || a.abbrev.localeCompare(b.abbrev)).slice(0, 3);
+    const left = createHighlightsColumn();
+    addInlineHighlights(left, 'Best regular season:',
+      sortedTeams.map(t => ({ name: t.abbrev, value: t.wins + '-' + t.losses })));
+    addInlineHighlights(left, 'Win Shares / 48 Minutes leaders:',
+      summary.ws48.map(p => ({ name: p.name, value: p.value.toFixed(3) + ' WS/48' })));
+    addInlineHighlights(left, 'Scoring leaders:',
+      summary.scoring.map(p => ({ name: p.name, value: p.value.toFixed(1) + ' ppg' })));
+
+    const middle = createHighlightsColumn('Climbing the charts this year:');
+    addHighlightBullets(middle, summary.climbs.map(c => ({
+      name: c.name,
+      description: ' moved from No. ' + c.oldRank + ' to No. ' + c.newRank
+        + ' all-time in ' + c.category
+        + (c.passedName ? ', passing ' + c.passedName
+          + (c.others ? ' and ' + c.others + ' other' + (c.others === 1 ? '' : 's') : '') : '') + '.'
+    })));
+
+    const right = createHighlightsColumn('Season records broken:');
+    addHighlightBullets(right, summary.records.map(r => ({
+      name: r.current.name,
+      description: ' set a new single-season ' + r.label + ' record with '
+        + r.current.value.toFixed(r.digits) + ' ' + r.unit
+        + ' (previous: ' + r.previous.name + ', '
+        + r.previous.value.toFixed(r.digits) + ' in ' + r.previous.year + ').'
+    })));
+    const grid = document.createElement('div');
+    grid.className = 'home-highlights-grid';
+    grid.append(left, middle, right);
+    highlights.replaceChildren(grid);
+  }
+
   async function load(file) {
     const token = ++fileVersion;
     activeFile = file;
-    yearNode.textContent = '— Season';
+    yearNode.textContent = '—';
+    countNode.textContent = '— season';
     stageNode.textContent = file ? 'Loading season…' : 'No league file loaded';
     content.replaceChildren();
+    highlights.replaceChildren();
+    if (file) highlights.appendChild(textElement('p', 'home-highlights-empty', 'Loading season highlights…'));
     if (!file) return;
     if (!stream.readTopLevelValue || !stream.forEachTopLevelArrayItem) {
       stageNode.textContent = 'League reader unavailable';
@@ -290,9 +515,19 @@
       if (!isCurrent()) return;
       const season = asInteger(attrs.season);
       const phase = asInteger(attrs.phase);
-      yearNode.textContent = season === null ? 'Season unavailable' : season + ' Season';
+      yearNode.textContent = season === null ? '—' : String(season);
+      const nth = seasonNumber(attrs, season);
+      countNode.textContent = nth === null ? 'season unavailable' : ordinal(nth) + ' season';
       stageNode.textContent = stageName(phase);
-      if (phase !== 3 || season === null) return;
+      if (season === null) {
+        highlights.replaceChildren(textElement('p', 'home-highlights-empty', 'Season unavailable.'));
+        return;
+      }
+      if (phase !== 3) {
+        highlights.replaceChildren(textElement('p', 'home-highlights-empty',
+          'Season highlights will appear during the playoffs.'));
+        return;
+      }
 
       let seriesRecord = null;
       await stream.forEachTopLevelArrayItem(file, 'playoffSeries', record => {
@@ -315,11 +550,16 @@
         }
       }
       const seasonTeams = new Map();
+      const standings = [];
       await stream.forEachTopLevelArrayItem(file, 'teams', team => {
         const tid = asInteger(team?.tid);
-        if (!participating.has(tid)) return;
         const details = teamFromFile(team, season);
-        if (details) seasonTeams.set(tid, details);
+        if (!details) return;
+        const seasonRow = Array.isArray(team.seasons)
+          ? team.seasons.find(row => asInteger(row?.season) === season) : null;
+        standings.push({ abbrev: details.abbrev,
+          wins: asInteger(seasonRow?.won), losses: asInteger(seasonRow?.lost) });
+        if (participating.has(tid)) seasonTeams.set(tid, details);
       });
       if (!isCurrent()) return;
       renderBracket(seriesRecord, attrs, seasonTeams, season);
@@ -333,9 +573,11 @@
         rowsByTeam.get(tid).push(row);
       }
       const injuryCounts = new Map();
+      const collector = createHighlightCollector(season, attrs);
       try {
         await stream.forEachTopLevelArrayItem(file, 'players', player => {
           if (!isCurrent()) return;
+          collector.addPlayer(player);
           const tid = asInteger(player?.tid);
           if (tid === null || tid < 0 || !participating.has(tid)
               || !hasQualifyingInjury(player, season)) return;
@@ -343,10 +585,14 @@
           injuryCounts.set(tid, count);
           updateInjuryMarkers(rowsByTeam.get(tid), count);
         });
+        if (isCurrent()) renderHighlights(standings, collector.finish());
       } catch (error) {
-        // An unavailable/corrupt players collection should not destroy the
-        // already successfully rendered playoff bracket.
-        if (isCurrent()) console.warn('Could not load Home playoff injury markers.', error);
+        // A damaged players collection must not erase the existing bracket.
+        if (isCurrent()) {
+          console.warn('Could not load Home season highlights or injury markers.', error);
+          highlights.replaceChildren(textElement('p', 'home-highlights-empty',
+            'Could not read season highlights from this league file.'));
+        }
       }
     } catch (error) {
       if (!isCurrent()) return;
