@@ -1,21 +1,21 @@
 /* DBL Home: compact ZenGM-style playoff series with historic team branding. */
 .home-panel {
-  padding: clamp(18px, 3vw, 42px);
+  padding: clamp(6px, 1vw, 14px) clamp(18px, 3vw, 42px) clamp(18px, 3vw, 42px);
   min-height: 54vh;
   overflow: hidden;
 }
 .home-league-heading {
   text-align: center;
-  padding: 14px 4px 26px;
+  padding: 0 4px 12px;
 }
 .home-league-heading h2 {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.75rem, 5vw, 4.1rem);
+  font-size: clamp(0.86rem, 3.2vw, 2.45rem);
   font-weight: 900;
-  letter-spacing: clamp(0.045em, 0.6vw, 0.13em);
+  letter-spacing: 0.015em;
   text-transform: uppercase;
-  line-height: 1.12;
-  text-wrap: balance;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 .home-season-stage {
   display: flex;
@@ -23,7 +23,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 9px;
-  margin-top: 14px;
+  margin-top: 6px;
   color: var(--muted);
   font-size: clamp(0.93rem, 1.65vw, 1.18rem);
   font-weight: 650;
@@ -37,7 +37,7 @@
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 8px 0 20px;
+  padding: 3px 0 20px;
 }
 .home-message {
   max-width: 38rem;
@@ -125,7 +125,7 @@
 }
 .home-playoff-name {
   display: block;
-  color: var(--home-team-accent, var(--text));
+  color: var(--text);
   font-size: 0.87rem;
   font-weight: 750;
   white-space: nowrap;
@@ -133,9 +133,11 @@
   text-overflow: ellipsis;
 }
 .home-playoff-record {
+  display: block;
   color: var(--muted);
   font-size: 0.79rem;
-  text-align: right;
+  text-align: left;
+  line-height: 1.15;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -156,9 +158,9 @@
   white-space: nowrap;
 }
 @media (max-width: 620px) {
-  .home-panel { padding: 14px 10px 24px; }
-  .home-league-heading { padding: 10px 8px 17px; }
-  .home-league-heading h2 { font-size: clamp(1.65rem, 7vw, 2.45rem); }
+  .home-panel { padding: 5px 10px 24px; }
+  .home-league-heading { padding: 0 2px 10px; }
+  .home-league-heading h2 { font-size: clamp(0.86rem, 3.2vw, 1.5rem); }
   .home-playoff-round { width: 152px; }
   .home-playoff-bracket { gap: 34px; }
   .home-playoff-team { gap: 5px; padding-inline: 4px; }
