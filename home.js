@@ -92,7 +92,8 @@
     const logos = [row.imgURLSmall, row.imgURL, team.imgURLSmall, team.imgURL]
       .map(validImage).filter((src, index, urls) => src && urls.indexOf(src) === index);
     return { name, abbrev: abbrev || nickname || '—', record, logos,
-      accent: teamColor(row) || teamColor(team) };
+      accent: teamColor(row) || teamColor(team),
+      tid: asInteger(team.tid), playThroughInjuries: team.playThroughInjuries };
   }
 
   // Only current injuries count. Historical injury entries and ratings from
@@ -109,6 +110,74 @@
       }
     }
     return false;
+  }
+
+  // Basketball GM current team OVR: official playoff-weighted top-ten model.
+  // Its injury-adjusted roster excludes players unavailable for the next game
+  // and discounts the ratings of players eligible to play through injuries.
+  function activePlayerRating(player, season, attrs, team) {
+    const ratings = Array.isArray(player?.ratings) ? player.ratings : [];
+    let current = null;
+    for (let i = ratings.length - 1; i >= 0; i--) {
+      if (asInteger(ratings[i]?.season) === season) {
+        current = ratings[i];
+        break;
+      }
+    }
+    if (!current || !Number.isFinite(Number(current.ovr))) return null;
+    let ovr = Number(current.ovr);
+    const userTids = Array.isArray(attrs?.userTids)
+      ? attrs.userTids : [attrs?.userTid];
+    // BBGM disables scouting fuzz in God Mode or multi-team mode.
+    if (!attrs?.godMode && userTids.length <= 1) {
+      const fuzz = Number(current.fuzz);
+      ovr = Math.round(Math.max(0, Math.min(100, ovr + (Number.isFinite(fuzz) ? fuzz : 0))));
+    }
+    const remaining = asInteger(player?.injury?.gamesRemaining) ?? 0;
+    // AI-controlled clubs and spectator leagues use BBGM's [0, 4] default.
+    const isUserTeam = !attrs?.spectator
+      && userTids.some(tid => asInteger(tid) === team?.tid);
+    const configured = isUserTeam && Array.isArray(team?.playThroughInjuries)
+      ? asInteger(team.playThroughInjuries[1]) : null;
+    const playThroughDays = configured === null ? 4 : configured;
+    if (remaining > playThroughDays) return null;
+    if (remaining > 0) ovr *= 1 - 0.025 * remaining;
+    return ovr;
+  }
+  function currentPlayoffTeamOverall(playerRatings, attrs, season) {
+    if (!playerRatings?.length) return null;
+    const ratings = [...playerRatings].sort((a, b) => b - a).slice(0, 10);
+    while (ratings.length < 10) ratings.push(0);
+    const onCourt = asInteger(timelineValue(attrs?.numPlayersOnCourt, season)) ?? 5;
+    let predictedMOV = -157.43;
+    if (onCourt >= 5) {
+      for (let i = 0; i < 10; i++) {
+        predictedMOV += 0.6388 * Math.exp(-0.2245 * i) * ratings[i];
+      }
+    } else {
+      // BBGM also supports custom formats with fewer than five on court.
+      for (let i = 0; i < onCourt; i++) {
+        predictedMOV += 0.6388 * Math.exp(-0.2245 * i) * ratings[i];
+      }
+      for (let i = 5; i < 10; i++) {
+        predictedMOV += 0.6388 * Math.exp(-0.2245 * i) * ratings[onCourt + i - 5];
+      }
+      predictedMOV += 60 * (5 - onCourt) / 5;
+    }
+    // Playoff-mode BBGM OVR maps expected margin to the 0-100-like scale.
+    return Math.round(predictedMOV * 50 / 15 + 10);
+  }
+  function updateTeamOveralls(rowsByTeam, rosterRatings, attrs, season) {
+    for (const [tid, rows] of rowsByTeam) {
+      const value = currentPlayoffTeamOverall(rosterRatings.get(tid), attrs, season);
+      if (value === null) continue;
+      for (const row of rows) {
+        const record = row.querySelector('.home-playoff-record');
+        if (!record) continue;
+        record.textContent = (record.dataset.baseRecord || '—') + ' (' + value + ')';
+        record.title = 'Current playoff team overall, adjusted for injuries: ' + value;
+      }
+    }
   }
 
   // A team can appear in multiple playoff rounds: update every occurrence.
@@ -175,6 +244,7 @@
       (seed === null ? '' : seed + '. ') + (team.abbrev || (tid === null ? 'TBD' : 'T' + tid)));
     name.title = team.name || '';
     const record = textElement('span', 'home-playoff-record', team.record || '—');
+    record.dataset.baseRecord = team.record || '—';
     info.append(name, record);
     line.append(logoFrame, info,
       textElement('span', 'home-playoff-wins', wins === null ? '—' : wins));
@@ -595,19 +665,28 @@
         rowsByTeam.get(tid).push(row);
       }
       const injuryCounts = new Map();
+      const rosterRatings = new Map();
       const collector = createHighlightCollector(season, attrs);
       try {
         await stream.forEachTopLevelArrayItem(file, 'players', player => {
           if (!isCurrent()) return;
           collector.addPlayer(player);
           const tid = asInteger(player?.tid);
-          if (tid === null || tid < 0 || !participating.has(tid)
-              || !hasQualifyingInjury(player, season)) return;
+          if (tid === null || tid < 0 || !participating.has(tid)) return;
+          const rating = activePlayerRating(player, season, attrs, seasonTeams.get(tid));
+          if (rating !== null) {
+            if (!rosterRatings.has(tid)) rosterRatings.set(tid, []);
+            rosterRatings.get(tid).push(rating);
+          }
+          if (!hasQualifyingInjury(player, season)) return;
           const count = (injuryCounts.get(tid) || 0) + 1;
           injuryCounts.set(tid, count);
           updateInjuryMarkers(rowsByTeam.get(tid), count);
         });
-        if (isCurrent()) renderHighlights(standings, collector.finish());
+        if (isCurrent()) {
+          updateTeamOveralls(rowsByTeam, rosterRatings, attrs, season);
+          renderHighlights(standings, collector.finish());
+        }
       } catch (error) {
         // A damaged players collection must not erase the existing bracket.
         if (isCurrent()) {
