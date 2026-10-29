@@ -104,9 +104,9 @@
   height: 34px;
   display: grid;
   place-items: center;
-  /* Some historic logos reach the edge of their image bounds. The fixed
-     square should size the logo, not crop its lower edge. */
-  overflow: visible;
+  /* Contain every logo inside its allotted square so no image can leak
+     into the next row or below the matchup card. */
+  overflow: hidden;
 }
 .home-playoff-logo img {
   display: block;
@@ -114,10 +114,21 @@
   height: 100%;
   max-width: 100%;
   max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
   object-fit: contain;
   object-position: center center;
 }
 .home-logo-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  line-height: 1;
   font-size: 0.67rem;
   font-weight: 800;
   color: var(--muted);

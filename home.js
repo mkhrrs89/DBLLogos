@@ -74,9 +74,11 @@
     const wins = asInteger(row.won);
     const losses = asInteger(row.lost);
     const record = wins !== null && losses !== null ? wins + '-' + losses : '—';
-    const logo = validImage(row.imgURL) || validImage(row.imgURLSmall)
-      || validImage(team.imgURL) || validImage(team.imgURLSmall);
-    return { name, abbrev: abbrev || nickname || '—', record, logo,
+    // Prefer the smaller logo but try other historical URLs if a host/image
+    // has gone away. Distinct sources avoid repeating a failed request.
+    const logos = [row.imgURLSmall, row.imgURL, team.imgURLSmall, team.imgURL]
+      .map(validImage).filter((src, index, urls) => src && urls.indexOf(src) === index);
+    return { name, abbrev: abbrev || nickname || '—', record, logos,
       accent: teamColor(row) || teamColor(team) };
   }
 
@@ -91,17 +93,30 @@
 
     const logoFrame = document.createElement('span');
     logoFrame.className = 'home-playoff-logo';
-    if (team.logo) {
+    const placeholder = () => textElement('span', 'home-logo-placeholder',
+      (team.abbrev || '?').slice(0, 3));
+    const logoSources = Array.isArray(team.logos) ? team.logos : [];
+    if (logoSources.length) {
       const logo = document.createElement('img');
-      logo.src = team.logo;
-      logo.alt = team.name ? team.name + ' logo' : 'Team logo';
+      // Decorative: the row itself carries the team name. An empty alt also
+      // prevents broken-image text from spilling over nearby matchup rows.
+      logo.alt = '';
       logo.loading = 'lazy';
       logo.decoding = 'async';
       logo.referrerPolicy = 'no-referrer';
+      let sourceIndex = 0;
+      logo.addEventListener('error', () => {
+        sourceIndex++;
+        if (sourceIndex < logoSources.length) {
+          logo.src = logoSources[sourceIndex];
+        } else {
+          logoFrame.replaceChildren(placeholder());
+        }
+      });
+      logo.src = logoSources[0];
       logoFrame.appendChild(logo);
     } else {
-      logoFrame.appendChild(textElement('span', 'home-logo-placeholder',
-        (team.abbrev || '?').slice(0, 3)));
+      logoFrame.appendChild(placeholder());
     }
     const info = document.createElement('div');
     info.className = 'home-playoff-team-info';
@@ -152,6 +167,27 @@
     const middle = Math.ceil(round.length / 2);
     return [round.slice(0, middle), round.slice(middle)];
   }
+  function bracketSideCids(attrs, year, openingRound) {
+    const cids = [];
+    for (const series of openingRound) {
+      const cid = asInteger(series?.home?.cid) ?? asInteger(series?.away?.cid);
+      if (cid !== null && !cids.includes(cid)) cids.push(cid);
+    }
+    if (cids.length < 2) return cids;
+    const conferences = timelineValue(attrs?.confs, year);
+    if (!Array.isArray(conferences)) return cids;
+    const named = (pattern) => conferences.find(conf =>
+      cids.includes(asInteger(conf?.cid)) && pattern.test(asText(conf?.name)));
+    const west = named(/\b(?:west(?:ern|ward)?|pacific)\b/i);
+    const east = named(/\b(?:east(?:ern)?|atlantic)\b/i);
+    if (west && east && west.cid !== east.cid) {
+      return [asInteger(west.cid), asInteger(east.cid),
+        ...cids.filter(cid => cid !== asInteger(west.cid) && cid !== asInteger(east.cid))];
+    }
+    if (west) return [asInteger(west.cid), ...cids.filter(cid => cid !== asInteger(west.cid))];
+    if (east) return [...cids.filter(cid => cid !== asInteger(east.cid)), asInteger(east.cid)];
+    return cids;
+  }
   function renderBracket(record, attrs, seasonTeams, year) {
     const rounds = Array.isArray(record?.series)
       ? record.series.filter(round => Array.isArray(round) && round.length) : [];
@@ -160,11 +196,7 @@
       return;
     }
 
-    const cids = [];
-    for (const series of rounds[0]) {
-      const cid = asInteger(series?.home?.cid) ?? asInteger(series?.away?.cid);
-      if (cid !== null && !cids.includes(cid)) cids.push(cid);
-    }
+    const cids = bracketSideCids(attrs, year, rounds[0]);
     const lengths = bestOfLengths(attrs, year);
     const west = document.createElement('div');
     west.className = 'home-bracket-side home-bracket-left';
