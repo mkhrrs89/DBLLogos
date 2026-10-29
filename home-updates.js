@@ -9,7 +9,7 @@
   const DB_NAME = 'dbl-home-update-history';
   const STORE = 'snapshots';
   const KEY = 'latest';
-  const BUCKETS = ['playoffs', 'trades', 'moves', 'awards', 'injuries', 'news'];
+  const BUCKETS = ['playoffs', 'trades', 'moves', 'awards', 'injuries', 'feats', 'news'];
   let generation = 0;
   let dbPromise;
   let memoryState = null;
@@ -129,6 +129,7 @@
     if (type === 'trade') return 'trades';
     if (['freeAgent', 'release', 'draft', 'retired', 'reSigned', 'resigned', 'waiver'].includes(type)) return 'moves';
     if (['injured', 'healed'].includes(type)) return 'injuries';
+    if (type === 'playerFeat') return 'feats';
     if (['award', 'retiredJersey', 'allStar'].includes(type)) return 'awards';
     return 'news';
   }
@@ -203,7 +204,7 @@
       teams: {}, players: {}, playoffs: null,
       maxEid: -1, maxGid: -1, capturedAt: new Date().toISOString() };
     const delta = { counts: {}, events: Object.fromEntries(BUCKETS.map(key => [key, []])),
-      recentGames: [], feats: [], gameCount: 0, playoffGames: 0 };
+      recentGames: [], feats: [], featCount: 0, gameCount: 0, playoffGames: 0 };
     const lastEid = previous?.maxEid ?? Infinity;
     const lastGid = previous?.maxGid ?? Infinity;
     const collecting = Boolean(previous);
@@ -264,6 +265,7 @@
       await stream.forEachTopLevelArrayItem(file, 'playerFeats', feat => {
         const gid = integer(feat.gid);
         if (gid === null || gid <= lastGid) return;
+        delta.featCount++;
         const item = featSummary(feat);
         keepTop(delta.feats, item, 24, (a, b) => b.score - a.score || b.gid - a.gid);
       });
@@ -356,10 +358,9 @@
       delta.recentGames.slice().sort((a, b) => b.gid - a.gid)
         .map(g => g.season + ': ' + g.label));
     section('Player feats and standout performances',
-      delta.feats.length + (delta.counts.news || 0),
+      Math.max(delta.featCount, delta.counts.feats || 0),
       delta.feats.map(f => f.text)
-        .concat(delta.events.news.filter(e => e.type === 'playerFeat')
-          .map(e => titleForEvent(e, latest.teams, names))));
+        .concat(delta.events.feats.map(e => titleForEvent(e, latest.teams, names))));
 
     section('Trades', delta.counts.trades || 0,
       delta.events.trades.map(e => titleForEvent(e, latest.teams, names)));
@@ -387,12 +388,15 @@
         ...delta.events.moves.map(e => titleForEvent(e, latest.teams, names))
       ]);
     section('Injuries and recoveries',
-      newInjuries.length + recoveries.length, [
-        ...newInjuries.slice(0, 10), ...recoveries.slice(0, 7)
+      Math.max(newInjuries.length + recoveries.length, delta.counts.injuries || 0), [
+        ...newInjuries.slice(0, 8),
+        ...recoveries.slice(0, 5),
+        ...delta.events.injuries.filter(e => e.score >= 10).slice(0, 8)
+          .map(e => titleForEvent(e, latest.teams, names))
       ]);
     section('Awards and honors', delta.counts.awards || 0,
       delta.events.awards.map(e => titleForEvent(e, latest.teams, names)));
-    const misc = delta.events.news.filter(e => e.type !== 'playerFeat');
+    const misc = delta.events.news;
     section('Other league news', misc.length,
       misc.map(e => titleForEvent(e, latest.teams, names)));
 
@@ -401,7 +405,7 @@
       oldSeason: previous.season, season: latest.season,
       counts: { games: delta.gameCount, playoffGames: delta.playoffGames,
         events: Object.values(delta.counts).reduce((a, b) => a + b, 0),
-        feats: delta.feats.length,
+        feats: delta.featCount,
         trades: delta.counts.trades || 0 },
       sections
     };
