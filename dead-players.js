@@ -104,7 +104,7 @@
     return el;
   }
   function showMessage(message) {
-    wrap.replaceChildren(element('p', 'recent-deceased-message', message));
+    wrap.replaceChildren(element('p', 'recent-retirees-message', message));
   }
   function getDiedYear(player) {
     // Same official death indicator used by the site's News obituary system.
@@ -230,27 +230,27 @@
     }
     const displayed = ['diedYear', sortKey, ...TABLE_KEYS]
       .filter((key, index, keys) => keys.indexOf(key) === index);
-    const container = element('div', 'recent-deceased-table-scroll');
+    const container = element('div', 'recent-retirees-table-scroll');
     container.setAttribute('role', 'region');
     container.setAttribute('aria-label', 'Sortable statistics for deceased players');
     container.tabIndex = 0;
-    const table = element('table', 'recent-deceased-table');
-    const caption = element('caption', 'recent-deceased-visually-hidden',
+    const table = element('table', 'recent-retirees-table');
+    const caption = element('caption', 'recent-retirees-visually-hidden',
       'Career statistics for every deceased player in this league export');
     table.appendChild(caption);
     const thead = element('thead'), header = element('tr');
-    const fixedHeader = element('th', 'recent-deceased-rank-head', '#');
+    const fixedHeader = element('th', 'recent-retirees-rank-head', '#');
     fixedHeader.scope = 'col';
     header.appendChild(fixedHeader);
-    const nameHeader = element('th', 'recent-deceased-player-head', 'Player');
+    const nameHeader = element('th', 'recent-retirees-player-head', 'Player');
     nameHeader.scope = 'col';
     header.appendChild(nameHeader);
     for (const key of displayed) {
-      const th = element('th', key === sortKey ? 'recent-deceased-selected-column' : '');
+      const th = element('th', key === sortKey ? 'recent-retirees-selected-column' : '');
       th.scope = 'col';
       th.setAttribute('aria-sort', key === sortKey ?
         (direction === 'desc' ? 'descending' : 'ascending') : 'none');
-      const button = element('button', 'recent-deceased-sort-head',
+      const button = element('button', 'recent-retirees-sort-head',
         (COLUMN_LABELS[key] || key) + (key === sortKey ? (direction === 'desc' ? ' ↓' : ' ↑') : ''));
       button.type = 'button';
       button.title = 'Sort by ' + METRICS[key].label;
@@ -265,26 +265,26 @@
     for (let index = 0; index < filtered.length; index++) {
       const player = filtered[index];
       const row = element('tr');
-      row.appendChild(element('td', 'recent-deceased-rank', index + 1));
-      const nameCell = element('td', 'recent-deceased-player');
+      row.appendChild(element('td', 'recent-retirees-rank', index + 1));
+      const nameCell = element('td', 'recent-retirees-player');
       const playerLink = player.pid !== null
-        ? element('a', 'recent-deceased-player-link', player.name)
-        : element('span', 'recent-deceased-player-link', player.name);
+        ? element('a', 'recent-retirees-player-link', player.name)
+        : element('span', 'recent-retirees-player-link', player.name);
       if (player.pid !== null) {
         playerLink.href = EXPLORER + player.pid;
         playerLink.target = '_blank';
         playerLink.rel = 'noopener noreferrer';
         playerLink.title = 'Open player profile';
       }
-      const identity = element('span', 'recent-deceased-identity');
-      const playerContent = element('div', 'recent-deceased-player-content');
+      const identity = element('span', 'recent-retirees-identity');
+      const playerContent = element('div', 'recent-retirees-player-content');
       identity.appendChild(playerLink);
-      identity.appendChild(element('span', 'recent-deceased-player-detail',
+      identity.appendChild(element('span', 'recent-retirees-player-detail',
         player.pos + (player.careerStart !== null ?
           ' · ' + player.careerStart + '–' + player.careerEnd : '') +
           (player.deathAge !== null ? ' · Died age ' + player.deathAge : '')));
       if (player.imgURL) {
-        const image = element('img', 'recent-deceased-photo');
+        const image = element('img', 'recent-retirees-photo');
         image.src = player.imgURL;
         image.alt = '';
         image.loading = 'lazy';
@@ -298,7 +298,7 @@
       row.appendChild(nameCell);
       for (const key of displayed) {
         row.appendChild(element('td',
-          'recent-deceased-number' + (key === sortKey ? ' recent-deceased-selected-column' : ''),
+          'recent-retirees-number' + (key === sortKey ? ' recent-retirees-selected-column' : ''),
           format(player[key], key)));
       }
       fragment.appendChild(row);
