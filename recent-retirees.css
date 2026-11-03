@@ -104,28 +104,38 @@
 .recent-retirees-table tbody tr:last-child td { border-bottom: 0; }
 .recent-retirees-table tbody tr:hover { background: rgba(var(--accent-rgb), 0.055); }
 .recent-retirees-rank { text-align: right; color: var(--muted); width: 34px; }
-.recent-retirees-player-head { min-width: 190px; text-align: left; }
+.recent-retirees-player-head { min-width: 220px; text-align: left; }
 .recent-retirees-player {
-  min-width: 190px;
+  min-width: 220px;
   white-space: nowrap;
+  /* Remove the usual cell padding so the portrait is flush with row edges. */
+  padding: 0 !important;
+}
+.recent-retirees-player-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 72px;
+  padding-right: 9px;
 }
 .recent-retirees-photo {
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 8px;
-  width: 29px;
-  height: 37px;
-  border-radius: var(--radius-sm);
+  display: block;
+  flex: 0 0 54px;
+  width: 54px;
+  height: 72px;
+  border: 0;
+  border-radius: 0;
   object-fit: cover;
   object-position: center top;
-  border: 1px solid var(--line);
 }
 .recent-retirees-identity {
   display: inline-flex;
   flex-direction: column;
-  vertical-align: middle;
   min-width: 0;
   gap: 2px;
+}
+.recent-retirees-player-content:not(:has(.recent-retirees-photo)) .recent-retirees-identity {
+  padding-left: 10px;
 }
 .recent-retirees-player-link {
   color: var(--accent);
@@ -184,6 +194,10 @@
   .recent-retirees-table { font-size: 0.75rem; }
   .recent-retirees-table td { padding: 7px 8px; }
   .recent-retirees-table th { padding: 9px 8px; }
+  .recent-retirees-player,
+  .recent-retirees-player-head { min-width: 200px; }
+  .recent-retirees-player-content { min-height: 64px; gap: 8px; }
+  .recent-retirees-photo { flex-basis: 48px; width: 48px; height: 64px; }
 }
 /* Use the same enhanced editorial ink colors as Home highlight names. */
 html[data-theme="newspaper"] .recent-retirees-player-link { color: #903d3a; }

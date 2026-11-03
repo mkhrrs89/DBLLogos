@@ -46,7 +46,7 @@
   ];
   const METRICS = Object.fromEntries(SORTS.map(([key, label, digits]) =>
     [key, { key, label, digits }]));
-  const TABLE_KEYS = ['retiredYear', 'years', 'gp', 'pts', 'ppg',
+  const TABLE_KEYS = ['retiredYear', 'age', 'years', 'gp', 'pts', 'ppg',
     'trb', 'rpg', 'ast', 'apg', 'ws', 'ewa', 'vorp', 'per', 'ws48', 'bpm'];
   const COLUMN_LABELS = {
     retiredYear: 'Class', years: 'YRS', gp: 'GP', pts: 'PTS',
@@ -276,6 +276,7 @@
         playerLink.title = 'Open player profile';
       }
       const identity = element('span', 'recent-retirees-identity');
+      const playerContent = element('div', 'recent-retirees-player-content');
       identity.appendChild(playerLink);
       identity.appendChild(element('span', 'recent-retirees-player-detail',
         player.pos + (player.careerStart !== null ?
@@ -289,9 +290,10 @@
         image.decoding = 'async';
         image.referrerPolicy = 'no-referrer';
         image.addEventListener('error', () => image.remove());
-        nameCell.appendChild(image);
+        playerContent.appendChild(image);
       }
-      nameCell.appendChild(identity);
+      playerContent.appendChild(identity);
+      nameCell.appendChild(playerContent);
       row.appendChild(nameCell);
       for (const key of displayed) {
         row.appendChild(element('td',
