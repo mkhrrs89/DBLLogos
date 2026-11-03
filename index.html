@@ -14,7 +14,7 @@
       }
     </script>
     <link rel="stylesheet" href="./styles.css?v=20261029-home-startup" />
-    <link rel="stylesheet" href="./home.css?v=20261029-individual-leader-bullets" />
+    <link rel="stylesheet" href="./home.css?v=20261103-home-file-upload" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -150,6 +150,7 @@
               <button id="playersOfMonthTabBtn" class="tab-btn" type="button" aria-selected="false">Players of the Month</button>
               <button id="hallOfFameTabBtn" class="tab-btn" type="button" aria-selected="false">Hall of Fame</button>
               <button id="recentRetireesTabBtn" class="tab-btn" type="button" aria-selected="false">Recent Retirees</button>
+              <button id="deadPlayersTabBtn" class="tab-btn" type="button" aria-selected="false">The Dead</button>
               <button id="retiredNumbersTabBtn" class="tab-btn" type="button" aria-selected="false">Retired Numbers</button>
               <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
               <button id="shootoutRecordsTabBtn" class="tab-btn" type="button" aria-selected="false">Shootout Records</button>
@@ -194,6 +195,15 @@
               <span id="homeStage" class="home-stage-name">No league file loaded</span>
             </div>
           </header>
+          <section class="panel home-file-upload" aria-label="Upload a league file">
+            <div class="upload-block">
+              <input id="homeLeagueFile" class="file-input" type="file"
+                data-league-file-input aria-label="Upload league file from Home"
+                accept=".json,.gz,.json.gz,application/json,application/gzip" />
+              <button id="homeClearLeagueFileBtn" class="action-btn" type="button">Clear loaded file</button>
+            </div>
+            <p id="homeLeagueFileStatus" class="home-file-upload-status" aria-live="polite">No league file loaded.</p>
+          </section>
           <section class="panel home-highlights-container" aria-label="Current season highlights">
             <div id="homeHighlightsContent" class="home-highlights-content" aria-live="polite"></div>
           </section>
@@ -538,6 +548,37 @@
           <p class="recent-retirees-footnote">Career regular-season statistics only. PER and BPM are weighted by minutes, and WS/48 uses career win shares and minutes. Tap a column heading to sort, or scroll sideways to see more stats.</p>
         </section>
 
+        <section id="deadPlayersPanel" class="panel recent-retirees-panel" aria-label="Deceased league players" hidden>
+          <header class="recent-retirees-header">
+            <h2>The Dead</h2>
+            <p class="subtle">Every deceased player in the league's recorded history, with age and year of death, career statistics, and accomplishments.</p>
+          </header>
+          <div class="recent-retirees-controls">
+            <label class="recent-retirees-field" for="deadPlayersYear">
+              <span>Year of death</span>
+              <select id="deadPlayersYear" class="recent-retirees-class-select">
+                <option value="all">All death years</option>
+              </select>
+            </label>
+            <label class="recent-retirees-field" for="deadPlayersSort">
+              <span>Sort by</span>
+              <select id="deadPlayersSort" class="recent-retirees-sort-select"></select>
+            </label>
+            <button id="deadPlayersDirection" class="action-btn recent-retirees-direction"
+              type="button" aria-label="Sort direction">High → Low</button>
+            <label class="recent-retirees-field recent-retirees-search-field" for="deadPlayersSearch">
+              <span>Find player</span>
+              <input id="deadPlayersSearch" class="recent-retirees-search" type="search"
+                placeholder="Search the deceased…" autocomplete="off" />
+            </label>
+          </div>
+          <p id="deadPlayersSummary" class="recent-retirees-summary" aria-live="polite"></p>
+          <div id="deadPlayersWrap" class="recent-retirees-wrap">
+            <p class="recent-retirees-message">Upload a league file to view deceased players.</p>
+          </div>
+          <p class="recent-retirees-footnote">Includes every player with a recorded year of death, whether active or retired when they died. Age at death is calculated from birth and death years. Career statistics cover regular-season games. Tap a column heading to sort.</p>
+        </section>
+
         <section id="retiredNumbersPanel" class="panel rankings-panel" hidden>
           <div class="retired-numbers-header">
             <h2>Retired Numbers</h2>
@@ -781,12 +822,14 @@
     <script src="./large-file-loader.js?v=20261027-direct-team-import"></script>
     <script src="./home.js?v=20261029-individual-leader-bullets"></script>
     <script src="./home-updates.js?v=20261029-digest-accuracy"></script>
+    <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
     <script src="./champion-grid.js?v=20261015-v1"></script>
     <script src="./retired-numbers.js?v=20261023-arched-surnames"></script>
     <script src="./recent-retirees.js?v=20261103-age-column-photo-rows"></script>
+    <script src="./dead-players.js?v=20261103-the-dead-all-years"></script>
     <script src="./color-schemes.js?v=20261027-reuse-cards"></script>
     <script src="./all-time-leaders.js?v=20261027-reuse-cards"></script>
     <script src="./team-leaders.js?v=20261003-cleveland-leaders"></script>

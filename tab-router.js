@@ -22,6 +22,7 @@
     playersOfMonthTabBtn: 'playersOfMonthPanel',
     hallOfFameTabBtn: 'hallOfFamePanel',
     recentRetireesTabBtn: 'recentRetireesPanel',
+    deadPlayersTabBtn: 'deadPlayersPanel',
     retiredNumbersTabBtn: 'retiredNumbersPanel',
     recordsTabBtn: 'recordsPanel',
     shootoutRecordsTabBtn: 'shootoutRecordsPanel',
