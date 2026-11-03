@@ -290,6 +290,19 @@
         image.loading = 'lazy';
         image.decoding = 'async';
         image.referrerPolicy = 'no-referrer';
+        // Intrinsic dimensions and inline sizing are a safety net: even if a
+        // browser serves a stale CSS file, portraits cannot expand to their
+        // original full-resolution size and break the table layout.
+        image.width = 54;
+        image.height = 72;
+        image.style.width = '54px';
+        image.style.height = '72px';
+        image.style.minWidth = '54px';
+        image.style.maxWidth = '54px';
+        image.style.minHeight = '72px';
+        image.style.maxHeight = '72px';
+        image.style.objectFit = 'cover';
+        image.style.objectPosition = 'center top';
         image.addEventListener('error', () => image.remove());
         playerContent.appendChild(image);
       }

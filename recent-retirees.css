@@ -202,3 +202,62 @@
 /* Use the same enhanced editorial ink colors as Home highlight names. */
 html[data-theme="newspaper"] .recent-retirees-player-link { color: #903d3a; }
 html[data-theme="dark-newspaper"] .recent-retirees-player-link { color: #e6a078; }
+
+/* The Dead shares the Recent Retirees table styling. Enforce its portrait
+   limits and scrollable table independently so old cached styles or broader
+   site image rules cannot blow up the layout. */
+#deadPlayersPanel .recent-retirees-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+#deadPlayersPanel .recent-retirees-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+#deadPlayersPanel .recent-retirees-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+#deadPlayersPanel .recent-retirees-player {
+  min-width: 220px;
+  padding: 0 !important;
+  vertical-align: middle;
+}
+#deadPlayersPanel .recent-retirees-player-content {
+  display: flex;
+  align-items: center;
+  min-height: 72px;
+  gap: 10px;
+}
+#deadPlayersPanel img.recent-retirees-photo {
+  display: block;
+  box-sizing: border-box;
+  flex: 0 0 54px;
+  width: 54px !important;
+  min-width: 54px;
+  max-width: 54px !important;
+  height: 72px !important;
+  min-height: 72px;
+  max-height: 72px !important;
+  object-fit: cover;
+  object-position: center top;
+}
+@media (max-width: 660px) {
+  #deadPlayersPanel .recent-retirees-player { min-width: 200px; }
+  #deadPlayersPanel .recent-retirees-player-content {
+    min-height: 64px;
+    gap: 8px;
+  }
+  #deadPlayersPanel img.recent-retirees-photo {
+    flex-basis: 48px;
+    width: 48px !important;
+    min-width: 48px;
+    max-width: 48px !important;
+    height: 64px !important;
+    min-height: 64px;
+    max-height: 64px !important;
+  }
+}
