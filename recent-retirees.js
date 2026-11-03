@@ -178,6 +178,8 @@
   }
   function format(value, key) {
     if (!Number.isFinite(value)) return '—';
+    // Calendar years are identifiers, not quantities: never format 1966 as 1,966.
+    if (key === 'retiredYear') return String(value);
     const decimals = METRICS[key]?.digits ?? 0;
     return value.toLocaleString('en-US', {
       minimumFractionDigits: decimals && ['ws', 'ewa', 'vorp', 'ws48'].includes(key) ? decimals : 0,

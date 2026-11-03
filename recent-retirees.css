@@ -185,3 +185,6 @@
   .recent-retirees-table td { padding: 7px 8px; }
   .recent-retirees-table th { padding: 9px 8px; }
 }
+/* Use the same enhanced editorial ink colors as Home highlight names. */
+html[data-theme="newspaper"] .recent-retirees-player-link { color: #903d3a; }
+html[data-theme="dark-newspaper"] .recent-retirees-player-link { color: #e6a078; }
