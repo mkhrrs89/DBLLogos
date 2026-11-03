@@ -69,14 +69,18 @@
     const middle = Math.floor(rows.length / 2);
     return rows.length % 2 ? rows[middle] : (rows[middle - 1] + rows[middle]) / 2;
   };
+  // BBGM potential/overall scores cluster near the middle. Narrow 1.5-point
+  // grade bands let meaningful scouting differences show through without
+  // forcing a bell curve or guaranteeing an A/F in every set of classes.
+  // These are fixed thresholds, independent of how many classes were uploaded.
+  const GRADE_BANDS = [
+    [64, 'A+'], [62.5, 'A'], [61, 'A-'], [59.5, 'B+'],
+    [58, 'B'], [56.5, 'B-'], [55, 'C+'], [53.5, 'C'],
+    [52, 'C-'], [50.5, 'D+'], [49, 'D'], [47.5, 'D-']
+  ];
   function grade(score) {
-    if (score === null) return 'N/A';
-    const grades = [
-      [70, 'A+'], [67, 'A'], [64, 'A-'], [61, 'B+'],
-      [58, 'B'], [55, 'B-'], [52, 'C+'], [49, 'C'],
-      [46, 'C-'], [43, 'D+'], [40, 'D'], [37, 'D-']
-    ];
-    return grades.find(([threshold]) => score >= threshold)?.[1] || 'F';
+    if (score === null || !Number.isFinite(score)) return 'N/A';
+    return GRADE_BANDS.find(([threshold]) => score >= threshold)?.[1] || 'F';
   }
   function analyze(year, players) {
     const potSorted = players.filter(p => p.pot !== null)
