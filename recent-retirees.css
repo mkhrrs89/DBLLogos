@@ -1,0 +1,187 @@
+/* Recent Retirees: sortable career summaries for the three latest classes. */
+.recent-retirees-panel {
+  min-width: 0;
+  padding: clamp(14px, 2.3vw, 28px);
+}
+.recent-retirees-header h2 {
+  margin: 0 0 5px;
+}
+.recent-retirees-header .subtle {
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.recent-retirees-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  margin: 12px 0;
+}
+.recent-retirees-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: 0.75rem;
+  font-weight: 750;
+  color: var(--muted);
+}
+.recent-retirees-field select,
+.recent-retirees-field input {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 7px 10px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 500;
+}
+.recent-retirees-field select option,
+.recent-retirees-field select optgroup {
+  background: var(--panel);
+  color: var(--text);
+}
+.recent-retirees-class-select { width: 210px; }
+.recent-retirees-sort-select { width: 255px; }
+.recent-retirees-search { width: min(245px, 100%); }
+.recent-retirees-direction {
+  align-self: end;
+  white-space: nowrap;
+  min-height: 36px;
+}
+.recent-retirees-summary {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 10px 0 14px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+}
+.recent-retirees-message {
+  color: var(--muted);
+  padding: 17px 12px;
+  font-size: 0.88rem;
+  text-align: center;
+}
+.recent-retirees-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.recent-retirees-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.79rem;
+  line-height: 1.35;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.recent-retirees-table th {
+  background: var(--panel-2);
+  color: var(--muted);
+  padding: 10px 9px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 0.73rem;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line-strong);
+}
+.recent-retirees-table th:not(.recent-retirees-player-head),
+.recent-retirees-table td.recent-retirees-number { text-align: right; }
+.recent-retirees-table td {
+  padding: 8px 9px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.recent-retirees-table tbody tr:last-child td { border-bottom: 0; }
+.recent-retirees-table tbody tr:hover { background: rgba(var(--accent-rgb), 0.055); }
+.recent-retirees-rank { text-align: right; color: var(--muted); width: 34px; }
+.recent-retirees-player-head { min-width: 190px; text-align: left; }
+.recent-retirees-player {
+  min-width: 190px;
+  white-space: nowrap;
+}
+.recent-retirees-photo {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+  width: 29px;
+  height: 37px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid var(--line);
+}
+.recent-retirees-identity {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  min-width: 0;
+  gap: 2px;
+}
+.recent-retirees-player-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 800;
+}
+.recent-retirees-player-link:hover { text-decoration: underline; }
+.recent-retirees-player-detail {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.recent-retirees-sort-head {
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  padding: 0;
+  white-space: nowrap;
+}
+.recent-retirees-sort-head:hover { color: var(--accent); }
+.recent-retirees-selected-column {
+  background: rgba(var(--accent-rgb), 0.10);
+  color: var(--text) !important;
+  font-weight: 800;
+}
+.recent-retirees-table th.recent-retirees-selected-column {
+  background: var(--panel-2);
+  box-shadow: inset 0 -3px var(--accent);
+  color: var(--accent) !important;
+}
+.recent-retirees-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.recent-retirees-footnote {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+@media (max-width: 660px) {
+  .recent-retirees-panel { padding: 12px 10px 16px; }
+  .recent-retirees-controls { gap: 8px; }
+  .recent-retirees-field { flex: 1 1 135px; }
+  .recent-retirees-class-select,
+  .recent-retirees-sort-select,
+  .recent-retirees-search { width: 100%; }
+  .recent-retirees-search-field { flex: 1 1 100%; }
+  .recent-retirees-table { font-size: 0.75rem; }
+  .recent-retirees-table td { padding: 7px 8px; }
+  .recent-retirees-table th { padding: 9px 8px; }
+}

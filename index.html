@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
     <link rel="stylesheet" href="./retired-numbers.css?v=20261023-chest-surnames" />
+    <link rel="stylesheet" href="./recent-retirees.css?v=20261103-retiring-classes" />
     <link rel="stylesheet" href="./logos-by-team.css" />
     <link rel="stylesheet" href="./headshot-backgrounds.css?v=20261021-fixed-aspect-overlay" />
     <link rel="stylesheet" href="./all-time-leaders.css?v=20260926-summary-face-center" />
@@ -148,6 +149,7 @@
               <button id="teamLeadersTabBtn" class="tab-btn" type="button" aria-selected="false">Team Leaders</button>
               <button id="playersOfMonthTabBtn" class="tab-btn" type="button" aria-selected="false">Players of the Month</button>
               <button id="hallOfFameTabBtn" class="tab-btn" type="button" aria-selected="false">Hall of Fame</button>
+              <button id="recentRetireesTabBtn" class="tab-btn" type="button" aria-selected="false">Recent Retirees</button>
               <button id="retiredNumbersTabBtn" class="tab-btn" type="button" aria-selected="false">Retired Numbers</button>
               <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
               <button id="shootoutRecordsTabBtn" class="tab-btn" type="button" aria-selected="false">Shootout Records</button>
@@ -506,6 +508,36 @@
           </div>
         </section>
 
+        <section id="recentRetireesPanel" class="panel recent-retirees-panel" aria-label="Recent retirees" hidden>
+          <header class="recent-retirees-header">
+            <h2>Recent Retirees</h2>
+            <p class="subtle">All players from the league's three most recent retiring classes. Sort by career achievements, traditional statistics and advanced metrics.</p>
+          </header>
+          <div class="recent-retirees-controls">
+            <label class="recent-retirees-field" for="recentRetireesClass">
+              <span>Retirement class</span>
+              <select id="recentRetireesClass" class="recent-retirees-class-select">
+                <option value="all">All three classes</option>
+              </select>
+            </label>
+            <label class="recent-retirees-field" for="recentRetireesSort">
+              <span>Sort by</span>
+              <select id="recentRetireesSort" class="recent-retirees-sort-select"></select>
+            </label>
+            <button id="recentRetireesDirection" class="action-btn recent-retirees-direction" type="button" aria-label="Sort direction">High → Low</button>
+            <label class="recent-retirees-field recent-retirees-search-field" for="recentRetireesSearch">
+              <span>Find player</span>
+              <input id="recentRetireesSearch" class="recent-retirees-search"
+                type="search" placeholder="Search retirees…" autocomplete="off" />
+            </label>
+          </div>
+          <p id="recentRetireesSummary" class="recent-retirees-summary" aria-live="polite"></p>
+          <div id="recentRetireesWrap" class="recent-retirees-wrap">
+            <p class="recent-retirees-message">Upload a league file to view recent retirees.</p>
+          </div>
+          <p class="recent-retirees-footnote">Career regular-season statistics only. PER and BPM are weighted by minutes, and WS/48 uses career win shares and minutes. Tap a column heading to sort, or scroll sideways to see more stats.</p>
+        </section>
+
         <section id="retiredNumbersPanel" class="panel rankings-panel" hidden>
           <div class="retired-numbers-header">
             <h2>Retired Numbers</h2>
@@ -754,6 +786,7 @@
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
     <script src="./champion-grid.js?v=20261015-v1"></script>
     <script src="./retired-numbers.js?v=20261023-arched-surnames"></script>
+    <script src="./recent-retirees.js?v=20261103-retiring-classes"></script>
     <script src="./color-schemes.js?v=20261027-reuse-cards"></script>
     <script src="./all-time-leaders.js?v=20261027-reuse-cards"></script>
     <script src="./team-leaders.js?v=20261003-cleveland-leaders"></script>
