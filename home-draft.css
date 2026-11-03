@@ -1,0 +1,201 @@
+
+/* Draft Lottery / Draft: live Home big board and pick tracker. */
+.home-draft-container {
+  min-width: 0;
+  margin-top: 12px;
+  padding: 16px clamp(15px, 2.2vw, 28px) 20px;
+}
+.home-draft-container[hidden] { display: none !important; }
+.home-draft-heading h3 {
+  margin: 0 0 4px;
+  font-size: 1.08rem;
+  color: var(--text);
+}
+.home-draft-heading p {
+  margin: 0 0 13px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.home-draft-status {
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+.home-draft-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.home-draft-counter {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 9px;
+  font-size: 0.77rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.home-draft-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.95fr);
+  gap: clamp(12px, 2vw, 22px);
+  align-items: start;
+}
+.home-draft-picks {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.home-draft-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+.home-draft-card h4 {
+  margin: 0 0 4px;
+  font-size: 0.91rem;
+  color: var(--text);
+}
+.home-draft-card-note {
+  margin: 0 0 11px;
+  font-size: 0.73rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.home-draft-board-list,
+.home-draft-pick-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+  max-height: 550px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.home-draft-board-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 3px 2px;
+  min-height: 55px;
+  border-bottom: 1px solid var(--line);
+}
+.home-draft-board-item:last-child,
+.home-draft-pick-item:last-child { border-bottom: 0; }
+.home-draft-board-rank {
+  flex: 0 0 21px;
+  font-size: 0.78rem;
+  text-align: center;
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.home-draft-portrait {
+  flex: 0 0 40px;
+  display: block;
+  box-sizing: border-box;
+  width: 40px !important;
+  min-width: 40px;
+  max-width: 40px !important;
+  height: 52px !important;
+  min-height: 52px;
+  max-height: 52px !important;
+  object-fit: cover;
+  object-position: center top;
+  background: rgba(120,120,120,0.08);
+}
+.home-draft-prospect-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+  flex: 1 1 auto;
+  line-height: 1.32;
+}
+.home-draft-player-name {
+  font-size: 0.79rem;
+  font-weight: 800;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+html[data-theme="newspaper"] .home-draft-player-name { color: #903d3a; }
+html[data-theme="dark-newspaper"] .home-draft-player-name { color: #e6a078; }
+.home-draft-player-meta {
+  font-size: 0.70rem;
+  color: var(--muted);
+}
+.home-draft-player-ratings {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 7px;
+  justify-content: flex-end;
+  font-size: 0.70rem;
+  color: var(--text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.home-draft-expand {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.79rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.home-draft-expand:hover { background: rgba(127,127,127,0.06); }
+.home-draft-pick-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 3px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.78rem;
+}
+.home-draft-pick-item.is-next {
+  border-left: 3px solid var(--accent);
+  padding-left: 9px;
+  background: rgba(127,127,127,0.04);
+}
+.home-draft-pick-id {
+  flex: 0 0 66px;
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 750;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.home-draft-pick-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 3px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.home-draft-pick-info strong { color: var(--text); font-weight: 800; }
+.home-draft-pick-player { font-size: 0.74rem; color: var(--muted); }
+.home-draft-note { margin: 2px 0; font-size: 0.74rem; line-height: 1.5; color: var(--muted); }
+@media (max-width: 900px) {
+  .home-draft-layout { grid-template-columns: minmax(0, 1fr); }
+  .home-draft-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-draft-note { grid-column: 1 / -1; }
+}
+@media (max-width: 620px) {
+  .home-draft-container { margin-top: 10px; padding: 12px 13px 16px; }
+  .home-draft-picks { grid-template-columns: minmax(0, 1fr); }
+  .home-draft-note { grid-column: auto; }
+  .home-draft-card { padding: 10px; }
+  .home-draft-pick-list { max-height: 330px; }
+  .home-draft-player-ratings { gap: 5px; font-size: 0.68rem; }
+}
