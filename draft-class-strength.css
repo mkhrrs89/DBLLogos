@@ -1,0 +1,125 @@
+/* Upcoming draft classes: compact, readable scouting grades. */
+.draft-strength-panel {
+  min-width: 0;
+  padding: clamp(14px, 2.4vw, 28px);
+}
+.draft-strength-header h2 { margin: 0 0 6px; }
+.draft-strength-header .subtle { margin: 0 0 16px; line-height: 1.5; }
+.draft-strength-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+}
+.draft-strength-summary { font-size: 0.8rem; color: var(--muted); line-height: 1.45; }
+.draft-strength-order-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.draft-strength-order {
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  min-height: 36px;
+  font: inherit;
+  font-weight: 500;
+}
+.draft-strength-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.draft-strength-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.draft-strength-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.draft-strength-card-heading { min-width: 0; }
+.draft-strength-card-heading h3 {
+  font-size: 1.12rem;
+  font-weight: 800;
+  margin: 0 0 3px;
+  color: var(--text);
+}
+.draft-strength-card-count { margin: 0; color: var(--muted); font-size: 0.75rem; }
+.draft-strength-grade {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+.draft-strength-letter {
+  font-size: clamp(1.75rem, 3vw, 2.45rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-weight: 900;
+  color: var(--accent);
+}
+html[data-theme="newspaper"] .draft-strength-letter { color: #903d3a; }
+html[data-theme="dark-newspaper"] .draft-strength-letter { color: #e6a078; }
+.draft-strength-score { font-size: 0.69rem; color: var(--muted); white-space: nowrap; margin-top: 3px; }
+.draft-strength-analysis { font-size: 0.81rem; line-height: 1.5; margin: 0; color: var(--text); }
+.draft-strength-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.draft-strength-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.draft-strength-metric-label { font-size: 0.68rem; color: var(--muted); }
+.draft-strength-metric-value { font-size: 0.98rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.draft-strength-top h4 { margin: 0 0 5px; font-size: 0.81rem; color: var(--text); }
+.draft-strength-top-list { margin: 0; padding-left: 20px; font-size: 0.78rem; line-height: 1.6; }
+.draft-strength-top-list li { padding-left: 2px; }
+.draft-strength-top-list strong { color: var(--accent); }
+.draft-strength-top-list span { color: var(--muted); }
+.draft-strength-caution { margin: 0; font-size: 0.73rem; line-height: 1.4; color: var(--muted); }
+.draft-strength-message { grid-column: 1 / -1; padding: 20px; text-align: center; color: var(--muted); }
+.draft-strength-method {
+  margin-top: 16px;
+  font-size: 0.79rem;
+  line-height: 1.6;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  color: var(--muted);
+}
+.draft-strength-method summary { cursor: pointer; font-weight: 750; color: var(--text); }
+.draft-strength-method p { margin: 8px 0 0; }
+@media (max-width: 800px) {
+  .draft-strength-list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 540px) {
+  .draft-strength-panel { padding: 12px; }
+  .draft-strength-card { padding: 12px; }
+  .draft-strength-card-heading h3 { font-size: 1rem; }
+  .draft-strength-order-label { width: 100%; justify-content: space-between; }
+  .draft-strength-order { min-width: 0; flex: 1; }
+  .draft-strength-metrics { gap: 6px; }
+  .draft-strength-metric { padding: 7px; }
+}
