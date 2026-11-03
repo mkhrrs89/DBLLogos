@@ -2,10 +2,11 @@
   const panel = document.getElementById('draftClassStrengthPanel');
   const list = document.getElementById('draftClassStrengthList');
   const summary = document.getElementById('draftClassStrengthSummary');
+  const ranking = document.getElementById('draftClassStrengthRanking');
   const orderSelect = document.getElementById('draftClassStrengthOrder');
   const hub = window.DBLLeagueFileHub;
   const stream = window.DBLLeagueStream;
-  if (!panel || !list || !summary || !orderSelect || !hub?.subscribe ||
+  if (!panel || !list || !summary || !ranking || !orderSelect || !hub?.subscribe ||
       !stream?.forEachTopLevelArrayItem || !stream?.readTopLevelValue) return;
 
   let activeFile = null;
@@ -180,6 +181,57 @@
       'Provisional: fewer than five players have complete OVR/POT ratings.'));
     return article;
   }
+  function rankingColumn(title, entries) {
+    const group = text('section', 'draft-strength-rank-group');
+    group.appendChild(text('h3', '', title));
+    const items = text('ol', 'draft-strength-rank-list');
+    for (const info of entries) {
+      const item = text('li', 'draft-strength-rank-item');
+      const main = text('div', 'draft-strength-rank-main');
+      main.appendChild(text('strong', 'draft-strength-rank-year', info.year + ' Draft'));
+      main.appendChild(text('span', 'draft-strength-rank-grade', info.grade));
+      main.appendChild(text('span', 'draft-strength-rank-score', info.score.toFixed(1) + '/100'));
+      item.appendChild(main);
+      const summaryLine = 'Top 5 POT ' + display(info.top5) +
+        ' · Top 20 POT ' + display(info.top20) +
+        ' · ' + info.elite + ' elite (75+ POT)' +
+        (info.provisional ? ' · Provisional' : '');
+      item.appendChild(text('p', 'draft-strength-rank-detail', summaryLine));
+      items.appendChild(item);
+    }
+    group.appendChild(items);
+    return group;
+  }
+  function renderRanking() {
+    // Use the same class scores as the cards, independent of the display sort.
+    // Ungraded classes must never be mislabeled as the weakest.
+    const graded = classes.filter(info => Number.isFinite(info.score));
+    ranking.replaceChildren();
+    if (!graded.length) {
+      ranking.hidden = true;
+      return;
+    }
+    const strongest = graded.slice()
+      .sort((a, b) => b.score - a.score || a.year - b.year).slice(0, 5);
+    const weakest = graded.slice()
+      .sort((a, b) => a.score - b.score || a.year - b.year).slice(0, 5);
+    const heading = text('header', 'draft-strength-ranking-header');
+    heading.appendChild(text('h3', '', 'Draft Class Rankings'));
+    heading.appendChild(text('p', '',
+      'The five strongest and five weakest upcoming classes, ordered by strength score.'));
+    ranking.appendChild(heading);
+    const grid = text('div', 'draft-strength-ranking-grid');
+    grid.appendChild(rankingColumn('Top 5 Strongest', strongest));
+    grid.appendChild(rankingColumn('Top 5 Weakest', weakest));
+    ranking.appendChild(grid);
+    if (graded.length < 10) {
+      ranking.appendChild(text('p', 'draft-strength-ranking-note',
+        'Only ' + graded.length + ' graded ' +
+        (graded.length === 1 ? 'class is' : 'classes are') +
+        ' available; rankings may overlap.'));
+    }
+    ranking.hidden = false;
+  }
   function render() {
     if (!loadedFile) return;
     const rows = classes.slice();
@@ -196,6 +248,7 @@
       (classes.length === 1 ? '' : 'es') +
       (best ? ' · Strongest: ' + best.year + ' (' + best.grade + ')' : '') +
       ' · Grades reflect ratings in the uploaded file';
+    renderRanking();
     if (!rows.length) {
       showMessage('No upcoming undrafted classes were found in this league export.');
       return;
@@ -206,6 +259,8 @@
   }
   async function load(file, version) {
     loadingVersion = version;
+    ranking.hidden = true;
+    ranking.replaceChildren();
     const current = () => fileVersion === version && activeFile === file;
     showMessage('Reading future draft classes and evaluating their talent…');
     summary.textContent = 'Analyzing draft prospects…';
@@ -261,6 +316,8 @@
     loadingVersion = -1;
     loadedFile = null;
     classes = [];
+    ranking.hidden = true;
+    ranking.replaceChildren();
     summary.textContent = '';
     showMessage(file
       ? 'Open Draft Class Strength to analyze upcoming draft classes.'

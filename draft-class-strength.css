@@ -123,3 +123,89 @@ html[data-theme="dark-newspaper"] .draft-strength-letter { color: #e6a078; }
   .draft-strength-metrics { gap: 6px; }
   .draft-strength-metric { padding: 7px; }
 }
+
+/* Compact rankings above the complete draft-class cards. */
+.draft-strength-ranking {
+  min-width: 0;
+  margin-bottom: 20px;
+}
+.draft-strength-ranking[hidden] { display: none !important; }
+.draft-strength-ranking-header { margin: 0 0 10px; }
+.draft-strength-ranking-header h3 {
+  font-size: 1.02rem;
+  color: var(--text);
+  margin: 0 0 3px;
+}
+.draft-strength-ranking-header p {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+.draft-strength-ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.draft-strength-rank-group {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+.draft-strength-rank-group h3 {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  color: var(--text);
+}
+.draft-strength-rank-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: draft-rank;
+}
+.draft-strength-rank-item {
+  counter-increment: draft-rank;
+  padding: 8px 0 8px 26px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+.draft-strength-rank-item:last-child { border-bottom: 0; padding-bottom: 2px; }
+.draft-strength-rank-item::before {
+  content: counter(draft-rank) ".";
+  position: absolute;
+  top: 9px;
+  left: 1px;
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.draft-strength-rank-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.draft-strength-rank-year { color: var(--text); font-size: 0.81rem; }
+.draft-strength-rank-grade { font-weight: 850; color: var(--accent); font-size: 0.88rem; }
+.draft-strength-rank-score { color: var(--muted); font-size: 0.72rem; }
+.draft-strength-rank-detail {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.70rem;
+  line-height: 1.5;
+}
+.draft-strength-ranking-note {
+  margin: 9px 0 0;
+  font-size: 0.73rem;
+  color: var(--muted);
+}
+html[data-theme="newspaper"] .draft-strength-rank-grade { color: #903d3a; }
+html[data-theme="dark-newspaper"] .draft-strength-rank-grade { color: #e6a078; }
+@media (max-width: 800px) {
+  .draft-strength-ranking-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 540px) {
+  .draft-strength-rank-group { padding: 10px; }
+}
