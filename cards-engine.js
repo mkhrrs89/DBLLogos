@@ -15,6 +15,9 @@
   ];
   // Migrate every previously collected card rather than discarding old tiers.
   // Rare + Epic become Refractor; Legendary becomes Black Label.
+  // A peak rating of 35 or less does not qualify for any new card pull.
+  // Never delete previously owned cards as a side effect of an export scan.
+  const MIN_CARD_OVR = 36;
   const OLD_RARITY = Object.freeze({
     common: 'common', uncommon: 'crome', rare: 'refractor',
     epic: 'refractor', legendary: 'black-label'
@@ -170,7 +173,7 @@
     const pid = integer(player?.pid);
     if (pid === null || pid < 0 || integer(player.tid) === -2) return null;
     const ratings = ratingData(player, season);
-    if (ratings.peak === null && number(ratings.selected.pot) === null) return null;
+    if (ratings.peak === null || ratings.peak < MIN_CARD_OVR) return null;
     const career = careerData(player);
     const peakYear = ratings.peakSeason;
     const peakTid = teamForPeak(player, peakYear, season);

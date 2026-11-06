@@ -1435,3 +1435,52 @@
   font-weight: 700;
   letter-spacing: -.04em;
 }
+
+
+/* FLAGSHIP 1960s-style side-rail type, as in the card design mockup.
+   Keep each letter upright; shrink the long rarity words to stay beside
+   the portrait rather than overlapping the bottom player information. */
+.dbl-cards-side-rarity {
+  position: absolute;
+  top: 20%;
+  left: 5.1%;
+  z-index: 5;
+  height: auto;
+  max-height: 52%;
+  width: auto;
+  display: block;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: "Trebuchet MS", "Avenir Next", Arial, sans-serif;
+  font-weight: 600;
+  font-size: clamp(8px, 6.8cqw, 19px);
+  line-height: 1;
+  letter-spacing: .055em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  color: var(--card-metal);
+  pointer-events: none;
+}
+.dbl-cards-card[data-rarity="refractor"] .dbl-cards-side-rarity {
+  font-size: clamp(7px, 5.8cqw, 16px);
+  letter-spacing: .01em;
+}
+.dbl-cards-card[data-rarity="black-label"] .dbl-cards-side-rarity {
+  font-size: clamp(6px, 4.8cqw, 14px);
+  letter-spacing: -.015em;
+}
+/* Remove the now-unused bottom label strip, giving the name and team
+   their own breathing room just above the inner card's curved edge. */
+.dbl-cards-bottom,
+.dbl-cards-card[data-rarity="refractor"] .dbl-cards-bottom,
+.dbl-cards-card[data-rarity="black-label"] .dbl-cards-bottom {
+  bottom: 5.3%;
+}
+.dbl-cards-name,
+.dbl-cards-surname-glyphs {
+  /* Trebuchet is a slightly characterful humanist sans, not a display font. */
+  font-family: "Trebuchet MS", "Avenir Next", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -.045em;
+}

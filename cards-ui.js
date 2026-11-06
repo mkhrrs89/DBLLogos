@@ -226,11 +226,10 @@
     identity.appendChild(details);
     lower.appendChild(identity);
 
-    // Only the rarity appears in the footer; POT is not printed.
-    const foot = make('span', 'dbl-cards-front-foot');
-    foot.appendChild(make('strong', 'dbl-cards-rarity-name',
-      tierMap[card.rarity]?.label.toUpperCase()));
-    lower.appendChild(foot);
+    // Type is spelled downward in the left rail, beside the tall arched photo.
+    const rarity = make('span', 'dbl-cards-side-rarity dbl-cards-rarity-name',
+      tierMap[card.rarity]?.label.toUpperCase() || 'COMMON');
+    front.appendChild(rarity);
     front.appendChild(lower);
 
     front.appendChild(make('span', 'dbl-cards-foil'));
