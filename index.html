@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="./styles.css?v=20261029-home-startup" />
     <link rel="stylesheet" href="./home.css?v=20261103-home-file-upload" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
+    <link rel="stylesheet" href="./home-season-preview.css?v=20261106-season-preview" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -206,6 +207,14 @@
               <button id="homeClearLeagueFileBtn" class="action-btn" type="button">Clear loaded file</button>
             </div>
             <p id="homeLeagueFileStatus" class="home-file-upload-status" aria-live="polite">No league file loaded.</p>
+          </section>
+          <section id="homeSeasonPreview" class="panel home-season-preview"
+            aria-label="Season preview for upcoming regular season" hidden>
+            <header class="home-preview-heading">
+              <h3>Season Preview</h3>
+              <p id="homeSeasonPreviewSubtitle">Preseason outlook</p>
+            </header>
+            <div id="homeSeasonPreviewContent" aria-live="polite"></div>
           </section>
           <section id="homeDraftContainer" class="panel home-draft-container"
             aria-label="Current draft big board and pick tracker" hidden>
@@ -860,6 +869,7 @@
     <script src="./large-file-loader.js?v=20261027-direct-team-import"></script>
     <script src="./home.js?v=20261029-individual-leader-bullets"></script>
     <script src="./home-draft.js?v=20261103-home-draft-board"></script>
+    <script src="./home-season-preview.js?v=20261106-season-preview"></script>
     <script src="./home-updates.js?v=20261029-digest-accuracy"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>

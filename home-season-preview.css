@@ -1,0 +1,224 @@
+/* Home-only season preview for preseason and opening night. */
+.home-season-preview {
+  min-width: 0;
+  margin-top: 12px;
+  padding: 16px clamp(15px, 2.2vw, 28px) 18px;
+}
+.home-season-preview[hidden] { display: none !important; }
+.home-preview-heading h3 {
+  margin: 0 0 3px;
+  font-size: 1.08rem;
+  color: var(--text);
+}
+.home-preview-heading p {
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.home-preview-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 15px;
+}
+.home-preview-metric {
+  flex: 1 1 100px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 11px;
+  background: rgba(127,127,127,0.035);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  gap: 2px;
+  min-width: 0;
+}
+.home-preview-metric strong {
+  font-size: 1.03rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.home-preview-metric span {
+  font-size: 0.71rem;
+  color: var(--muted);
+}
+.home-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 13px;
+  align-items: start;
+}
+.home-preview-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 13px;
+}
+.home-preview-card h4 {
+  margin: 0 0 4px;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+.home-preview-small {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.home-preview-empty {
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.home-preview-contenders,
+.home-preview-players,
+.home-preview-last-year {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.home-preview-contender {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.home-preview-contender:last-child,
+.home-preview-person:last-child,
+.home-preview-last-year li:last-child { border-bottom: 0; }
+.home-preview-contender > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+.home-preview-team-name {
+  color: var(--accent);
+  font-size: 0.82rem;
+}
+.home-preview-muted {
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.35;
+}
+.home-preview-team-rating {
+  font-size: 0.77rem;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  color: var(--text);
+}
+.home-preview-person {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--line);
+  padding: 4px 0;
+  min-height: 56px;
+}
+.home-preview-photo {
+  box-sizing: border-box;
+  flex: 0 0 42px;
+  display: block;
+  width: 42px !important;
+  height: 54px !important;
+  max-width: 42px !important;
+  max-height: 54px !important;
+  object-fit: cover;
+  object-position: center top;
+}
+.home-preview-person-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.home-preview-person-content strong {
+  font-size: 0.79rem;
+  color: var(--accent);
+}
+.home-preview-person-content span {
+  font-size: 0.71rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.home-preview-card:has(.home-preview-table-scroll) {
+  grid-column: 1 / -1;
+}
+.home-preview-table-scroll {
+  overflow-x: auto;
+  max-height: 470px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+.home-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+.home-preview-table th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-align: left;
+  border-bottom: 1px solid var(--line-strong);
+  z-index: 1;
+}
+.home-preview-table th,
+.home-preview-table td {
+  padding: 8px 9px;
+  white-space: nowrap;
+}
+.home-preview-table td { border-bottom: 1px solid var(--line); }
+.home-preview-table tbody tr:last-child td { border-bottom: 0; }
+.home-preview-table tbody tr:hover { background: rgba(127,127,127,0.05); }
+.home-preview-table td:nth-child(1),
+.home-preview-table td:nth-child(3),
+.home-preview-table th:nth-child(1),
+.home-preview-table th:nth-child(3) {
+  text-align: right;
+}
+.home-preview-table-team { color: var(--accent); font-weight: 750; }
+.home-preview-last-year li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.79rem;
+}
+.home-preview-last-year li strong { color: var(--text); }
+.home-preview-last-year li span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.home-preview-disclaimer {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+html[data-theme="newspaper"] .home-preview-team-name,
+html[data-theme="newspaper"] .home-preview-person-content strong,
+html[data-theme="newspaper"] .home-preview-table-team { color: #903d3a; }
+html[data-theme="dark-newspaper"] .home-preview-team-name,
+html[data-theme="dark-newspaper"] .home-preview-person-content strong,
+html[data-theme="dark-newspaper"] .home-preview-table-team { color: #e6a078; }
+@media (max-width: 840px) {
+  .home-preview-grid { grid-template-columns: minmax(0,1fr); }
+  .home-preview-card:has(.home-preview-table-scroll) { grid-column: auto; }
+}
+@media (max-width: 540px) {
+  .home-season-preview { padding: 12px 11px 15px; margin-top: 10px; }
+  .home-preview-card { padding: 10px; }
+  .home-preview-summary { gap: 6px; }
+  .home-preview-metric { padding: 7px; flex-basis: calc(50% - 6px); }
+  .home-preview-table { font-size: 0.72rem; }
+  .home-preview-table th, .home-preview-table td { padding: 7px; }
+}
