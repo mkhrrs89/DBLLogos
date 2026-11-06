@@ -171,36 +171,68 @@
     }
     return crest;
   }
+  // Respect the export's first/last names when present. Older saved cards
+  // only contain one full-name string, so reconstruct both lines for them.
+  function nameParts(card) {
+    const parts = api.findNameParts?.(card) || {};
+    const first = String(parts.firstName || '').trim();
+    const last = String(parts.lastName || '').trim();
+    if (first || last) return {first: first || '', last: last || first};
+    const name = String(card.name || 'Unknown player').trim();
+    const breakAt = name.indexOf(' ');
+    return breakAt < 0 ? {first: '', last: name} : {
+      first: name.slice(0, breakAt), last: name.slice(breakAt + 1)
+    };
+  }
   function frontOf(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front');
-    const top = make('span', 'dbl-cards-front-top');
-    top.appendChild(make('span', '', 'FLAGSHIP'));
+    // Flagship and draft year stack in the top-left of the frame.
+    const heading = make('span', 'dbl-cards-front-top');
+    heading.appendChild(make('strong', 'dbl-cards-flagship', 'FLAGSHIP'));
     const issue = make('span', 'dbl-cards-issue');
-    issue.appendChild(make('span', '', card.era ?? 'ARCHIVE'));
+    issue.appendChild(make('span', 'dbl-cards-year', card.era ?? 'ARCHIVE'));
     if (api.isRookie(card)) {
       const rookie = make('span', 'dbl-cards-rookie', 'RC');
       rookie.title = 'Rookie card';
       issue.appendChild(rookie);
     }
-    top.appendChild(issue);
-    front.appendChild(top);
+    heading.appendChild(issue);
+    front.appendChild(heading);
+    // The badge is the actual logo asset, never a decorative circle.
+    front.appendChild(teamCrest(card));
     front.appendChild(art(card));
-    const bottom = make('span', 'dbl-cards-bottom');
+
+    // Editorial split: left OVR/jersey, right given name, large surname,
+    // then full team name and position beneath.
+    const lower = make('span', 'dbl-cards-bottom');
     const identity = make('span', 'dbl-cards-identity');
-    identity.appendChild(teamCrest(card));
+    const playerMetrics = make('span', 'dbl-cards-player-metrics');
+    playerMetrics.appendChild(make('span', 'dbl-cards-ovr-label', 'OVR'));
+    playerMetrics.appendChild(make('strong', 'dbl-cards-ovr-value',
+      card.ovr ?? '—'));
+    const jersey = api.findJersey?.(card);
+    if (jersey) playerMetrics.appendChild(make('span', 'dbl-cards-jersey', '#' + jersey));
+    identity.appendChild(playerMetrics);
+
     const details = make('span', 'dbl-cards-identity-details');
-    details.appendChild(make('strong', 'dbl-cards-name', card.name));
-    details.appendChild(make('span', 'dbl-cards-affiliation', card.team + ' / ' + card.pos));
+    const names = nameParts(card);
+    if (names.first) details.appendChild(make('span', 'dbl-cards-first-name', names.first));
+    details.appendChild(make('strong', 'dbl-cards-name', names.last.toLocaleUpperCase()));
+    details.appendChild(make('span', 'dbl-cards-affiliation',
+      card.pos + ' | ' + (card.teamName || card.team)));
     identity.appendChild(details);
-    bottom.appendChild(identity);
+    lower.appendChild(identity);
+
+    // Keep the existing POT information visible without competing with the surname.
     const foot = make('span', 'dbl-cards-front-foot');
-    foot.appendChild(make('strong', 'dbl-cards-rarity-name', tierMap[card.rarity]?.label.toUpperCase()));
-    foot.appendChild(make('span', '', 'OVR ' + (card.ovr ?? '—') + ' · POT ' + (card.pot ?? '—')));
-    bottom.appendChild(foot);
-    front.appendChild(bottom);
+    foot.appendChild(make('strong', 'dbl-cards-rarity-name',
+      tierMap[card.rarity]?.label.toUpperCase()));
+    foot.appendChild(make('span', 'dbl-cards-pot-label',
+      'POT ' + (card.pot ?? '—')));
+    lower.appendChild(foot);
+    front.appendChild(lower);
+
     front.appendChild(make('span', 'dbl-cards-foil'));
-    // Sparkles are entirely hidden on sealed cards; only a revealed Black
-    // Label front enables them through its rarity data attribute.
     if (card.rarity === 'black-label') {
       for (let index = 0; index < 7; index++) {
         const sparkle = make('span', 'dbl-cards-sparkle', '✦');

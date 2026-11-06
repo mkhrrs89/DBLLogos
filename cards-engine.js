@@ -85,6 +85,23 @@
     return {gp: Math.round(gp), ppg: gp ? Math.round(pts / gp * 10) / 10 : null,
       ws: Math.round(ws * 10) / 10, lastTid};
   }
+  function jerseyOf(player, season) {
+    const valid = value => {
+      const v = value === undefined || value === null ? '' : String(value).trim();
+      return /^\d{1,3}$/.test(v) ? v : '';
+    };
+    let jersey = valid(player?.jerseyNumber);
+    let newest = -Infinity;
+    for (const stat of Array.isArray(player?.stats) ? player.stats : []) {
+      const year = integer(stat?.season);
+      const candidate = valid(stat?.jerseyNumber);
+      if (year === null || year > season || stat?.playoffs || !candidate ||
+          year < newest) continue;
+      jersey = candidate;
+      newest = year;
+    }
+    return jersey;
+  }
   function playerInfo(player, season, teams) {
     const pid = integer(player?.pid);
     // Future draft prospects are not yet a part of the historical collection.
@@ -111,6 +128,8 @@
     const image = photoUrl(player?.imgURL);
     return {
       pid, name: nameOf(player),
+      firstName: str(player.firstName), lastName: str(player.lastName),
+      jersey: jerseyOf(player, season),
       team: team?.abbrev || 'DBL', teamName: team?.name || 'League archive',
       teamLogo: team?.logo || '', publicTeamLogo: photoUrl(team?.logo, true),
       pos: str(ratings.selected.pos) || str(player.pos) || '—',
@@ -185,7 +204,10 @@
       const id = pid + ':' + rarity;
       const item = {
         id, pid, rarity, count: qty,
-        name: str(row.name) || 'Unknown player', team: str(row.team) || 'DBL',
+        name: str(row.name) || 'Unknown player',
+        firstName: str(row.firstName), lastName: str(row.lastName),
+        jersey: /^\d{1,3}$/.test(String(row.jersey || '')) ? String(row.jersey) : '',
+        team: str(row.team) || 'DBL',
         teamName: str(row.teamName) || 'League archive',
         teamLogo: photoUrl(row.teamLogo, true),
         pos: str(row.pos) || '—',
@@ -203,7 +225,7 @@
     packs = Math.max(0, integer(value?.packs) ?? 0);
   }
   function snapshot() {
-    return {version: 5, packs, items: [...collection.values()].map(i => ({
+    return {version: 6, packs, items: [...collection.values()].map(i => ({
       ...i, photo: photoUrl(i.photo, true),
       teamLogo: photoUrl(i.teamLogo, true)
     }))};
@@ -222,7 +244,7 @@
     notify();
     // Persist the normalized editions, including a collection restored from
     // a previous release, even if no new pack is opened.
-    if (state?.items?.length && state.version !== 5) void save();
+    if (state?.items?.length && state.version !== 6) void save();
   }).catch(error => {
     console.warn('Card collection restore failed.', error);
     collectionLoaded = true;
@@ -233,7 +255,7 @@
     if (!collectionLoaded) return false;
     // Serialize the reset behind any in-flight pack saves so an older write
     // can never resurrect cards after the user clears them.
-    const empty = {version: 5, packs: 0, items: []};
+    const empty = {version: 6, packs: 0, items: []};
     saveQueue = saveQueue.catch(() => {}).then(() => writeState(empty));
     const cleared = await saveQueue;
     if (!cleared) {
@@ -282,7 +304,8 @@
       picks.push({
         id: p.pid + ':' + tier.id, pid: p.pid,
         rarity: tier.id, count: 1,
-        name: p.name, team: p.team, teamName: p.teamName,
+        name: p.name, firstName: p.firstName, lastName: p.lastName,
+        jersey: p.jersey, team: p.team, teamName: p.teamName,
         teamLogo: p.publicTeamLogo,
         pos: p.pos, era: p.era, rookie: p.rookie,
         ovr: p.ovr, peak: p.peak, pot: p.pot,
@@ -399,6 +422,14 @@
         card?.era === poolByPid.get(card?.pid)?.era;
     },
     findPhoto(card) { return poolByPid.get(card.pid)?.image || card.photo || ''; },
+    findJersey(card) { return card?.jersey || poolByPid.get(card?.pid)?.jersey || ''; },
+    findNameParts(card) {
+      const live = poolByPid.get(card?.pid);
+      return {
+        firstName: card?.firstName || live?.firstName || '',
+        lastName: card?.lastName || live?.lastName || ''
+      };
+    },
     findTeamLogo(card) {
       const player = poolByPid.get(card.pid);
       return card.teamLogo || teamLogos.get(card.team) ||
