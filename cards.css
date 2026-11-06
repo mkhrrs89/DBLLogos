@@ -1444,7 +1444,7 @@
 .dbl-cards-side-rarity {
   position: absolute;
   /* Begins just below the year, matching the reference mockup. */
-  top: 15.5%;
+  top: 13.5%;
   left: 5.1%;
   z-index: 5;
   opacity: .60;
@@ -1456,7 +1456,7 @@
   text-orientation: upright;
   font-family: "Trebuchet MS", "Avenir Next", Arial, sans-serif;
   font-weight: 600;
-  font-size: clamp(8px, 6.8cqw, 19px);
+  font-size: clamp(7px, 5.7cqw, 16px);
   line-height: 1;
   letter-spacing: .055em;
   white-space: nowrap;
@@ -1466,11 +1466,11 @@
   pointer-events: none;
 }
 .dbl-cards-card[data-rarity="refractor"] .dbl-cards-side-rarity {
-  font-size: clamp(7px, 5.8cqw, 16px);
+  font-size: clamp(6px, 4.9cqw, 14px);
   letter-spacing: .01em;
 }
 .dbl-cards-card[data-rarity="black-label"] .dbl-cards-side-rarity {
-  font-size: clamp(6px, 4.8cqw, 14px);
+  font-size: clamp(5px, 4cqw, 12px);
   letter-spacing: -.015em;
 }
 /* Remove the now-unused bottom label strip, giving the name and team
