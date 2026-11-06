@@ -252,16 +252,16 @@
   --card-aura: rgba(202,134,90,.17);
 }
 .dbl-cards-card[data-rarity="uncommon"] {
-  --card-metal: #c9dce1;
-  --card-ink: #1e3442;
-  --card-edge: #adc9d0;
-  --card-aura: rgba(127,200,211,.18);
+  --card-metal: #e0f5ce;
+  --card-ink: #254b32;
+  --card-edge: #b5dea8;
+  --card-aura: rgba(174,230,160,.30);
 }
 .dbl-cards-card[data-rarity="rare"] {
-  --card-metal: #ffe09b;
-  --card-ink: #584020;
-  --card-edge: #f4c36b;
-  --card-aura: rgba(245,176,62,.25);
+  --card-metal: #b9e2ff;
+  --card-ink: #15395f;
+  --card-edge: #4ca9f2;
+  --card-aura: rgba(80,159,240,.36);
 }
 .dbl-cards-card[data-rarity="epic"] {
   --card-metal: #e0b5ff;
@@ -270,10 +270,10 @@
   --card-aura: rgba(164,111,237,.28);
 }
 .dbl-cards-card[data-rarity="legendary"] {
-  --card-metal: #fff0b6;
-  --card-ink: #5f232f;
-  --card-edge: #f8d17f;
-  --card-aura: rgba(255,178,70,.38);
+  --card-metal: #fff3bb;
+  --card-ink: #64430e;
+  --card-edge: #ffda68;
+  --card-aura: rgba(255,219,95,.48);
 }
 .dbl-cards-inner {
   display: block;
@@ -313,21 +313,6 @@
   border-radius: inherit;
   box-shadow: inset 0 0 0 3px rgba(14,14,20,.58), inset 0 0 0 5px rgba(255,255,255,.12);
 }
-.dbl-cards-card[data-variant="heritage"] .dbl-cards-front {
-  background:
-    repeating-linear-gradient(90deg,transparent 0 19px,rgba(255,229,179,.025) 20px 21px),
-    radial-gradient(circle at 50% 28%,var(--card-aura),transparent 62%),
-    linear-gradient(145deg,var(--card-ink),#111821 70%,var(--card-ink));
-}
-.dbl-cards-card[data-variant="velocity"] .dbl-cards-front {
-  background:
-    repeating-linear-gradient(130deg,transparent 0 15px,rgba(255,255,255,.045) 16px 18px),
-    linear-gradient(142deg,var(--card-ink),#0d1d26 55%,var(--card-ink));
-}
-.dbl-cards-card[data-variant="prism"] .dbl-cards-front {
-  background:
-    conic-gradient(from 205deg at 50% 41%,var(--card-ink),#172d3b,var(--card-ink),#422c45,var(--card-ink));
-}
 .dbl-cards-front-top {
   position: absolute;
   left: 9%;
@@ -354,14 +339,6 @@
   border: 2px solid rgba(255,224,171,.40);
   background: linear-gradient(140deg,rgba(254,229,170,.24),rgba(20,25,40,.75));
   border-radius: 42% 42% 6px 6px / 11% 11% 6px 6px;
-}
-.dbl-cards-card[data-variant="velocity"] .dbl-cards-art {
-  border-radius: 4px 35px 4px 35px;
-  transform: skew(-2deg);
-}
-.dbl-cards-card[data-variant="prism"] .dbl-cards-art {
-  border-radius: 5px;
-  clip-path: polygon(0 0,92% 0,100% 10%,100% 100%,8% 100%,0 90%);
 }
 .dbl-cards-player-photo {
   display: block !important;
@@ -467,15 +444,31 @@
   animation: dbl-card-foil 5s ease-in-out infinite;
 }
 .dbl-cards-card[data-rarity="legendary"] .dbl-cards-front {
-  box-shadow: inset 0 0 25px rgba(244,171,65,.3),0 0 30px rgba(240,171,57,.18);
+  background:
+    linear-gradient(112deg,transparent 8%,rgba(255,252,212,.56) 23%,transparent 35%,rgba(255,231,132,.3) 47%,transparent 57%),
+    repeating-linear-gradient(126deg,rgba(255,255,225,.05) 0 2px,transparent 2px 17px),
+    radial-gradient(ellipse at 50% 22%,#fff1a9 0%,#e2ad33 38%,#aa731c 80%,#65440e 100%);
+  border-color: #ffe58b;
+  box-shadow: inset 0 0 22px rgba(255,253,209,.36),0 0 28px rgba(252,189,65,.28);
+}
+.dbl-cards-card[data-rarity="legendary"] .dbl-cards-bottom {
+  background: linear-gradient(180deg,rgba(70,43,5,.32),rgba(52,35,7,.87) 45%);
+  border-radius: 5px;
+  padding: 1px 4px;
 }
 .dbl-cards-card[data-rarity="legendary"] .dbl-cards-art {
   border-color: #fff2bd;
-  box-shadow: 0 0 22px rgba(254,211,118,.33);
+  box-shadow: 0 0 22px rgba(254,211,118,.45);
+}
+.dbl-cards-card[data-rarity="legendary"] .dbl-cards-foil {
+  background: linear-gradient(110deg,transparent 16%,rgba(255,244,171,.06) 29%,rgba(255,255,245,.64) 45%,rgba(255,213,70,.14) 52%,transparent 68%);
 }
 .dbl-cards-back {
   transform: rotateY(180deg);
-  border: 3px solid var(--card-edge);
+  /* Every mystery card uses this exact neutral reverse: rarity stays secret. */
+  border: 3px solid #ada9a8;
+  box-shadow: 0 12px 25px rgba(0,0,0,.38), 0 0 0 1px #b5adab,
+    inset 0 0 0 5px rgba(255,250,225,.14);
   background:
     repeating-linear-gradient(45deg,transparent 0 20px,rgba(255,234,174,.035) 22px 23px),
     radial-gradient(circle at 50% 47%,rgba(195,150,95,.25),transparent 46%),
@@ -505,15 +498,15 @@
   margin-top: 14%;
   text-shadow: 0 0 19px rgba(255,202,132,.43);
 }
-.dbl-cards-back-ornament { font-size: clamp(3rem,6vw,5rem); line-height: .8; color: var(--card-metal); }
+.dbl-cards-back-ornament { font-size: clamp(3rem,6vw,5rem); line-height: .8; color: #d0c6bd; }
 .dbl-cards-back-small { letter-spacing: .12em; font-size: clamp(.52rem,.8vw,.7rem); font-weight: 800; }
 .dbl-cards-back-tap {
-  color: var(--card-metal);
+  color: #d0c6bd;
   font-size: clamp(.46rem,.7vw,.62rem);
   letter-spacing: .12em;
   font-weight: 850;
 }
-.dbl-cards-back-heading { font-size: clamp(.51rem,.72vw,.65rem); letter-spacing: .14em; font-weight: 900; color: var(--card-metal); }
+.dbl-cards-back-heading { font-size: clamp(.51rem,.72vw,.65rem); letter-spacing: .14em; font-weight: 900; color: #e3d5bd; }
 .dbl-cards-back-name {
   font-family: Georgia,serif;
   font-size: clamp(.87rem,1.7vw,1.5rem);
@@ -543,7 +536,7 @@
   font-variant-numeric: tabular-nums;
 }
 .dbl-cards-back-metric span { font-size: clamp(.43rem,.65vw,.59rem); color: #c1ae9e; font-weight: 700; }
-.dbl-cards-back-foot { color: var(--card-metal); font-size: clamp(.45rem,.65vw,.55rem); font-weight: 850; letter-spacing: .04em; }
+.dbl-cards-back-foot { color: #d7c9b2; font-size: clamp(.45rem,.65vw,.55rem); font-weight: 850; letter-spacing: .04em; }
 .dbl-cards-appearing {
   animation: dbl-card-rise .65s cubic-bezier(.18,1.15,.36,1) both;
   animation-delay: calc(var(--pack-position, 0) * 95ms);

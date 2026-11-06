@@ -12,18 +12,12 @@
     { id: 'epic', label: 'Epic', chance: 5, pool: .2 },
     { id: 'legendary', label: 'Legendary', chance: 1, pool: .075 }
   ];
-  const VARIANTS = [
-    { id: 'heritage', label: 'Heritage' },
-    { id: 'velocity', label: 'Velocity' },
-    { id: 'prism', label: 'Prism' }
-  ];
   const DATABASE = 'dbl-digital-cards-v1';
   const STORE = 'collections';
   const KEY = 'archive';
   const FALLBACK = 'dbl-digital-cards-fallback-v1';
   const tierIndex = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
   const tierMap = Object.fromEntries(RARITIES.map(r => [r.id, r]));
-  const variantMap = Object.fromEntries(VARIANTS.map(v => [v.id, v]));
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
   const integer = x => Number.isInteger(number(x)) ? number(x) : null;
   const str = x => typeof x === 'string' ? x.trim() : '';
@@ -168,10 +162,12 @@
     for (const row of Array.isArray(value?.items) ? value.items : []) {
       const pid = integer(row?.pid), qty = integer(row?.count);
       if (pid === null || pid < 0 || qty === null || qty < 1 || qty > 1000000 ||
-          !tierMap[row.rarity] || !variantMap[row.variant]) continue;
-      const id = pid + ':' + row.rarity + ':' + row.variant;
+          !tierMap[row.rarity]) continue;
+      // v1 stored three visual variants separately. Merge their quantities
+      // into one edition per player and rarity without losing older pulls.
+      const id = pid + ':' + row.rarity;
       const item = {
-        id, pid, rarity: row.rarity, variant: row.variant, count: qty,
+        id, pid, rarity: row.rarity, count: qty,
         name: str(row.name) || 'Unknown player', team: str(row.team) || 'DBL',
         teamName: str(row.teamName) || 'League archive', pos: str(row.pos) || '—',
         era: integer(row.era), ovr: number(row.ovr), peak: number(row.peak),
@@ -185,7 +181,7 @@
     packs = Math.max(0, integer(value?.packs) ?? 0);
   }
   function snapshot() {
-    return {version: 1, packs, items: [...collection.values()].map(i => ({
+    return {version: 2, packs, items: [...collection.values()].map(i => ({
       ...i, photo: photoUrl(i.photo, true)
     }))};
   }
@@ -239,10 +235,9 @@
       }
       const p = pool[index];
       taken.add(p.pid);
-      const style = VARIANTS[Math.floor(Math.random() * VARIANTS.length)];
       picks.push({
-        id: p.pid + ':' + tier.id + ':' + style.id, pid: p.pid,
-        rarity: tier.id, variant: style.id, count: 1,
+        id: p.pid + ':' + tier.id, pid: p.pid,
+        rarity: tier.id, count: 1,
         name: p.name, team: p.team, teamName: p.teamName,
         pos: p.pos, era: p.era, ovr: p.ovr, peak: p.peak, pot: p.pot,
         gp: p.gp, ppg: p.ppg, ws: p.ws, photo: p.publicImage
@@ -327,7 +322,6 @@
   }
   const api = Object.freeze({
     rarities: RARITIES.map(r => Object.freeze({...r})),
-    variants: VARIANTS.map(v => Object.freeze({...v})),
     ready, subscribe(callback) {
       listeners.add(callback);
       return () => listeners.delete(callback);

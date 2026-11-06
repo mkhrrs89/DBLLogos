@@ -22,7 +22,6 @@
 
   const tierIndex = Object.fromEntries(api.rarities.map((r, i) => [r.id, i]));
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
-  const variants = Object.fromEntries(api.variants.map(v => [v.id, v]));
   const make = (tag, cls, value) => {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -109,7 +108,7 @@
     front.appendChild(top);
     front.appendChild(art(card));
     const bottom = make('span', 'dbl-cards-bottom');
-    bottom.appendChild(make('span', 'dbl-cards-series', variants[card.variant]?.label.toUpperCase() + ' EDITION'));
+    bottom.appendChild(make('span', 'dbl-cards-series', 'COLLECTOR EDITION'));
     bottom.appendChild(make('strong', 'dbl-cards-name', card.name));
     bottom.appendChild(make('span', 'dbl-cards-affiliation', card.team + ' / ' + card.pos));
     const foot = make('span', 'dbl-cards-front-foot');
@@ -147,15 +146,16 @@
     back.appendChild(metrics);
     back.appendChild(make('span', 'dbl-cards-back-foot', (card.era ?? 'DBL') +
       ' · ' + tierMap[card.rarity]?.label.toUpperCase() +
-      ' · ' + variants[card.variant]?.label.toUpperCase()));
+      ' · COLLECTOR EDITION'));
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
     return back;
   }
   function cardElement(card, sealed = false, onFirst = null) {
     const button = make('button', 'dbl-cards-card' + (sealed ? ' is-sealed' : ''));
     button.type = 'button';
-    button.dataset.rarity = card.rarity;
-    button.dataset.variant = card.variant;
+    // Mystery cards have no rarity-dependent styling until flipped over.
+    // Revealed cards and cards already owned use their proper rarity color.
+    if (!sealed) button.dataset.rarity = card.rarity;
     button.setAttribute('aria-label', sealed ? 'Reveal mystery DBL card' :
       'View statistics for ' + card.name + ', ' + tierMap[card.rarity]?.label);
     const inner = make('span', 'dbl-cards-inner');
@@ -170,6 +170,7 @@
         const newBack = backOf(card, false);
         reverse.replaceChildren(...Array.from(newBack.childNodes));
         button.classList.remove('is-sealed');
+        button.dataset.rarity = card.rarity;
         button.setAttribute('aria-label', 'View statistics for ' + card.name +
           ', ' + tierMap[card.rarity]?.label);
         if (onFirst) onFirst();
