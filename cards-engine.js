@@ -99,6 +99,14 @@
     const draftYear = integer(player?.draft?.year);
     const firstYear = draftYear && draftYear > 0 && draftYear <= season
       ? draftYear : ratings.first ?? season;
+    // The displayed year is the draft year, NOT a yearly card edition.
+    // In BBGM, the latest draft usually happened in the preceding season.
+    // Mark RC only for first-year pros, not all historically drafted players.
+    const hadPriorGames = (Array.isArray(player.stats) ? player.stats : [])
+      .some(row => !row?.playoffs && (integer(row?.season) ?? Infinity) < season &&
+        (number(row?.gp) ?? 0) > 0);
+    const rookie = draftYear !== null && draftYear >= season - 1 &&
+      draftYear <= season && !hadPriorGames;
     const ovr = number(ratings.selected.ovr), pot = number(ratings.selected.pot);
     const image = photoUrl(player?.imgURL);
     return {
@@ -106,7 +114,7 @@
       team: team?.abbrev || 'DBL', teamName: team?.name || 'League archive',
       teamLogo: team?.logo || '', publicTeamLogo: photoUrl(team?.logo, true),
       pos: str(ratings.selected.pos) || str(player.pos) || '—',
-      era: firstYear, ovr, pot, peak: ratings.peak,
+      era: firstYear, rookie, ovr, pot, peak: ratings.peak,
       gp: career.gp, ppg: career.ppg, ws: career.ws,
       image, publicImage: photoUrl(player?.imgURL, true),
       score: (ratings.peak ?? 0) * .86 + (pot ?? ratings.peak ?? 0) * .14
@@ -181,7 +189,8 @@
         teamName: str(row.teamName) || 'League archive',
         teamLogo: photoUrl(row.teamLogo, true),
         pos: str(row.pos) || '—',
-        era: integer(row.era), ovr: number(row.ovr), peak: number(row.peak),
+        era: integer(row.era), rookie: row.rookie === true,
+        ovr: number(row.ovr), peak: number(row.peak),
         pot: number(row.pot), gp: number(row.gp), ppg: number(row.ppg),
         ws: number(row.ws), photo: photoUrl(row.photo, true)
       };
@@ -194,7 +203,7 @@
     packs = Math.max(0, integer(value?.packs) ?? 0);
   }
   function snapshot() {
-    return {version: 4, packs, items: [...collection.values()].map(i => ({
+    return {version: 5, packs, items: [...collection.values()].map(i => ({
       ...i, photo: photoUrl(i.photo, true),
       teamLogo: photoUrl(i.teamLogo, true)
     }))};
@@ -213,13 +222,31 @@
     notify();
     // Persist the normalized editions, including a collection restored from
     // a previous release, even if no new pack is opened.
-    if (state?.items?.length && state.version !== 4) void save();
+    if (state?.items?.length && state.version !== 5) void save();
   }).catch(error => {
     console.warn('Card collection restore failed.', error);
     collectionLoaded = true;
     savedOK = false;
     notify();
   });
+  async function clearCollection() {
+    if (!collectionLoaded) return false;
+    // Serialize the reset behind any in-flight pack saves so an older write
+    // can never resurrect cards after the user clears them.
+    const empty = {version: 5, packs: 0, items: []};
+    saveQueue = saveQueue.catch(() => {}).then(() => writeState(empty));
+    const cleared = await saveQueue;
+    if (!cleared) {
+      savedOK = false;
+      notify();
+      return false;
+    }
+    collection.clear();
+    packs = 0;
+    savedOK = true;
+    notify();
+    return true;
+  }
   function sampleTier(guarantee = false) {
     const tiers = guarantee ? RARITIES.slice(2) : RARITIES;
     const total = tiers.reduce((n, tier) => n + tier.chance, 0);
@@ -257,7 +284,8 @@
         rarity: tier.id, count: 1,
         name: p.name, team: p.team, teamName: p.teamName,
         teamLogo: p.publicTeamLogo,
-        pos: p.pos, era: p.era, ovr: p.ovr, peak: p.peak, pot: p.pot,
+        pos: p.pos, era: p.era, rookie: p.rookie,
+        ovr: p.ovr, peak: p.peak, pot: p.pot,
         gp: p.gp, ppg: p.ppg, ws: p.ws, photo: p.publicImage
       });
     }
@@ -362,7 +390,14 @@
       listeners.add(callback);
       return () => listeners.delete(callback);
     },
-    ensurePool, getPack, collectPack,
+    ensurePool, getPack, collectPack, clearCollection,
+    isRookie(card) {
+      if (card?.rookie === true) return true;
+      // Older saved cards lack a rookie flag. Use the current export if it
+      // happens to be the rookie's original season (no retroactive guessing).
+      return poolByPid.get(card?.pid)?.rookie === true &&
+        card?.era === poolByPid.get(card?.pid)?.era;
+    },
     findPhoto(card) { return poolByPid.get(card.pid)?.image || card.photo || ''; },
     findTeamLogo(card) {
       const player = poolByPid.get(card.pid);

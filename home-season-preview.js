@@ -4,6 +4,7 @@
   const subtitle = document.getElementById('homeSeasonPreviewSubtitle');
   const hub = window.DBLLeagueFileHub;
   const stream = window.DBLLeagueStream;
+  const teamBrand = window.DBLHomeTeamLogo;
   if (!section || !mount || !subtitle || !hub?.subscribe ||
       !stream?.readTopLevelValue || !stream?.forEachTopLevelArrayItem) return;
 
@@ -72,6 +73,7 @@
     const gp = number(stat?.gp) ?? 0;
     return {
       tid, abbrev, name: [region, nickname].filter(Boolean).join(' ') || abbrev,
+      logos: teamBrand?.fromTeam(team, season).logos || [],
       prevWins, prevLosses, previousRecord: record, gamesPlayed: Math.max(gamesPlayed, gp),
       players: [], rating: null
     };
@@ -149,7 +151,10 @@
     if (image) row.appendChild(image);
     const desc = el('div', 'home-preview-person-content');
     desc.appendChild(el('strong', '', player.name));
-    desc.appendChild(el('span', '', subtitleText));
+    const line = el('span', 'home-preview-player-meta');
+    if (teamBrand) line.appendChild(teamBrand.logo(player));
+    line.appendChild(el('span', '', subtitleText));
+    desc.appendChild(line);
     row.appendChild(desc);
     return row;
   }
@@ -175,7 +180,9 @@
       for (const team of topTeams.slice(0, 5)) {
         const row = el('li', 'home-preview-contender');
         const details = el('div');
-        details.appendChild(el('strong', 'home-preview-team-name', team.name));
+        details.appendChild(teamBrand
+          ? teamBrand.inline(team, team.name, 'home-preview-team-name')
+          : el('strong', 'home-preview-team-name', team.name));
         const leader = team.players[0];
         details.appendChild(el('span', 'home-preview-muted',
           'Last season: ' + team.previousRecord +
@@ -222,7 +229,10 @@
         i + 1, team.name, team.rating ?? '—',
         team.previousRecord, team.players.slice(0, 2).map(p => p.name).join(' / ') || '—'
       ].entries()) {
-        tr.appendChild(el('td', j === 1 ? 'home-preview-table-team' : '', value));
+        const cell = el('td', j === 1 ? 'home-preview-table-team' : '');
+        if (j === 1 && teamBrand) cell.appendChild(teamBrand.inline(team, value));
+        else cell.textContent = String(value);
+        tr.appendChild(cell);
       }
       body.appendChild(tr);
     }
@@ -266,7 +276,9 @@
       const ol = el('ol', 'home-preview-last-year');
       for (const team of lastYear.slice(0, 5)) {
         const li = el('li');
-        li.appendChild(el('strong', '', team.name));
+        li.appendChild(teamBrand
+          ? teamBrand.inline(team, team.name)
+          : el('strong', '', team.name));
         li.appendChild(el('span', '', team.previousRecord));
         ol.appendChild(li);
       }
@@ -346,7 +358,7 @@
         const age = born === null ? null : season - born;
         const p = {
           pid: integer(player.pid), name: nameOf(player),
-          team: team.abbrev, tid, age,
+          team: team.abbrev, logos: team.logos, tid, age,
           imgURL: plain(player.imgURL),
           ...rating
         };

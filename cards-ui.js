@@ -16,9 +16,11 @@
   const rarityFilter = document.getElementById('cardsRarityFilter');
   const order = document.getElementById('cardsSort');
   const loadMore = document.getElementById('cardsShowMoreBtn');
+  const clearBtn = document.getElementById('cardsClearCollectionBtn');
   if (!api || !panel || !status || !saveStatus || !packStage || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
-      !galleryCount || !search || !rarityFilter || !order || !loadMore) return;
+      !galleryCount || !search || !rarityFilter || !order || !loadMore ||
+      !clearBtn) return;
 
   const tierIndex = Object.fromEntries(api.rarities.map((r, i) => [r.id, i]));
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
@@ -33,6 +35,7 @@
     : '—';
   const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   let busy = false;
+  let clearing = false;
   let packToken = 0;
   let packCards = [];
   let limit = 36;
@@ -52,6 +55,7 @@
     appendStat(counter, format(s.unique), 'Unique editions');
     appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
       .reduce((n, c) => n + c.count, 0)), 'Black Label pulls');
+    clearBtn.disabled = clearing || busy || !s.ready || s.count === 0;
     saveStatus.textContent = s.ready
       ? s.savedOK ? 'Collection saved locally in this browser.' :
         'Browser storage is unavailable. Collection may be lost after a refresh.'
@@ -72,7 +76,7 @@
       else status.textContent =
         'Open the Cards tab to load players from the uploaded league file.';
     }
-    openBtn.disabled = busy || !s.ready || !s.poolSize || s.loading;
+    openBtn.disabled = busy || clearing || !s.ready || !s.poolSize || s.loading;
     openBtn.textContent = busy ? 'Opening pack…' : 'Open five-card pack';
   }
   function art(card) {
@@ -97,7 +101,6 @@
       image.src = source;
       artArea.appendChild(image);
     }
-    artArea.appendChild(make('span', 'dbl-cards-art-number', card.peak ?? card.ovr ?? 'DBL'));
     return artArea;
   }
   function teamCrest(card) {
@@ -130,13 +133,24 @@
     const front = make('span', 'dbl-cards-face dbl-cards-front');
     const top = make('span', 'dbl-cards-front-top');
     top.appendChild(make('span', '', 'FLAGSHIP'));
-    top.appendChild(make('span', '', card.era ?? 'ARCHIVE'));
+    const issue = make('span', 'dbl-cards-issue');
+    issue.appendChild(make('span', '', card.era ?? 'ARCHIVE'));
+    if (api.isRookie(card)) {
+      const rookie = make('span', 'dbl-cards-rookie', 'RC');
+      rookie.title = 'Rookie card';
+      issue.appendChild(rookie);
+    }
+    top.appendChild(issue);
     front.appendChild(top);
     front.appendChild(art(card));
-    front.appendChild(teamCrest(card));
     const bottom = make('span', 'dbl-cards-bottom');
-    bottom.appendChild(make('strong', 'dbl-cards-name', card.name));
-    bottom.appendChild(make('span', 'dbl-cards-affiliation', card.team + ' / ' + card.pos));
+    const identity = make('span', 'dbl-cards-identity');
+    identity.appendChild(teamCrest(card));
+    const details = make('span', 'dbl-cards-identity-details');
+    details.appendChild(make('strong', 'dbl-cards-name', card.name));
+    details.appendChild(make('span', 'dbl-cards-affiliation', card.team + ' / ' + card.pos));
+    identity.appendChild(details);
+    bottom.appendChild(identity);
     const foot = make('span', 'dbl-cards-front-foot');
     foot.appendChild(make('strong', 'dbl-cards-rarity-name', tierMap[card.rarity]?.label.toUpperCase()));
     foot.appendChild(make('span', '', 'OVR ' + (card.ovr ?? '—') + ' · POT ' + (card.pot ?? '—')));
@@ -263,7 +277,7 @@
     showStatus();
   }
   function openPack() {
-    if (busy) return;
+    if (busy || clearing) return;
     const pulled = api.getPack();
     if (pulled.length !== 5) return;
     // Save the pulls immediately. Closing the tab mid-animation cannot
@@ -342,6 +356,35 @@
     });
   }
   loadMore.addEventListener('click', () => { limit += 36; showGallery(); });
+  clearBtn.addEventListener('click', async () => {
+    if (clearing || busy || !api.status.ready || !api.status.count) return;
+    const okay = window.confirm(
+      'Permanently clear all collected cards, duplicates, and pack counts on this device? This cannot be undone.'
+    );
+    if (!okay) return;
+    clearing = true;
+    repaint();
+    try {
+      const cleared = await api.clearCollection();
+      if (cleared) {
+        readyStage();
+        limit = 36;
+        search.value = '';
+        rarityFilter.value = 'all';
+        order.value = 'rarity';
+        repaint();
+      } else {
+        saveStatus.textContent = 'Could not clear the collection because the save failed. Your cards were kept.';
+      }
+    } catch (error) {
+      console.warn('Could not clear card collection.', error);
+      saveStatus.textContent = 'Could not clear the collection. Your cards were kept.';
+    } finally {
+      clearing = false;
+      showStatus();
+      clearBtn.disabled = !api.status.count;
+    }
+  });
   window.addEventListener('dbl:tab-change', event => {
     if (event.detail?.panelId === 'cardsPanel') api.ensurePool();
   });

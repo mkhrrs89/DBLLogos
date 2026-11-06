@@ -4,6 +4,7 @@
   const subtitle = document.getElementById('homeDraftSubtitle');
   const hub = window.DBLLeagueFileHub;
   const stream = window.DBLLeagueStream;
+  const teamBrand = window.DBLHomeTeamLogo;
   if (!section || !body || !subtitle || !hub?.subscribe || !stream?.forEachTopLevelArrayItem) return;
 
   const PHASE_LOTTERY = 4;
@@ -183,8 +184,25 @@
         ? ' is-next' : ''));
       item.appendChild(make('span', 'home-draft-pick-id', pickNumber(p)));
       const info = make('span', 'home-draft-pick-info');
-      info.appendChild(make('strong', '', mode === 'selected'
-        ? selectedDisplay(teams, p) : teamDisplay(teams, p)));
+      const clubs = make('strong', 'home-draft-pick-teams');
+      const named = teams.get(p.tid) || {abbrev: teamLabel(teams, p.tid), logos: []};
+      clubs.appendChild(teamBrand
+        ? teamBrand.inline(named, teamLabel(teams, p.tid))
+        : make('span', '', teamLabel(teams, p.tid)));
+      if (p.originalTid !== null && p.originalTid !== p.tid) {
+        clubs.appendChild(make('span', '', ' (via '));
+        const previous = teams.get(p.originalTid) || {
+          abbrev: teamLabel(teams, p.originalTid), logos: []
+        };
+        clubs.appendChild(teamBrand
+          ? teamBrand.inline(previous, teamLabel(teams, p.originalTid), '', 'home-draft-via')
+          : make('span', '', teamLabel(teams, p.originalTid)));
+        clubs.appendChild(make('span', '', ')'));
+      }
+      // Keep the original complete description for hover/accessibility.
+      clubs.title = mode === 'selected'
+        ? selectedDisplay(teams, p) : teamDisplay(teams, p);
+      info.appendChild(clubs);
       if (mode === 'selected') {
         info.appendChild(make('span', 'home-draft-pick-player',
           p.name + (p.pos ? ' · ' + p.pos : '')));
@@ -248,7 +266,8 @@
         const seasonRow = (Array.isArray(team.seasons) ? team.seasons : [])
           .find(row => integer(row?.season) === season);
         teams.set(tid, {
-          abbrev: String(seasonRow?.abbrev || team.abbrev || 'T' + tid)
+          abbrev: String(seasonRow?.abbrev || team.abbrev || 'T' + tid),
+          logos: teamBrand?.fromTeam(team, season).logos || []
         });
       });
       if (!current()) return;

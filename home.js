@@ -7,6 +7,7 @@
   const highlights = document.getElementById('homeHighlightsContent');
   const hub = window.DBLLeagueFileHub;
   const stream = window.DBLLeagueStream;
+  const teamBrand = window.DBLHomeTeamLogo;
   if (!panel || !yearNode || !countNode || !stageNode || !content
       || !highlights || !hub || !stream) return;
 
@@ -516,7 +517,9 @@
       list.className = 'home-highlights-leaders';
       for (const entry of entries) {
         const item = document.createElement('li');
-        item.appendChild(highlightedName(entry.name));
+        item.appendChild(entry.team && teamBrand
+          ? teamBrand.inline(entry.team, entry.name, 'home-highlights-name')
+          : highlightedName(entry.name));
         item.appendChild(document.createTextNode(' ' + entry.value));
         list.appendChild(item);
       }
@@ -554,7 +557,7 @@
         || b.wins - a.wins || a.abbrev.localeCompare(b.abbrev)).slice(0, 3);
     const left = createHighlightsColumn();
     addInlineHighlights(left, 'Best regular season:',
-      sortedTeams.map(t => ({ name: t.abbrev, value: t.wins + '-' + t.losses })));
+      sortedTeams.map(t => ({ name: t.abbrev, value: t.wins + '-' + t.losses, team: t })));
     addInlineHighlights(left, 'Win Shares / 48 Minutes leaders:',
       summary.ws48.map(p => ({ name: p.name, value: p.value.toFixed(3) + ' WS/48' })));
     addInlineHighlights(left, 'Scoring leaders:',
@@ -658,7 +661,7 @@
         if (!details) return;
         const seasonRow = Array.isArray(team.seasons)
           ? team.seasons.find(row => asInteger(row?.season) === season) : null;
-        standings.push({ abbrev: details.abbrev,
+        standings.push({ abbrev: details.abbrev, logos: details.logos,
           wins: asInteger(seasonRow?.won), losses: asInteger(seasonRow?.lost) });
         if (participating.has(tid)) seasonTeams.set(tid, details);
       });

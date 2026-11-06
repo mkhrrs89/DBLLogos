@@ -1,0 +1,62 @@
+/* Compact historic team-logo badges throughout Home's team mentions. */
+.home-team-inline {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+.home-team-inline > span:last-child {
+  min-width: 0;
+}
+.home-team-inline-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  max-width: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  flex: 0 0 24px;
+  border-radius: 4px;
+  background: rgba(125,125,125,.09);
+  overflow: hidden;
+}
+.home-team-inline-logo img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center;
+  display: block !important;
+}
+.home-team-inline-fallback {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1;
+}
+.home-team-inline-fallback[hidden] { display: none !important; }
+.home-highlights-leaders .home-team-inline-logo { width: 20px; height: 20px; min-width: 20px; max-width: 20px; min-height: 20px; max-height: 20px; flex-basis: 20px; }
+.home-draft-pick-info .home-team-inline-logo { width: 21px; height: 21px; min-width: 21px; max-width: 21px; min-height: 21px; max-height: 21px; flex-basis: 21px; }
+.home-draft-via { margin-left: 3px; }
+.home-preview-contender .home-team-inline { font-size: inherit; }
+.home-preview-table .home-team-inline { white-space: nowrap; }
+.home-preview-player-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.home-preview-player-meta .home-team-inline-logo { width: 18px; height: 18px; min-width: 18px; max-width: 18px; min-height: 18px; max-height: 18px; flex-basis: 18px; }
+@media (max-width: 540px) {
+  .home-team-inline { gap: 4px; }
+  .home-team-inline-logo { width: 20px; height: 20px; min-width: 20px; max-width: 20px; min-height: 20px; max-height: 20px; flex-basis: 20px; }
+  .home-team-inline-fallback { font-size: 7px; }
+}

@@ -166,6 +166,29 @@
 .dbl-cards-ritual-controls { display: flex; justify-content: center; margin-top: 12px; }
 .dbl-cards-open-button,
 .dbl-cards-action-button,
+
+.dbl-cards-clear-button {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: .73rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.dbl-cards-clear-button:hover:not(:disabled) {
+  border-color: #b35a58;
+  color: #b35a58;
+}
+.dbl-cards-clear-button:disabled { opacity: .38; cursor: not-allowed; }
+.dbl-cards-binder-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.dbl-cards-binder-actions .dbl-cards-save-status { margin: 0; }
 .dbl-cards-more {
   cursor: pointer;
   font-weight: 800;
@@ -344,27 +367,27 @@
   white-space: nowrap;
   z-index: 2;
 }
-/* The full card is 0.70:1 wide-to-tall. This centered window is
-   (59.6% × 0.70) / 62.5% = 0.6675, essentially a true 2:3 portrait. */
+/* Re-introduce the classic rounded-top, flat-bottom portrait window.
+   It's just shorter than the previous true 2:3 crop and still tall enough
+   to preserve faces. Images always align at the TOP: excess crops below. */
 .dbl-cards-art {
   display: block;
   position: absolute;
-  top: 12.5%;
-  bottom: 25%;
+  top: 13.8%;
+  bottom: 27.3%;
   left: 20.2%;
   right: 20.2%;
   overflow: hidden;
   border: 2px solid var(--card-rule);
   background: linear-gradient(140deg,#e7eef3,#b9c6d0);
   z-index: 1;
-  border-radius: 7px 7px 3px 3px;
+  border-radius: 42% 42% 3px 3px / 12% 12% 3px 3px;
 }
-/* Team badge sits beside the portrait instead of covering a face. */
+/* The logo is now beside the name and affiliation, not the portrait. */
 .dbl-cards-team-crest {
-  position: absolute;
-  top: 27%;
-  right: 2.1%;
-  width: 16.5%;
+  position: relative;
+  flex: 0 0 18%;
+  width: 18%;
   aspect-ratio: 1;
   z-index: 3;
   box-sizing: border-box;
@@ -444,9 +467,9 @@
 }
 .dbl-cards-bottom {
   position: absolute;
-  left: 7%;
-  right: 7%;
-  top: 77%;
+  left: 6%;
+  right: 6%;
+  top: 74%;
   bottom: 2.5%;
   display: flex;
   flex-direction: column;
@@ -454,6 +477,49 @@
   gap: 2px;
   text-align: center;
   z-index: 2;
+}
+
+.dbl-cards-identity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4%;
+  min-width: 0;
+  width: 100%;
+  flex: 1 1 auto;
+}
+.dbl-cards-identity-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1 1 0;
+  gap: 4px;
+  text-align: center;
+}
+.dbl-cards-issue {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.dbl-cards-rookie {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2px 3px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-weight: 950;
+  letter-spacing: -.02em;
+  font-size: .92em;
+}
+.dbl-cards-card[data-rarity="common"] .dbl-cards-front {
+  /* One visible outer border, not the old layered triple outline. */
+  border: 2px solid #647582;
+  box-shadow: 0 12px 25px rgba(0,0,0,.32);
+}
+.dbl-cards-card[data-rarity="common"] .dbl-cards-front::before {
+  box-shadow: none;
 }
 .dbl-cards-series {
   color: var(--card-metal);

@@ -4,6 +4,7 @@
   const mount = document.getElementById('homeUpdatesContent');
   const stream = window.DBLLeagueStream;
   const hub = window.DBLLeagueFileHub;
+  const teamBrand = window.DBLHomeTeamLogo;
   if (!mount || !stream?.forEachTopLevelArrayItem || !hub?.subscribe) return;
 
   const DB_NAME = 'dbl-home-update-history';
@@ -215,9 +216,12 @@
       if (tid === null) return;
       const row = (team.seasons || []).find(s => integer(s.season) === season);
       if (!row) return;
+      const logo = teamBrand?.fromTeam(team, season).logos
+        .find(src => /^https?:\/\/\S+$/i.test(src) && src.length < 1800) || '';
       snapshot.teams[String(tid)] = {
         abbrev: row.abbrev || team.abbrev || 'T' + tid,
         name: [row.region || team.region, row.name || team.name].filter(Boolean).join(' '),
+        logo,
         won: integer(row.won) ?? 0, lost: integer(row.lost) ?? 0,
         tied: integer(row.tied) ?? 0
       };
@@ -410,7 +414,35 @@
       sections
     };
   }
-  function renderReport(report) {
+  function brandedUpdateLine(value, teams) {
+    const li = node('li', '');
+    const line = String(value || '');
+    // Match only whole, known abbreviations, not fragments of player names.
+    const teamRows = Object.values(teams || {}).filter(team =>
+      team?.abbrev && /^[A-Za-z0-9]{2,5}$/.test(team.abbrev));
+    if (!teamBrand || !teamRows.length) {
+      li.textContent = line;
+      return li;
+    }
+    const names = [...new Set(teamRows.map(team => team.abbrev))]
+      .sort((a, b) => b.length - a.length);
+    const regex = new RegExp('\\b(' + names.join('|') + ')\\b', 'g');
+    const lookup = new Map(teamRows.map(team => [team.abbrev, team]));
+    let last = 0, found = false, match;
+    while ((match = regex.exec(line)) !== null) {
+      found = true;
+      if (match.index > last) li.appendChild(document.createTextNode(line.slice(last, match.index)));
+      const team = lookup.get(match[0]);
+      li.appendChild(teamBrand.inline({
+        abbrev: team.abbrev, logos: team.logo ? [team.logo] : []
+      }, match[0], '', 'home-updates-team'));
+      last = match.index + match[0].length;
+    }
+    if (last < line.length) li.appendChild(document.createTextNode(line.slice(last)));
+    if (!found) li.textContent = line;
+    return li;
+  }
+  function renderReport(report, teams = {}) {
     const summary = node('div', 'home-updates-summary');
     summary.appendChild(node('p', 'home-updates-source',
       'Comparing ' + report.olderName + ' → ' + report.newerName));
@@ -435,14 +467,15 @@
         group.count + ' ' + (group.count === 1 ? 'update' : 'updates')));
       const list = node('ul', '');
       for (const entry of group.entries.slice(0, 7)) {
-        list.appendChild(node('li', '', entry));
+        list.appendChild(brandedUpdateLine(entry, teams));
       }
       card.appendChild(list);
       if (group.entries.length > 7) {
         const more = node('details', 'home-updates-more');
         more.appendChild(node('summary', '', 'Show ' + (group.entries.length - 7) + ' more'));
         const rest = node('ul', '');
-        for (const entry of group.entries.slice(7)) rest.appendChild(node('li', '', entry));
+        for (const entry of group.entries.slice(7))
+          rest.appendChild(brandedUpdateLine(entry, teams));
         more.appendChild(rest);
         card.appendChild(more);
       }
@@ -467,12 +500,12 @@
       if (!current()) return;
       const fileId = fingerprint(file);
       if (source !== 'upload' && stored?.snapshot?.signature === fileId) {
-        if (stored.report) renderReport(stored.report);
+        if (stored.report) renderReport(stored.report, stored.snapshot?.teams);
         else showStatus('Baseline saved. Upload a newer league file to see what changed.');
         return;
       }
       if (source === 'upload' && stored?.snapshot?.signature === fileId) {
-        if (stored.report) renderReport(stored.report);
+        if (stored.report) renderReport(stored.report, stored.snapshot?.teams);
         else showStatus('This is the saved baseline. Upload a newer file to compare.');
         return;
       }
@@ -504,7 +537,7 @@
       await storeSaved({ key: KEY, snapshot: latest, report }, current);
       if (!current()) return;
       if (report) {
-        renderReport(report);
+        renderReport(report, latest.teams);
       } else {
         showStatus(before
           ? 'This save is older or from a different league. It is now the baseline; upload a newer save to compare.'
