@@ -187,9 +187,13 @@
     issue.appendChild(make('span', 'dbl-cards-year', card.era ?? 'ARCHIVE'));
     heading.appendChild(issue);
     front.appendChild(heading);
-    // The badge is the actual logo asset, never a decorative circle.
-    front.appendChild(teamCrest(card));
-    // Unboxed, bright red RC sits directly beneath the upper-right team logo.
+    // Peak OVR moves to the upper-right in its original circular outline.
+    const playerMetrics = make('span', 'dbl-cards-player-metrics');
+    playerMetrics.appendChild(make('strong', 'dbl-cards-ovr-value',
+      card.ovr ?? '—'));
+    playerMetrics.title = 'Peak overall rating';
+    front.appendChild(playerMetrics);
+    // Rookie-only red pennant hangs from the card's top edge.
     if (api.isRookie(card)) {
       const rookie = make('span', 'dbl-cards-rookie');
       rookie.title = 'Rookie card';
@@ -200,15 +204,12 @@
     }
     front.appendChild(art(card));
 
-    // Editorial split: circled peak OVR left of the name, with the peak
-    // season's jersey number placed after the full team name below it.
+    // The team crest takes the former OVR slot beside the surname.
+    // The peak-year jersey stays inline after the team name.
     const lower = make('span', 'dbl-cards-bottom');
     const identity = make('span', 'dbl-cards-identity');
-    const playerMetrics = make('span', 'dbl-cards-player-metrics');
-    playerMetrics.appendChild(make('strong', 'dbl-cards-ovr-value',
-      card.ovr ?? '—'));
+    identity.appendChild(teamCrest(card));
     const jersey = api.findJersey?.(card);
-    identity.appendChild(playerMetrics);
 
     const details = make('span', 'dbl-cards-identity-details');
     const names = nameParts(card);

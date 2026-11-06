@@ -1487,3 +1487,96 @@
   font-weight: 700;
   letter-spacing: -.045em;
 }
+
+
+/* FLAGSHIP mockup: peak OVR at upper-right, crest beside surname, and
+   a red rookie pennant hanging from the top edge of the card face.
+   Scoped selectors override the older positions without altering the
+   card backs, rarity finishes, or responsive text-fitting behavior. */
+.dbl-cards-front > .dbl-cards-player-metrics {
+  position: absolute;
+  top: 5.3%;
+  right: 6.4%;
+  left: auto;
+  bottom: auto;
+  z-index: 6;
+  width: 13.1%;
+  height: auto;
+  min-width: 0;
+  aspect-ratio: 1;
+  align-self: auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  border: max(1px, .65cqw) solid currentColor;
+  border-radius: 50%;
+  color: var(--card-text);
+  background: transparent;
+}
+.dbl-cards-identity > .dbl-cards-team-crest {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-width: 0;
+  aspect-ratio: 1;
+  align-self: center;
+  justify-self: center;
+  margin: 0;
+  padding: 0;
+  z-index: 4;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dbl-cards-front > .dbl-cards-rookie {
+  position: absolute;
+  top: 0;
+  right: 24.6%;
+  bottom: auto;
+  left: auto;
+  z-index: 7;
+  width: 9.8%;
+  height: 12.8%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0;
+  box-sizing: border-box;
+  padding: 1.8% 0 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #c80012;
+  clip-path: polygon(0 0, 100% 0, 100% 82%, 50% 100%, 0 82%);
+  color: #ffffff;
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  font-weight: 900;
+  font-size: clamp(9px, 6.3cqw, 26px);
+  line-height: .81;
+  letter-spacing: -.06em;
+  text-shadow: 0 1px 1px rgba(85,0,0,.25);
+  -webkit-text-stroke: 0;
+  pointer-events: none;
+}
+.dbl-cards-front > .dbl-cards-rookie .dbl-cards-rookie-letter {
+  display: block;
+  color: #ffffff;
+  font: inherit;
+  line-height: .82;
+  text-align: center;
+  -webkit-text-stroke: 0;
+}
