@@ -15,9 +15,15 @@
   ];
   // Migrate every previously collected card rather than discarding old tiers.
   // Rare + Epic become Refractor; Legendary becomes Black Label.
-  // A peak rating of 35 or less does not qualify for any new card pull.
-  // Never delete previously owned cards as a side effect of an export scan.
-  const MIN_CARD_OVR = 36;
+  // A player's peak OVR must meet the floor for the actual rarity drawn.
+  // Keep the "common" ID for saved Base cards, preserving collections.
+  // Existing owned cards are never removed or downgraded by this rule.
+  const MIN_OVR_BY_RARITY = Object.freeze({
+    common: 35,       // Base
+    crome: 45,
+    refractor: 50,
+    'black-label': 55
+  });
   const OLD_RARITY = Object.freeze({
     common: 'common', uncommon: 'crome', rare: 'refractor',
     epic: 'refractor', legendary: 'black-label'
@@ -173,7 +179,8 @@
     const pid = integer(player?.pid);
     if (pid === null || pid < 0 || integer(player.tid) === -2) return null;
     const ratings = ratingData(player, season);
-    if (ratings.peak === null || ratings.peak < MIN_CARD_OVR) return null;
+    if (ratings.peak === null ||
+        ratings.peak < MIN_OVR_BY_RARITY.common) return null;
     const career = careerData(player);
     const peakYear = ratings.peakSeason;
     const peakTid = teamForPeak(player, peakYear, season);
@@ -384,27 +391,42 @@
     }
     return tiers[tiers.length - 1];
   }
+  // Pick a player whose PEAK OVR qualifies for the drawn edition.
+  // If none are available, move DOWN through the tiers, never upward.
+  // Reuse a player only as a last resort for tiny league files.
+  function pickForRarity(requestedTier, taken, protectedRarePid, allowDuplicates = false) {
+    for (let level = tierIndex[requestedTier.id]; level >= 0; level--) {
+      const tier = RARITIES[level];
+      const threshold = MIN_OVR_BY_RARITY[tier.id];
+      const available = pool.filter(p => p.peak >= threshold &&
+        (allowDuplicates || !taken.has(p.pid)) &&
+        // Protect the last possible Refractor+ player for the guaranteed
+        // slot, when no Refractor+ has been drawn earlier in the pack.
+        !(level < 2 && protectedRarePid === p.pid));
+      if (!available.length) continue;
+      // Retain the previous stronger-player bias within each eligible tier.
+      const range = Math.max(1, Math.ceil(available.length * tier.pool));
+      const player = available[Math.floor(Math.random() * range)];
+      return {tier, player};
+    }
+    return null;
+  }
   function getPack() {
     if (!collectionLoaded || !pool.length) return [];
     const taken = new Set(), picks = [];
     let hasRefractor = false;
+    const rareCandidate = pool.find(p =>
+      p.peak >= MIN_OVR_BY_RARITY.refractor);
     for (let i = 0; i < 5; i++) {
-      const tier = sampleTier(i === 4 && !hasRefractor);
+      const guarantee = i === 4 && !hasRefractor && !!rareCandidate;
+      const requestedTier = sampleTier(guarantee);
+      const protectedRarePid = hasRefractor ? null : rareCandidate?.pid ?? null;
+      const chosen =
+        pickForRarity(requestedTier, taken, protectedRarePid) ||
+        pickForRarity(requestedTier, taken, protectedRarePid, true);
+      if (!chosen) return []; // In practice, pool is never empty here.
+      const {tier, player: p} = chosen;
       if (tierIndex[tier.id] >= 2) hasRefractor = true;
-      const range = Math.max(1, Math.ceil(pool.length * tier.pool));
-      let index = Math.floor(Math.random() * range);
-      for (let step = 0; step < range && taken.has(pool[index].pid); step++) {
-        index = (index + 1) % range;
-      }
-      // A very small elite tier may contain fewer players than the pack.
-      // Prefer a unique player outside that tier to a repeated player.
-      if (taken.has(pool[index].pid) && taken.size < pool.length) {
-        index = Math.floor(Math.random() * pool.length);
-        for (let step = 0; step < pool.length && taken.has(pool[index].pid); step++) {
-          index = (index + 1) % pool.length;
-        }
-      }
-      const p = pool[index];
       taken.add(p.pid);
       picks.push({
         id: p.pid + ':' + tier.id, pid: p.pid,
