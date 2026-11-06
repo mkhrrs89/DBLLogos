@@ -249,12 +249,18 @@
 .dbl-cards-card:hover { filter: brightness(1.055); }
 .dbl-cards-card:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 .dbl-cards-card[data-rarity="common"] {
-  --card-metal: #526373;
-  --card-ink: #fff;
-  --card-edge: #d0d8de;
-  --card-aura: rgba(133,150,160,.12);
+  --card-metal: #445867;
+  --card-ink: #c4cdd4;
+  --card-edge: #9cabb7;
+  --card-aura: rgba(75,92,105,.14);
   --card-text: #172832;
-  --card-muted: #465968;
+  --card-muted: #3d5260;
+  --card-rule: rgba(24,43,57,.3);
+}
+.dbl-cards-card[data-rarity="common"] .dbl-cards-front {
+  background:
+    radial-gradient(circle at 50% 18%,var(--card-aura),transparent 65%),
+    linear-gradient(145deg,#d9dfe4,#c5cdd3 52%,#adb8c1 74%,#d4dbe0);
 }
 .dbl-cards-card[data-rarity="crome"] {
   --card-metal: #3c5665;
