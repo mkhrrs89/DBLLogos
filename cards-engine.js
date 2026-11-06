@@ -406,7 +406,10 @@
       if (!available.length) continue;
       // Retain the previous stronger-player bias within each eligible tier.
       const range = Math.max(1, Math.ceil(available.length * tier.pool));
-      const player = available[Math.floor(Math.random() * range)];
+      // Preserve the strong-player bias while letting every eligible edition
+      // have a real chance to appear, as shown in the Checklist.
+      const drawFrom = Math.random() < .95 ? range : available.length;
+      const player = available[Math.floor(Math.random() * drawFrom)];
       return {tier, player};
     }
     return null;
@@ -534,7 +537,17 @@
     notify();
   }
   const api = Object.freeze({
-    rarities: RARITIES.map(r => Object.freeze({...r})),
+    rarities: RARITIES.map(r => Object.freeze({
+      ...r, minOvr: MIN_OVR_BY_RARITY[r.id]
+    })),
+    // A compact, read-only catalog built from the currently uploaded export.
+    // Never modify or infer ownership here; saved collections remain separate.
+    get checklistPlayers() {
+      return pool.map(p => ({
+        pid: p.pid, name: p.name, teamName: p.teamName,
+        team: p.team, peak: p.peak, era: p.era
+      }));
+    },
     ready, subscribe(callback) {
       listeners.add(callback);
       return () => listeners.delete(callback);

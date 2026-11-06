@@ -17,10 +17,26 @@
   const order = document.getElementById('cardsSort');
   const loadMore = document.getElementById('cardsShowMoreBtn');
   const clearBtn = document.getElementById('cardsClearCollectionBtn');
+  const tabs = [
+    ['cardsPacksTab', 'cardsPackView'],
+    ['cardsCollectionTab', 'cardsCollectionView'],
+    ['cardsChecklistTab', 'cardsChecklistView']
+  ].map(([tab, view]) => [document.getElementById(tab), document.getElementById(view)]);
+  const checklistStats = document.getElementById('cardsChecklistStats');
+  const checklistSearch = document.getElementById('cardsChecklistSearch');
+  const checklistRarity = document.getElementById('cardsChecklistRarity');
+  const checklistOwnership = document.getElementById('cardsChecklistOwnership');
+  const checklistSort = document.getElementById('cardsChecklistSort');
+  const checklistCaption = document.getElementById('cardsChecklistCaption');
+  const checklistList = document.getElementById('cardsChecklistList');
+  const checklistMore = document.getElementById('cardsChecklistMore');
   if (!api || !panel || !status || !saveStatus || !packStage || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
       !galleryCount || !search || !rarityFilter || !order || !loadMore ||
-      !clearBtn) return;
+      !clearBtn || tabs.some(([tab, view]) => !tab || !view) ||
+      !checklistStats || !checklistSearch || !checklistRarity ||
+      !checklistOwnership || !checklistSort || !checklistCaption ||
+      !checklistList || !checklistMore) return;
 
   const tierIndex = Object.fromEntries(api.rarities.map((r, i) => [r.id, i]));
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
@@ -41,6 +57,8 @@
   let limit = 36;
   let lastFileState = '';
   let nameFitScheduled = false;
+  let activeCardsSubtab = 0;
+  let checklistLimit = 80;
 
   // The outer name field is a fixed-width clipping frame. The INNER text
   // is measured at its natural width, then squeezed horizontally if needed.
@@ -415,10 +433,156 @@
     scheduleNameFit();
   }
   function formattedCount(n) { return n.toLocaleString('en-US'); }
+
+  // A checklist entry represents one player/rarity edition. Collected marks
+  // are read from the saved binder, not independently entered or stored.
+  function checklistData() {
+    const players = api.checklistPlayers;
+    const owned = new Map(api.items.map(card => [card.pid + ':' + card.rarity, card]));
+    const totals = Object.fromEntries(api.rarities.map(tier =>
+      [tier.id, {label: tier.label, possible: 0, collected: 0}]));
+    const all = [];
+    let collected = 0;
+    for (const player of players) {
+      for (const tier of api.rarities) {
+        if (!Number.isFinite(player.peak) || player.peak < tier.minOvr) continue;
+        const id = player.pid + ':' + tier.id;
+        const item = owned.get(id);
+        const isOwned = !!item;
+        totals[tier.id].possible++;
+        if (isOwned) { totals[tier.id].collected++; collected++; }
+        all.push({
+          id, pid: player.pid, name: player.name,
+          team: player.teamName || player.team || 'Team unavailable',
+          peak: player.peak, era: player.era,
+          rarity: tier.id, label: tier.label,
+          owned: isOwned, copies: item?.count || 0
+        });
+      }
+    }
+    return {all, totals, collected};
+  }
+  function checklistCounter(parent, label, collected, possible) {
+    const box = make('div', 'dbl-cards-checklist-stat');
+    box.appendChild(make('strong', '', format(collected) + ' / ' + format(possible)));
+    box.appendChild(make('span', '', label));
+    const track = make('div', 'dbl-cards-checklist-track');
+    const fill = make('span', 'dbl-cards-checklist-fill');
+    fill.style.width = (possible ? collected / possible * 100 : 0).toFixed(2) + '%';
+    track.appendChild(fill);
+    box.appendChild(track);
+    parent.appendChild(box);
+  }
+  function showChecklist() {
+    if (activeCardsSubtab !== 2 || panel.hidden) return;
+    const s = api.status;
+    checklistStats.replaceChildren();
+    checklistList.replaceChildren();
+    checklistMore.hidden = true;
+    if (!s.ready) {
+      checklistCaption.textContent = 'Restoring your collected cards…';
+      return;
+    }
+    if (!s.hasFile) {
+      checklistCaption.textContent =
+        'Upload a league export to see every possible card. Your owned cards remain saved in My Collection.';
+      checklistList.appendChild(make('p', 'dbl-cards-empty',
+        'The complete checklist is generated from players in your league archive.'));
+      return;
+    }
+    if (s.loading || (s.season === null && !s.problem)) {
+      checklistCaption.textContent = 'Building the checklist from your league file…';
+      return;
+    }
+    if (s.problem) {
+      checklistCaption.textContent = s.problem;
+      return;
+    }
+    const {all, totals, collected} = checklistData();
+    const progress = all.length ? collected / all.length * 100 : 0;
+    checklistCounter(checklistStats, 'Overall · ' + progress.toFixed(1) + '%',
+      collected, all.length);
+    for (const tier of api.rarities) {
+      const t = totals[tier.id];
+      checklistCounter(checklistStats, t.label + ' · peak OVR ' + tier.minOvr + '+',
+        t.collected, t.possible);
+    }
+    const query = checklistSearch.value.trim().toLocaleLowerCase();
+    const rarity = checklistRarity.value;
+    const ownership = checklistOwnership.value;
+    const result = all.filter(card =>
+      (rarity === 'all' || card.rarity === rarity) &&
+      (ownership === 'all' || (ownership === 'owned') === card.owned) &&
+      (!query || card.name.toLocaleLowerCase().includes(query) ||
+        card.team.toLocaleLowerCase().includes(query) ||
+        String(card.era ?? '').includes(query)));
+    if (checklistSort.value === 'rating') {
+      result.sort((a, b) => b.peak - a.peak ||
+        a.name.localeCompare(b.name) || tierIndex[b.rarity] - tierIndex[a.rarity]);
+    } else if (checklistSort.value === 'rarity') {
+      result.sort((a, b) => tierIndex[b.rarity] - tierIndex[a.rarity] ||
+        a.name.localeCompare(b.name));
+    } else {
+      result.sort((a, b) => a.name.localeCompare(b.name) ||
+        tierIndex[a.rarity] - tierIndex[b.rarity]);
+    }
+    checklistCaption.textContent =
+      format(collected) + ' of ' + format(all.length) + ' editions collected (' +
+      progress.toFixed(1) + '%). Showing ' + format(Math.min(checklistLimit, result.length)) +
+      ' of ' + format(result.length) + ' matching editions.';
+    if (!result.length) {
+      checklistList.appendChild(make('p', 'dbl-cards-empty',
+        all.length ? 'No card editions match those filters.' :
+          'No eligible players are in this league export.'));
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    for (const card of result.slice(0, checklistLimit)) {
+      const entry = make('div', 'dbl-cards-checklist-entry' +
+        (card.owned ? ' is-owned' : ' is-missing'));
+      entry.setAttribute('role', 'listitem');
+      const mark = make('span', 'dbl-cards-checklist-mark', card.owned ? '✓' : '');
+      mark.setAttribute('aria-label', card.owned ? 'Collected' : 'Not collected');
+      mark.setAttribute('role', 'img');
+      entry.appendChild(mark);
+      const details = make('div', 'dbl-cards-checklist-player');
+      details.appendChild(make('strong', '', card.name));
+      details.appendChild(make('span', '', card.team +
+        (card.era === null ? '' : ' · ' + card.era)));
+      entry.appendChild(details);
+      entry.appendChild(make('span', 'dbl-cards-checklist-ovr', 'OVR ' + card.peak));
+      const edition = make('span', 'dbl-cards-checklist-edition', card.label);
+      edition.dataset.rarity = card.rarity;
+      entry.appendChild(edition);
+      entry.appendChild(make('span', 'dbl-cards-checklist-owned-label',
+        card.owned ? 'OWNED' + (card.copies > 1 ? ' ×' + card.copies : '') : 'MISSING'));
+      fragment.appendChild(entry);
+    }
+    checklistList.appendChild(fragment);
+    checklistMore.hidden = result.length <= checklistLimit;
+    checklistMore.textContent = 'Show ' +
+      format(Math.min(80, result.length - checklistLimit)) + ' more editions';
+  }
+  function openCardsSubtab(index, focus = false) {
+    activeCardsSubtab = index;
+    tabs.forEach(([tab, view], i) => {
+      const selected = i === index;
+      tab.classList.toggle('is-active', selected);
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      view.hidden = !selected;
+    });
+    if (index === 1) { showGallery(); scheduleNameFit(); }
+    if (index === 2) { checklistLimit = 80; showChecklist(); }
+    if (index === 0) scheduleNameFit();
+    if (focus) tabs[index][0].focus();
+  }
+
   function repaint() {
     showStatus();
     showCounters();
-    showGallery();
+    if (activeCardsSubtab === 1) showGallery();
+    if (activeCardsSubtab === 2) showChecklist();
     // A new file uploaded while Cards is already open should immediately
     // populate the new player pool, not require switching tabs twice.
     if (!panel.hidden) api.ensurePool();
@@ -432,6 +596,29 @@
     window.addEventListener('resize', scheduleNameFit);
   }
   document.fonts?.ready?.then(scheduleNameFit);
+  tabs.forEach(([tab], index) => {
+    tab.addEventListener('click', () => openCardsSubtab(index));
+    tab.addEventListener('keydown', event => {
+      const next = event.key === 'ArrowRight' ?
+        (index + 1) % tabs.length : event.key === 'ArrowLeft' ?
+        (index + tabs.length - 1) % tabs.length : event.key === 'Home' ?
+        0 : event.key === 'End' ? tabs.length - 1 : null;
+      if (next === null) return;
+      event.preventDefault();
+      openCardsSubtab(next, true);
+    });
+  });
+  for (const control of [checklistSearch, checklistRarity,
+    checklistOwnership, checklistSort]) {
+    control.addEventListener(control === checklistSearch ? 'input' : 'change', () => {
+      checklistLimit = 80;
+      showChecklist();
+    });
+  }
+  checklistMore.addEventListener('click', () => {
+    checklistLimit += 80;
+    showChecklist();
+  });
   openBtn.addEventListener('click', openPack);
   revealBtn.addEventListener('click', revealAll);
   againBtn.addEventListener('click', readyStage);
@@ -474,6 +661,8 @@
   window.addEventListener('dbl:tab-change', event => {
     if (event.detail?.panelId === 'cardsPanel') {
       api.ensurePool();
+      if (activeCardsSubtab === 2) showChecklist();
+      if (activeCardsSubtab === 1) showGallery();
       scheduleNameFit();
     }
   });
