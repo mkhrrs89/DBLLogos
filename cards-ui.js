@@ -191,22 +191,23 @@
     front.appendChild(teamCrest(card));
     // Unboxed, bright red RC sits directly beneath the upper-right team logo.
     if (api.isRookie(card)) {
-      const rookie = make('span', 'dbl-cards-rookie', 'RC');
+      const rookie = make('span', 'dbl-cards-rookie');
       rookie.title = 'Rookie card';
+      rookie.setAttribute('aria-label', 'Rookie card');
+      rookie.appendChild(make('span', 'dbl-cards-rookie-letter', 'R'));
+      rookie.appendChild(make('span', 'dbl-cards-rookie-letter', 'C'));
       front.appendChild(rookie);
     }
     front.appendChild(art(card));
 
-    // Editorial split: left OVR/jersey, right given name, large surname,
-    // then full team name and position beneath.
+    // Editorial split: circled peak OVR left of the name, with the peak
+    // season's jersey number placed after the full team name below it.
     const lower = make('span', 'dbl-cards-bottom');
     const identity = make('span', 'dbl-cards-identity');
     const playerMetrics = make('span', 'dbl-cards-player-metrics');
-    playerMetrics.appendChild(make('span', 'dbl-cards-ovr-label', 'OVR'));
     playerMetrics.appendChild(make('strong', 'dbl-cards-ovr-value',
       card.ovr ?? '—'));
     const jersey = api.findJersey?.(card);
-    if (jersey) playerMetrics.appendChild(make('span', 'dbl-cards-jersey', '#' + jersey));
     identity.appendChild(playerMetrics);
 
     const details = make('span', 'dbl-cards-identity-details');
@@ -216,8 +217,12 @@
     surname.appendChild(make('span', 'dbl-cards-surname-glyphs',
       names.last.toLocaleUpperCase()));
     details.appendChild(surname);
-    details.appendChild(make('span', 'dbl-cards-affiliation',
+    const affiliation = make('span', 'dbl-cards-affiliation');
+    affiliation.appendChild(make('span', 'dbl-cards-affiliation-team',
       card.pos + ' | ' + (card.teamName || card.team)));
+    if (jersey) affiliation.appendChild(make('span',
+      'dbl-cards-affiliation-jersey', ' | #' + jersey));
+    details.appendChild(affiliation);
     identity.appendChild(details);
     lower.appendChild(identity);
 

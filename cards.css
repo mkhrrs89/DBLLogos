@@ -1348,3 +1348,90 @@
 .dbl-cards-surname-glyphs {
   font-weight: 900;
 }
+
+
+/* Reference refinement: ornamental stacked rookie mark, a circled peak OVR,
+   and a lighter-weight, single-family sans-serif player name. */
+.dbl-cards-front > .dbl-cards-rookie {
+  top: 19.5%;
+  right: 5.6%;
+  width: 10.5%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  font-weight: 900;
+  font-size: clamp(12px, 9.2cqw, 34px);
+  line-height: .79;
+  letter-spacing: -.09em;
+  color: #bf1029;
+  -webkit-text-stroke: .018em #8a081a;
+  text-shadow: .035em .035em 0 rgba(255,246,231,.8);
+}
+.dbl-cards-rookie-letter {
+  display: block;
+  font: inherit;
+  line-height: .82;
+  text-align: center;
+}
+.dbl-cards-player-metrics {
+  align-self: center;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  padding: 0;
+  border: max(1px, .65cqw) solid currentColor;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+.dbl-cards-ovr-value {
+  display: block;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  font-weight: 750;
+  line-height: 1;
+  font-size: clamp(8px, 7.2cqw, 26px);
+  letter-spacing: -.04em;
+}
+.dbl-cards-affiliation {
+  display: flex;
+  align-items: baseline;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+  width: 100%;
+  min-width: 0;
+}
+.dbl-cards-affiliation-team {
+  display: block;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dbl-cards-affiliation-jersey {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.dbl-cards-first-name,
+.dbl-cards-name,
+.dbl-cards-surname-glyphs {
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+.dbl-cards-name,
+.dbl-cards-surname-glyphs {
+  font-weight: 700;
+  letter-spacing: -.04em;
+}
