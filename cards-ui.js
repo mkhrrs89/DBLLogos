@@ -50,8 +50,8 @@
     appendStat(counter, format(s.packs), 'Packs opened');
     appendStat(counter, format(s.count), 'Total cards');
     appendStat(counter, format(s.unique), 'Unique editions');
-    appendStat(counter, format(api.items.filter(c => c.rarity === 'legendary')
-      .reduce((n, c) => n + c.count, 0)), 'Legendary pulls');
+    appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
+      .reduce((n, c) => n + c.count, 0)), 'Black Label pulls');
     saveStatus.textContent = s.ready
       ? s.savedOK ? 'Collection saved locally in this browser.' :
         'Browser storage is unavailable. Collection may be lost after a refresh.'
@@ -108,7 +108,6 @@
     front.appendChild(top);
     front.appendChild(art(card));
     const bottom = make('span', 'dbl-cards-bottom');
-    bottom.appendChild(make('span', 'dbl-cards-series', 'COLLECTOR EDITION'));
     bottom.appendChild(make('strong', 'dbl-cards-name', card.name));
     bottom.appendChild(make('span', 'dbl-cards-affiliation', card.team + ' / ' + card.pos));
     const foot = make('span', 'dbl-cards-front-foot');
@@ -117,6 +116,15 @@
     bottom.appendChild(foot);
     front.appendChild(bottom);
     front.appendChild(make('span', 'dbl-cards-foil'));
+    // Sparkles are entirely hidden on sealed cards; only a revealed Black
+    // Label front enables them through its rarity data attribute.
+    if (card.rarity === 'black-label') {
+      for (let index = 0; index < 7; index++) {
+        const sparkle = make('span', 'dbl-cards-sparkle', '✦');
+        sparkle.setAttribute('aria-hidden', 'true');
+        front.appendChild(sparkle);
+      }
+    }
     return front;
   }
   function backOf(card, sealed) {
@@ -145,8 +153,7 @@
     }
     back.appendChild(metrics);
     back.appendChild(make('span', 'dbl-cards-back-foot', (card.era ?? 'DBL') +
-      ' · ' + tierMap[card.rarity]?.label.toUpperCase() +
-      ' · COLLECTOR EDITION'));
+      ' · ' + tierMap[card.rarity]?.label.toUpperCase()));
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
     return back;
   }

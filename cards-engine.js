@@ -5,13 +5,20 @@
   const reader = window.DBLLeagueStream;
   if (!hub?.subscribe || !reader?.forEachTopLevelArrayItem || !reader?.readTopLevelValue) return;
 
+  // One visual design per rarity, ordered from entry-level to most exclusive.
+  // Keep the 1% top-tier slot and the Refractor+ guarantee from the old packs.
   const RARITIES = [
     { id: 'common', label: 'Common', chance: 54, pool: 1 },
-    { id: 'uncommon', label: 'Uncommon', chance: 27, pool: .72 },
-    { id: 'rare', label: 'Rare', chance: 13, pool: .42 },
-    { id: 'epic', label: 'Epic', chance: 5, pool: .2 },
-    { id: 'legendary', label: 'Legendary', chance: 1, pool: .075 }
+    { id: 'crome', label: 'Crome', chance: 27, pool: .72 },
+    { id: 'refractor', label: 'Refractor', chance: 18, pool: .42 },
+    { id: 'black-label', label: 'Black Label', chance: 1, pool: .075 }
   ];
+  // Migrate every previously collected card rather than discarding old tiers.
+  // Rare + Epic become Refractor; Legendary becomes Black Label.
+  const OLD_RARITY = Object.freeze({
+    common: 'common', uncommon: 'crome', rare: 'refractor',
+    epic: 'refractor', legendary: 'black-label'
+  });
   const DATABASE = 'dbl-digital-cards-v1';
   const STORE = 'collections';
   const KEY = 'archive';
@@ -161,13 +168,14 @@
     collection = new Map();
     for (const row of Array.isArray(value?.items) ? value.items : []) {
       const pid = integer(row?.pid), qty = integer(row?.count);
+      const rarity = OLD_RARITY[row?.rarity] || row?.rarity;
       if (pid === null || pid < 0 || qty === null || qty < 1 || qty > 1000000 ||
-          !tierMap[row.rarity]) continue;
-      // v1 stored three visual variants separately. Merge their quantities
-      // into one edition per player and rarity without losing older pulls.
-      const id = pid + ':' + row.rarity;
+          !tierMap[rarity]) continue;
+      // Consolidate both prior visual variants and retired rarity names;
+      // merging records adds their duplicate quantities, not replacing them.
+      const id = pid + ':' + rarity;
       const item = {
-        id, pid, rarity: row.rarity, count: qty,
+        id, pid, rarity, count: qty,
         name: str(row.name) || 'Unknown player', team: str(row.team) || 'DBL',
         teamName: str(row.teamName) || 'League archive', pos: str(row.pos) || '—',
         era: integer(row.era), ovr: number(row.ovr), peak: number(row.peak),
@@ -175,13 +183,15 @@
         ws: number(row.ws), photo: photoUrl(row.photo, true)
       };
       const existing = collection.get(id);
-      if (existing) existing.count += qty;
-      else collection.set(id, item);
+      if (existing) {
+        existing.count += qty;
+        if (!existing.photo && item.photo) existing.photo = item.photo;
+      } else collection.set(id, item);
     }
     packs = Math.max(0, integer(value?.packs) ?? 0);
   }
   function snapshot() {
-    return {version: 2, packs, items: [...collection.values()].map(i => ({
+    return {version: 3, packs, items: [...collection.values()].map(i => ({
       ...i, photo: photoUrl(i.photo, true)
     }))};
   }
@@ -197,6 +207,9 @@
     parseState(state);
     collectionLoaded = true;
     notify();
+    // Persist the normalized editions, including a collection restored from
+    // a previous release, even if no new pack is opened.
+    if (state?.items?.length && state.version !== 3) void save();
   }).catch(error => {
     console.warn('Card collection restore failed.', error);
     collectionLoaded = true;
@@ -216,10 +229,10 @@
   function getPack() {
     if (!collectionLoaded || !pool.length) return [];
     const taken = new Set(), picks = [];
-    let hasRare = false;
+    let hasRefractor = false;
     for (let i = 0; i < 5; i++) {
-      const tier = sampleTier(i === 4 && !hasRare);
-      if (tierIndex[tier.id] >= 2) hasRare = true;
+      const tier = sampleTier(i === 4 && !hasRefractor);
+      if (tierIndex[tier.id] >= 2) hasRefractor = true;
       const range = Math.max(1, Math.ceil(pool.length * tier.pool));
       let index = Math.floor(Math.random() * range);
       for (let step = 0; step < range && taken.has(pool[index].pid); step++) {
