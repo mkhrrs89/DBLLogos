@@ -369,8 +369,9 @@
   position: absolute;
   top: 13.8%;
   bottom: 27.3%;
-  left: 20.2%;
-  right: 20.2%;
+  /* Widen the photo window without changing its height or rounded-top shape. */
+  left: 17%;
+  right: 17%;
   overflow: hidden;
   border: 2px solid var(--card-rule);
   background: linear-gradient(140deg,#e7eef3,#b9c6d0);
@@ -422,14 +423,17 @@
 .dbl-cards-team-initials[hidden] { display: none !important; }
 .dbl-cards-player-photo {
   display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: cover !important;
-  object-position: center top !important;
   position: absolute;
   inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  /* Fill the whole wider frame; crop from the bottom before the top. */
+  object-fit: cover !important;
+  object-position: center top !important;
   z-index: 1;
 }
 .dbl-cards-initials {
