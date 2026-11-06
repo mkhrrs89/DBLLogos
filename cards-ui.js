@@ -85,7 +85,7 @@
       const image = make('img', 'dbl-cards-player-photo');
       image.alt = '';
       image.width = 200;
-      image.height = 248;
+      image.height = 300;
       image.style.width = '100%';
       image.style.height = '100%';
       image.style.maxWidth = '100%';
@@ -100,13 +100,40 @@
     artArea.appendChild(make('span', 'dbl-cards-art-number', card.peak ?? card.ovr ?? 'DBL'));
     return artArea;
   }
+  function teamCrest(card) {
+    const crest = make('span', 'dbl-cards-team-crest');
+    const placeholder = make('span', 'dbl-cards-team-initials', card.team || 'DBL');
+    crest.appendChild(placeholder);
+    const logo = api.findTeamLogo(card);
+    if (logo) {
+      const img = make('img', 'dbl-cards-team-logo');
+      img.alt = '';
+      img.width = 40;
+      img.height = 40;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.referrerPolicy = 'no-referrer';
+      img.addEventListener('load', () => {
+        placeholder.hidden = true;
+      });
+      img.addEventListener('error', () => {
+        img.remove();
+        placeholder.hidden = false;
+      });
+      crest.appendChild(img);
+      img.src = logo;
+      if (img.complete && img.naturalWidth > 0) placeholder.hidden = true;
+    }
+    return crest;
+  }
   function frontOf(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front');
     const top = make('span', 'dbl-cards-front-top');
-    top.appendChild(make('span', '', 'DELTA · BASKETBALL LEAGUE'));
+    top.appendChild(make('span', '', 'FLAGSHIP'));
     top.appendChild(make('span', '', card.era ?? 'ARCHIVE'));
     front.appendChild(top);
     front.appendChild(art(card));
+    front.appendChild(teamCrest(card));
     const bottom = make('span', 'dbl-cards-bottom');
     bottom.appendChild(make('strong', 'dbl-cards-name', card.name));
     bottom.appendChild(make('span', 'dbl-cards-affiliation', card.team + ' / ' + card.pos));

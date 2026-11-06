@@ -31,7 +31,7 @@
   const nameOf = p => [p?.firstName, p?.lastName].filter(Boolean).join(' ').trim() || str(p?.name) || 'Unknown player';
   const listeners = new Set();
   let currentFile = null, fileVersion = 0, scanning = false, poolFile = null;
-  let pool = [], poolByPid = new Map(), activeSeason = null;
+  let pool = [], poolByPid = new Map(), teamLogos = new Map(), activeSeason = null;
   let collection = new Map(), packs = 0, collectionLoaded = false;
   let savedOK = true, saveQueue = Promise.resolve();
   let problem = '';
@@ -104,6 +104,7 @@
     return {
       pid, name: nameOf(player),
       team: team?.abbrev || 'DBL', teamName: team?.name || 'League archive',
+      teamLogo: team?.logo || '', publicTeamLogo: photoUrl(team?.logo, true),
       pos: str(ratings.selected.pos) || str(player.pos) || '—',
       era: firstYear, ovr, pot, peak: ratings.peak,
       gp: career.gp, ppg: career.ppg, ws: career.ws,
@@ -177,7 +178,9 @@
       const item = {
         id, pid, rarity, count: qty,
         name: str(row.name) || 'Unknown player', team: str(row.team) || 'DBL',
-        teamName: str(row.teamName) || 'League archive', pos: str(row.pos) || '—',
+        teamName: str(row.teamName) || 'League archive',
+        teamLogo: photoUrl(row.teamLogo, true),
+        pos: str(row.pos) || '—',
         era: integer(row.era), ovr: number(row.ovr), peak: number(row.peak),
         pot: number(row.pot), gp: number(row.gp), ppg: number(row.ppg),
         ws: number(row.ws), photo: photoUrl(row.photo, true)
@@ -191,8 +194,9 @@
     packs = Math.max(0, integer(value?.packs) ?? 0);
   }
   function snapshot() {
-    return {version: 3, packs, items: [...collection.values()].map(i => ({
-      ...i, photo: photoUrl(i.photo, true)
+    return {version: 4, packs, items: [...collection.values()].map(i => ({
+      ...i, photo: photoUrl(i.photo, true),
+      teamLogo: photoUrl(i.teamLogo, true)
     }))};
   }
   function save() {
@@ -209,7 +213,7 @@
     notify();
     // Persist the normalized editions, including a collection restored from
     // a previous release, even if no new pack is opened.
-    if (state?.items?.length && state.version !== 3) void save();
+    if (state?.items?.length && state.version !== 4) void save();
   }).catch(error => {
     console.warn('Card collection restore failed.', error);
     collectionLoaded = true;
@@ -252,6 +256,7 @@
         id: p.pid + ':' + tier.id, pid: p.pid,
         rarity: tier.id, count: 1,
         name: p.name, team: p.team, teamName: p.teamName,
+        teamLogo: p.publicTeamLogo,
         pos: p.pos, era: p.era, ovr: p.ovr, peak: p.peak, pot: p.pot,
         gp: p.gp, ppg: p.ppg, ws: p.ws, photo: p.publicImage
       });
@@ -281,17 +286,33 @@
       const season = integer(attrs.season);
       if (season === null) throw Error('League season is unavailable.');
       const teams = new Map();
+      const availableLogos = new Map();
       await reader.forEachTopLevelArrayItem(file, 'teams', team => {
         if (!current()) return;
         const tid = integer(team?.tid);
         if (tid === null) return;
         const seasons = (Array.isArray(team.seasons) ? team.seasons : [])
-          .filter(row => (integer(row?.season) ?? Infinity) <= season);
+          .filter(row => (integer(row?.season) ?? Infinity) <= season)
+          .sort((a, b) => integer(a.season) - integer(b.season));
         const row = seasons.length ? seasons[seasons.length - 1] : null;
+        const baseLogo = photoUrl(team.imgURL) || photoUrl(team.imgURLSmall);
+        let lastLogo = '';
+        for (const entry of seasons) {
+          const entryLogo = photoUrl(entry.imgURL) || photoUrl(entry.imgURLSmall);
+          if (entryLogo) lastLogo = entryLogo;
+          const abbrev = str(entry.abbrev) || str(team.abbrev);
+          if (abbrev && (lastLogo || baseLogo)) {
+            // Index old franchise abbreviations as well, so an older card
+            // can still show its original team crest after a rebrand.
+            availableLogos.set(abbrev, lastLogo || baseLogo);
+          }
+        }
         const name = [str(row?.region) || str(team.region),
           str(row?.name) || str(team.name)].filter(Boolean).join(' ');
-        teams.set(tid, {abbrev: str(row?.abbrev) || str(team.abbrev) || 'DBL',
-          name: name || 'League archive'});
+        const abbrev = str(row?.abbrev) || str(team.abbrev) || 'DBL';
+        const logo = lastLogo || baseLogo;
+        if (logo && !availableLogos.has(abbrev)) availableLogos.set(abbrev, logo);
+        teams.set(tid, {abbrev, name: name || 'League archive', logo});
       });
       if (!current()) return;
       const players = [], seen = new Set();
@@ -306,6 +327,7 @@
       players.sort((a, b) => b.score - a.score || (b.peak ?? 0) - (a.peak ?? 0) || a.pid - b.pid);
       pool = players;
       poolByPid = new Map(players.map(p => [p.pid, p]));
+      teamLogos = availableLogos;
       activeSeason = season;
       poolFile = file;
     } catch (error) {
@@ -328,6 +350,7 @@
     poolFile = null;
     pool = [];
     poolByPid = new Map();
+    teamLogos = new Map();
     activeSeason = null;
     scanning = false;
     problem = '';
@@ -341,6 +364,11 @@
     },
     ensurePool, getPack, collectPack,
     findPhoto(card) { return poolByPid.get(card.pid)?.image || card.photo || ''; },
+    findTeamLogo(card) {
+      const player = poolByPid.get(card.pid);
+      return card.teamLogo || teamLogos.get(card.team) ||
+        (player?.team === card.team ? player.teamLogo : '') || '';
+    },
     get status() {
       return {
         hasFile: !!currentFile, loading: scanning,

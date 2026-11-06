@@ -249,18 +249,18 @@
 .dbl-cards-card:hover { filter: brightness(1.055); }
 .dbl-cards-card:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 .dbl-cards-card[data-rarity="common"] {
-  --card-metal: #445867;
-  --card-ink: #c4cdd4;
-  --card-edge: #9cabb7;
-  --card-aura: rgba(75,92,105,.14);
-  --card-text: #172832;
-  --card-muted: #3d5260;
-  --card-rule: rgba(24,43,57,.3);
+  --card-metal: #334554;
+  --card-ink: #919ea8;
+  --card-edge: #73828d;
+  --card-aura: rgba(44,61,74,.18);
+  --card-text: #132430;
+  --card-muted: #263a49;
+  --card-rule: rgba(18,37,52,.42);
 }
 .dbl-cards-card[data-rarity="common"] .dbl-cards-front {
   background:
     radial-gradient(circle at 50% 18%,var(--card-aura),transparent 65%),
-    linear-gradient(145deg,#d9dfe4,#c5cdd3 52%,#adb8c1 74%,#d4dbe0);
+    linear-gradient(145deg,#afb9c1,#929faa 50%,#7c8b96 73%,#a5afb8);
 }
 .dbl-cards-card[data-rarity="crome"] {
   --card-metal: #3c5665;
@@ -330,33 +330,79 @@
 }
 .dbl-cards-front-top {
   position: absolute;
-  left: 9%;
-  right: 9%;
-  top: 4.5%;
+  left: 8%;
+  right: 8%;
+  top: 3.8%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 4px;
-  font-size: clamp(.45rem, .72vw, .58rem);
-  font-weight: 850;
-  letter-spacing: .09em;
+  font-size: clamp(.57rem, .97vw, .74rem);
+  font-weight: 900;
+  letter-spacing: .12em;
   color: var(--card-metal);
   white-space: nowrap;
   z-index: 2;
 }
+/* The full card is 0.70:1 wide-to-tall. This centered window is
+   (59.6% × 0.70) / 62.5% = 0.6675, essentially a true 2:3 portrait. */
 .dbl-cards-art {
   display: block;
   position: absolute;
-  top: 15%;
-  bottom: 31.5%;
-  left: 6.7%;
-  right: 6.7%;
+  top: 12.5%;
+  bottom: 25%;
+  left: 20.2%;
+  right: 20.2%;
   overflow: hidden;
   border: 2px solid var(--card-rule);
   background: linear-gradient(140deg,#e7eef3,#b9c6d0);
   z-index: 1;
-  border-radius: 42% 42% 6px 6px / 11% 11% 6px 6px;
+  border-radius: 7px 7px 3px 3px;
 }
+/* Team badge sits beside the portrait instead of covering a face. */
+.dbl-cards-team-crest {
+  position: absolute;
+  top: 27%;
+  right: 2.1%;
+  width: 16.5%;
+  aspect-ratio: 1;
+  z-index: 3;
+  box-sizing: border-box;
+  border: 1px solid var(--card-rule);
+  border-radius: 50%;
+  background: rgba(251,252,254,.92);
+  box-shadow: 0 2px 8px rgba(12,20,32,.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.dbl-cards-team-logo {
+  display: block !important;
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px) !important;
+  height: calc(100% - 6px) !important;
+  max-width: calc(100% - 6px) !important;
+  max-height: calc(100% - 6px) !important;
+  min-width: 0;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+.dbl-cards-team-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1px;
+  font-size: clamp(.38rem, .72vw, .65rem);
+  font-weight: 900;
+  color: #243543;
+  letter-spacing: -.05em;
+  text-align: center;
+  overflow: hidden;
+}
+.dbl-cards-team-initials[hidden] { display: none !important; }
 .dbl-cards-player-photo {
   display: block !important;
   width: 100% !important;
@@ -364,7 +410,7 @@
   max-width: 100% !important;
   max-height: 100% !important;
   object-fit: cover !important;
-  object-position: center 12% !important;
+  object-position: center top !important;
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -398,10 +444,10 @@
 }
 .dbl-cards-bottom {
   position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 70%;
-  bottom: 3%;
+  left: 7%;
+  right: 7%;
+  top: 77%;
+  bottom: 2.5%;
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
