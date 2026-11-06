@@ -1048,6 +1048,7 @@
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   font-weight: 900;
   letter-spacing: .12em;
+  opacity: .60;
   z-index: 3;
 }
 .dbl-cards-flagship,
@@ -1442,9 +1443,11 @@
    the portrait rather than overlapping the bottom player information. */
 .dbl-cards-side-rarity {
   position: absolute;
-  top: 20%;
+  /* Begins just below the year, matching the reference mockup. */
+  top: 15.5%;
   left: 5.1%;
   z-index: 5;
+  opacity: .60;
   height: auto;
   max-height: 52%;
   width: auto;
