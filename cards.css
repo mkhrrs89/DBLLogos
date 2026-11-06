@@ -934,3 +934,80 @@
   }
   .dbl-cards-card[data-rarity="black-label"] .dbl-cards-sparkle { opacity: .7; }
 }
+
+
+/* Card-width-relative typography.
+   Each card is its own size container, so a smaller binder card gets
+   proportionally smaller lettering than the larger pack-opening cards.
+   This overrides viewport-relative and fixed minimum font sizes above.
+   Older browsers retain those existing styles as a fallback. */
+@supports (font-size: 1cqw) and (container-type: inline-size) {
+  .dbl-cards-card {
+    container-type: inline-size;
+  }
+  .dbl-cards-front-top {
+    font-size: clamp(7px, 6.7cqw, 13px);
+  }
+  .dbl-cards-issue {
+    gap: 2.5cqw;
+  }
+  .dbl-cards-rookie {
+    padding: .9cqw 1.4cqw;
+    font-size: .87em;
+  }
+  .dbl-cards-name {
+    font-size: clamp(8px, 7cqw, 15px);
+  }
+  .dbl-cards-name.is-condensed {
+    font-size: clamp(7px, 6.5cqw, 14px);
+  }
+  .dbl-cards-affiliation {
+    font-size: clamp(6px, 5.3cqw, 11px);
+  }
+  .dbl-cards-front-foot {
+    font-size: clamp(6px, 4.7cqw, 10px);
+    padding-top: 2.3cqw;
+    gap: 1.8cqw;
+  }
+  .dbl-cards-identity-details {
+    gap: 1.2cqw;
+  }
+  .dbl-cards-series {
+    font-size: clamp(6px, 4.2cqw, 9px);
+  }
+  .dbl-cards-team-initials {
+    font-size: clamp(6px, 4.2cqw, 9px);
+  }
+  .dbl-cards-initials {
+    font-size: clamp(23px, 26cqw, 62px);
+  }
+  /* Flip-side typography scales with the front, too. */
+  .dbl-cards-back-logo {
+    font-size: clamp(27px, 22cqw, 52px);
+  }
+  .dbl-cards-back-ornament {
+    font-size: clamp(32px, 30cqw, 70px);
+  }
+  .dbl-cards-back-small {
+    font-size: clamp(6px, 4.4cqw, 10px);
+  }
+  .dbl-cards-back-tap {
+    font-size: clamp(6px, 4cqw, 9px);
+  }
+  .dbl-cards-back-heading,
+  .dbl-cards-back-foot {
+    font-size: clamp(6px, 4.4cqw, 10px);
+  }
+  .dbl-cards-back-name {
+    font-size: clamp(10px, 9.2cqw, 22px);
+  }
+  .dbl-cards-back-team {
+    font-size: clamp(7px, 5.2cqw, 12px);
+  }
+  .dbl-cards-back-metric strong {
+    font-size: clamp(9px, 8cqw, 18px);
+  }
+  .dbl-cards-back-metric span {
+    font-size: clamp(6px, 4.1cqw, 10px);
+  }
+}
