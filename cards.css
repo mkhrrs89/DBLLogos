@@ -530,18 +530,6 @@
   white-space: nowrap;
   overflow-wrap: normal;
 }
-.dbl-cards-name.is-condensed {
-  font-family: "Arial Narrow", "Roboto Condensed", "Liberation Sans Narrow", Arial, sans-serif;
-  font-stretch: condensed;
-  font-weight: 800;
-  font-size: clamp(10px, .72vw, 13px);
-  letter-spacing: -.035em;
-}
-.dbl-cards-name.is-wrapped {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  letter-spacing: -.03em;
-}
 .dbl-cards-affiliation {
   color: var(--card-muted);
   font-size: clamp(8px, .60vw, 10px);
@@ -962,9 +950,6 @@
   .dbl-cards-name {
     font-size: clamp(8px, 7cqw, 15px);
   }
-  .dbl-cards-name.is-condensed {
-    font-size: clamp(7px, 6.5cqw, 14px);
-  }
   .dbl-cards-affiliation {
     font-size: clamp(6px, 5.3cqw, 11px);
   }
@@ -1232,18 +1217,6 @@
   white-space: nowrap;
   overflow-wrap: normal;
 }
-.dbl-cards-name.is-condensed {
-  font-family: Impact, "Arial Narrow", "Liberation Sans Narrow",
-    "Roboto Condensed", Arial, sans-serif;
-  font-stretch: condensed;
-  letter-spacing: -.035em;
-  font-weight: 850;
-}
-.dbl-cards-name.is-wrapped {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: .94;
-}
 .dbl-cards-affiliation {
   width: 100%;
   color: var(--card-muted);
@@ -1294,7 +1267,6 @@
   .dbl-cards-jersey { font-size: clamp(7px, 5.7cqw, 20px); }
   .dbl-cards-first-name { font-size: clamp(7px, 6.3cqw, 24px); }
   .dbl-cards-name { font-size: clamp(17px, 15.5cqw, 58px); }
-  .dbl-cards-name.is-condensed { font-size: clamp(15px, 14.2cqw, 54px); }
   .dbl-cards-affiliation { font-size: clamp(6px, 4.7cqw, 17px); }
   .dbl-cards-front-foot { font-size: clamp(6px, 4.3cqw, 16px); }
   .dbl-cards-identity-details { gap: 0; }
@@ -1307,7 +1279,6 @@
   .dbl-cards-jersey { font-size: 10px; }
   .dbl-cards-first-name { font-size: 10px; }
   .dbl-cards-name { font-size: 23px; }
-  .dbl-cards-name.is-condensed { font-size: 20px; }
   .dbl-cards-affiliation { font-size: 8px; }
   .dbl-cards-front-foot { font-size: 8px; }
 }

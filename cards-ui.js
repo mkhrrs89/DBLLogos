@@ -42,27 +42,20 @@
   let lastFileState = '';
   let nameFitScheduled = false;
 
-  // Try the original serif first. Only switch a name to condensed sans-serif
-  // when its measured width exceeds the available space beside the team logo.
-  // A slight horizontal squeeze is allowed for nearly fitting names; very
-  // long names can still wrap rather than disappear outside the card.
+  // Keep exactly the same bold surname font on every card. If the name is
+  // wider than its available space, compress its drawn shape horizontally.
+  // Unlike switching to a condensed font, this preserves the typeface and
+  // letter shapes, including for very long surnames.
   function fitName(name) {
-    const width = name.clientWidth;
-    if (!width) return;
-    name.classList.remove('is-condensed');
-    name.classList.remove('is-wrapped');
     name.style.transform = '';
     name.style.transformOrigin = '';
-    if (name.scrollWidth <= width + 1) return;
-    name.classList.add('is-condensed');
-    if (name.scrollWidth <= width + 1) return;
-    const fraction = (width - 1) / name.scrollWidth;
-    if (fraction >= .72) {
-      name.style.transform = 'scaleX(' + Math.min(1, fraction).toFixed(3) + ')';
-      name.style.transformOrigin = 'center';
-    } else {
-      name.classList.add('is-wrapped');
-    }
+    const width = name.clientWidth;
+    if (!width) return; // Cards tab is hidden; remeasure when it opens.
+    const naturalWidth = name.scrollWidth;
+    if (naturalWidth <= width + 1) return;
+    const scale = Math.min(1, (width - 1) / naturalWidth);
+    name.style.transformOrigin = 'left center';
+    name.style.transform = 'scaleX(' + scale.toFixed(4) + ')';
   }
   function fitVisibleNames() {
     for (const root of [gallery, packStage]) {
