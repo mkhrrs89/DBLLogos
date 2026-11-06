@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
     <link rel="stylesheet" href="./home-season-preview.css?v=20261106-season-preview" />
-    <link rel="stylesheet" href="./cards.css?v=20261106-higher-smaller-rarity-labels" />
+    <link rel="stylesheet" href="./cards.css?v=20261106-base-matched-rarity-labels" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -266,7 +266,7 @@
                 <button id="cardsRevealAllBtn" class="dbl-cards-action-button" type="button">Reveal all cards</button>
                 <button id="cardsNextPackBtn" class="dbl-cards-action-button" type="button">Next pack</button>
               </div>
-              <p class="dbl-cards-save-status">Base slot odds: Common 85% · Crome 10% · Refractor 4% · Black Label 1%. Each pack still guarantees one Refractor+ card, so actual overall pull rates differ from base odds.</p>
+              <p class="dbl-cards-save-status">Base pull odds: Base 85% · Crome 10% · Refractor 4% · Black Label 1%. Each pack still guarantees one Refractor+ card, so actual overall pull rates differ from base odds.</p>
             </section>
           </div>
 
@@ -291,7 +291,7 @@
                 Rarity
                 <select id="cardsRarityFilter">
                   <option value="all">All rarities</option>
-                  <option value="common">Common</option>
+                  <option value="common">Base</option>
                   <option value="crome">Crome</option>
                   <option value="refractor">Refractor</option>
                   <option value="black-label">Black Label</option>
@@ -312,7 +312,7 @@
               <p class="dbl-cards-empty">Your collection is empty. Open a pack to start collecting.</p>
             </div>
             <button id="cardsShowMoreBtn" class="dbl-cards-more" type="button" hidden>Show more cards</button>
-            <p class="dbl-cards-footnote">Four card finishes: tan Common, silver Crome, rainbow Refractor and black holographic Black Label. Every sealed card looks identical until revealed. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. RC appears only if that peak was during the player's rookie season. Previously collected cards update when you load a league export with their history. This is a free fictional card collection with no money or trading value. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it.</p>
+            <p class="dbl-cards-footnote">Four card finishes: tan Base, silver Crome, rainbow Refractor and black holographic Black Label. Every sealed card looks identical until revealed. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. RC appears only if that peak was during the player's rookie season. Previously collected cards update when you load a league export with their history. This is a free fictional card collection with no money or trading value. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it.</p>
           </section>
         </section>
 
@@ -950,8 +950,8 @@
     <script src="./home-season-preview.js?v=20261106-home-team-badges"></script>
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
-    <script src="./cards-engine.js?v=20261106-side-rail-rarity-ovr36"></script>
-    <script src="./cards-ui.js?v=20261106-side-rail-rarity-ovr36"></script>
+    <script src="./cards-engine.js?v=20261106-base-matched-rarity-labels"></script>
+    <script src="./cards-ui.js?v=20261106-base-matched-rarity-labels"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>

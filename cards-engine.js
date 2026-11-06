@@ -8,7 +8,7 @@
   // One visual design per rarity, ordered from entry-level to most exclusive.
   // Keep the 1% top-tier slot and the Refractor+ guarantee from the old packs.
   const RARITIES = [
-    { id: 'common', label: 'Common', chance: 85, pool: 1 },
+    { id: 'common', label: 'Base', chance: 85, pool: 1 },
     { id: 'crome', label: 'Crome', chance: 10, pool: .72 },
     { id: 'refractor', label: 'Refractor', chance: 4, pool: .42 },
     { id: 'black-label', label: 'Black Label', chance: 1, pool: .075 }

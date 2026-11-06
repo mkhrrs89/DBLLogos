@@ -228,7 +228,7 @@
 
     // Type is spelled downward in the left rail, beside the tall arched photo.
     const rarity = make('span', 'dbl-cards-side-rarity dbl-cards-rarity-name',
-      tierMap[card.rarity]?.label.toUpperCase() || 'COMMON');
+      tierMap[card.rarity]?.label.toUpperCase() || 'BASE');
     front.appendChild(rarity);
     front.appendChild(lower);
 

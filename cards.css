@@ -1456,7 +1456,7 @@
   text-orientation: upright;
   font-family: "Trebuchet MS", "Avenir Next", Arial, sans-serif;
   font-weight: 600;
-  font-size: clamp(7px, 5.7cqw, 16px);
+  font-size: clamp(6px, 4.9cqw, 14px);
   line-height: 1;
   letter-spacing: .055em;
   white-space: nowrap;
