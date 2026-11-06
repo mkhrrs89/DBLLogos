@@ -1157,7 +1157,7 @@
 }
 .dbl-cards-identity {
   display: grid;
-  grid-template-columns: 14% minmax(0,1fr);
+  grid-template-columns: 19% minmax(0,1fr);
   gap: 2.8%;
   align-items: end;
   justify-content: stretch;
