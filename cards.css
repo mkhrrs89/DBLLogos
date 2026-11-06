@@ -1018,7 +1018,8 @@
   left: 3.2%;
   right: 3.2%;
   bottom: 2.6%;
-  border-radius: 3px 3px 14% 14% / 3px 3px 10% 10%;
+  /* Match the existing lower inner-panel curves at the TOP as well. */
+  border-radius: 14% / 10%;
   background: var(--flagship-panel, rgba(255,255,255,.24));
 }
 .dbl-cards-card[data-rarity="common"] {
@@ -1311,4 +1312,39 @@
 .dbl-cards-front-foot {
   padding-left: 0;
   justify-content: flex-start;
+}
+
+/* The rookie monogram lives directly below the team crest, outside the
+   FLAGSHIP/year column. It never receives a frame or background circle. */
+.dbl-cards-front > .dbl-cards-rookie {
+  position: absolute;
+  top: 19.7%;
+  right: 6.1%;
+  z-index: 5;
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #c20d24;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  font-size: clamp(11px, 7cqw, 28px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.055em;
+  text-shadow: none;
+  pointer-events: none;
+}
+/* Use the same true sans-serif family for the complete player name.
+   Keep the existing clipped, measured horizontal surname compression. */
+.dbl-cards-first-name,
+.dbl-cards-name,
+.dbl-cards-surname-glyphs {
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+.dbl-cards-name,
+.dbl-cards-surname-glyphs {
+  font-weight: 900;
 }

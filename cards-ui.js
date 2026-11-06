@@ -185,15 +185,16 @@
     heading.appendChild(make('strong', 'dbl-cards-flagship', 'FLAGSHIP'));
     const issue = make('span', 'dbl-cards-issue');
     issue.appendChild(make('span', 'dbl-cards-year', card.era ?? 'ARCHIVE'));
-    if (api.isRookie(card)) {
-      const rookie = make('span', 'dbl-cards-rookie', 'RC');
-      rookie.title = 'Rookie card';
-      issue.appendChild(rookie);
-    }
     heading.appendChild(issue);
     front.appendChild(heading);
     // The badge is the actual logo asset, never a decorative circle.
     front.appendChild(teamCrest(card));
+    // Unboxed, bright red RC sits directly beneath the upper-right team logo.
+    if (api.isRookie(card)) {
+      const rookie = make('span', 'dbl-cards-rookie', 'RC');
+      rookie.title = 'Rookie card';
+      front.appendChild(rookie);
+    }
     front.appendChild(art(card));
 
     // Editorial split: left OVR/jersey, right given name, large surname,
