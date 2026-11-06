@@ -40,6 +40,48 @@
   let packCards = [];
   let limit = 36;
   let lastFileState = '';
+  let nameFitScheduled = false;
+
+  // Try the original serif first. Only switch a name to condensed sans-serif
+  // when its measured width exceeds the available space beside the team logo.
+  // A slight horizontal squeeze is allowed for nearly fitting names; very
+  // long names can still wrap rather than disappear outside the card.
+  function fitName(name) {
+    const width = name.clientWidth;
+    if (!width) return;
+    name.classList.remove('is-condensed');
+    name.classList.remove('is-wrapped');
+    name.style.transform = '';
+    name.style.transformOrigin = '';
+    if (name.scrollWidth <= width + 1) return;
+    name.classList.add('is-condensed');
+    if (name.scrollWidth <= width + 1) return;
+    const fraction = (width - 1) / name.scrollWidth;
+    if (fraction >= .72) {
+      name.style.transform = 'scaleX(' + Math.min(1, fraction).toFixed(3) + ')';
+      name.style.transformOrigin = 'center';
+    } else {
+      name.classList.add('is-wrapped');
+    }
+  }
+  function fitVisibleNames() {
+    for (const root of [gallery, packStage]) {
+      for (const name of root.querySelectorAll?.('.dbl-cards-name') || []) {
+        fitName(name);
+      }
+    }
+  }
+  function scheduleNameFit() {
+    if (nameFitScheduled) return;
+    nameFitScheduled = true;
+    const run = () => {
+      nameFitScheduled = false;
+      fitVisibleNames();
+    };
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(run);
+    } else run();
+  }
 
   function appendStat(parent, value, heading) {
     const box = make('span', 'dbl-cards-stat');
@@ -272,6 +314,7 @@
       return element;
     });
     packStage.appendChild(spread);
+    scheduleNameFit();
     actions.hidden = false;
     revealBtn.disabled = false;
     showStatus();
@@ -335,6 +378,7 @@
     }
     loadMore.hidden = filtered.length <= limit;
     loadMore.textContent = 'Show ' + Math.min(36, filtered.length - limit) + ' more';
+    scheduleNameFit();
   }
   function formattedCount(n) { return n.toLocaleString('en-US'); }
   function repaint() {
@@ -346,6 +390,14 @@
     if (!panel.hidden) api.ensurePool();
   }
   api.subscribe(repaint);
+  if (typeof window.ResizeObserver === 'function') {
+    const nameResizeObserver = new window.ResizeObserver(scheduleNameFit);
+    nameResizeObserver.observe(gallery);
+    nameResizeObserver.observe(packStage);
+  } else {
+    window.addEventListener('resize', scheduleNameFit);
+  }
+  document.fonts?.ready?.then(scheduleNameFit);
   openBtn.addEventListener('click', openPack);
   revealBtn.addEventListener('click', revealAll);
   againBtn.addEventListener('click', readyStage);
@@ -386,7 +438,10 @@
     }
   });
   window.addEventListener('dbl:tab-change', event => {
-    if (event.detail?.panelId === 'cardsPanel') api.ensurePool();
+    if (event.detail?.panelId === 'cardsPanel') {
+      api.ensurePool();
+      scheduleNameFit();
+    }
   });
   readyStage();
   repaint();
