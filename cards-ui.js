@@ -42,20 +42,21 @@
   let lastFileState = '';
   let nameFitScheduled = false;
 
-  // Keep exactly the same bold surname font on every card. If the name is
-  // wider than its available space, compress its drawn shape horizontally.
-  // Unlike switching to a condensed font, this preserves the typeface and
-  // letter shapes, including for very long surnames.
+  // The outer name field is a fixed-width clipping frame. The INNER text
+  // is measured at its natural width, then squeezed horizontally if needed.
+  // Transforming that inner text (not the outer field) prevents layout overflow.
   function fitName(name) {
-    name.style.transform = '';
-    name.style.transformOrigin = '';
-    const width = name.clientWidth;
-    if (!width) return; // Cards tab is hidden; remeasure when it opens.
-    const naturalWidth = name.scrollWidth;
-    if (naturalWidth <= width + 1) return;
-    const scale = Math.min(1, (width - 1) / naturalWidth);
-    name.style.transformOrigin = 'left center';
-    name.style.transform = 'scaleX(' + scale.toFixed(4) + ')';
+    const glyphs = name.querySelector('.dbl-cards-surname-glyphs');
+    if (!glyphs) return;
+    glyphs.style.transform = '';
+    const available = name.clientWidth;
+    if (available <= 0) return; // The cards panel may still be hidden.
+    const natural = glyphs.getBoundingClientRect?.().width ||
+      glyphs.scrollWidth || 0;
+    if (natural <= 0 || natural <= available - 2) return;
+    glyphs.style.transformOrigin = 'left center';
+    glyphs.style.transform = 'scaleX(' +
+      Math.min(1, Math.max(.01, (available - 2) / natural)).toFixed(5) + ')';
   }
   function fitVisibleNames() {
     for (const root of [gallery, packStage]) {
@@ -179,7 +180,7 @@
   }
   function frontOf(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front');
-    // Flagship and draft year stack in the top-left of the frame.
+    // FLAGSHIP and the peak-rating season stack in the top-left.
     const heading = make('span', 'dbl-cards-front-top');
     heading.appendChild(make('strong', 'dbl-cards-flagship', 'FLAGSHIP'));
     const issue = make('span', 'dbl-cards-issue');
@@ -210,18 +211,19 @@
     const details = make('span', 'dbl-cards-identity-details');
     const names = nameParts(card);
     if (names.first) details.appendChild(make('span', 'dbl-cards-first-name', names.first));
-    details.appendChild(make('strong', 'dbl-cards-name', names.last.toLocaleUpperCase()));
+    const surname = make('strong', 'dbl-cards-name');
+    surname.appendChild(make('span', 'dbl-cards-surname-glyphs',
+      names.last.toLocaleUpperCase()));
+    details.appendChild(surname);
     details.appendChild(make('span', 'dbl-cards-affiliation',
       card.pos + ' | ' + (card.teamName || card.team)));
     identity.appendChild(details);
     lower.appendChild(identity);
 
-    // Keep the existing POT information visible without competing with the surname.
+    // Only the rarity appears in the footer; POT is not printed.
     const foot = make('span', 'dbl-cards-front-foot');
     foot.appendChild(make('strong', 'dbl-cards-rarity-name',
       tierMap[card.rarity]?.label.toUpperCase()));
-    foot.appendChild(make('span', 'dbl-cards-pot-label',
-      'POT ' + (card.pot ?? '—')));
     lower.appendChild(foot);
     front.appendChild(lower);
 
@@ -286,6 +288,7 @@
         reverse.replaceChildren(...Array.from(newBack.childNodes));
         button.classList.remove('is-sealed');
         button.dataset.rarity = card.rarity;
+        scheduleNameFit();
         button.setAttribute('aria-label', 'View statistics for ' + card.name +
           ', ' + tierMap[card.rarity]?.label);
         if (onFirst) onFirst();

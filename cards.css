@@ -1282,3 +1282,33 @@
   .dbl-cards-affiliation { font-size: 8px; }
   .dbl-cards-front-foot { font-size: 8px; }
 }
+
+
+/* Peak-season FLAGSHIP surnames: one sans-serif face, constrained to card.
+   The wrapper clips layout overflow; JavaScript measures and compresses the
+   inner text without changing its font or allowing it past the card edge. */
+.dbl-cards-name {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  white-space: nowrap;
+  font-family: "Arial Black", Arial, "Helvetica Neue", Helvetica, sans-serif;
+  font-weight: 950;
+  letter-spacing: -.065em;
+}
+.dbl-cards-surname-glyphs {
+  display: inline-block;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  vertical-align: bottom;
+  transform-origin: left center;
+  will-change: auto;
+}
+.dbl-cards-front-foot {
+  padding-left: 0;
+  justify-content: flex-start;
+}

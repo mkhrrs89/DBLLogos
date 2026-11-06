@@ -51,15 +51,76 @@
     return '';
   }
   function ratingData(player, season) {
-    let selected = null, mostRecent = -Infinity, peak = null;
+    let selected = null, mostRecent = -Infinity;
+    let peak = null, peakRow = null, peakSeason = null;
     for (const row of Array.isArray(player?.ratings) ? player.ratings : []) {
       const year = integer(row?.season);
       if (year === null || year > season) continue;
       const value = number(row?.ovr);
-      if (value !== null && (peak === null || value > peak)) peak = value;
       if (year >= mostRecent) { selected = row; mostRecent = year; }
+      // Earlier season wins a cross-year tie; last row within that
+      // season wins a same-year tie (e.g. multiple rating snapshots).
+      if (value !== null && (peak === null || value > peak ||
+          (value === peak && (year < peakSeason || year === peakSeason)))) {
+        peak = value;
+        peakRow = row;
+        peakSeason = year;
+      }
     }
-    return {selected: selected || {}, peak, first: mostRecent === -Infinity ? null : mostRecent};
+    return {selected: selected || {}, peak, peakRow: peakRow || {},
+      peakSeason, recentSeason: mostRecent === -Infinity ? null : mostRecent};
+  }
+  function teamAt(teams, tid, year) {
+    const team = teams.get(tid);
+    if (!team) return null;
+    const history = team.history || [];
+    const eligible = history.filter(row => (integer(row.season) ?? Infinity) <= year);
+    const row = eligible.length ? eligible[eligible.length - 1] : null;
+    let historicalLogo = '';
+    for (const entry of eligible) {
+      const found = photoUrl(entry.imgURL) || photoUrl(entry.imgURLSmall);
+      if (found) historicalLogo = found;
+    }
+    return {
+      abbrev: str(row?.abbrev) || team.abbrev,
+      name: [str(row?.region) || team.region, str(row?.name) || team.name]
+        .filter(Boolean).join(' ') || team.name || 'League archive',
+      logo: historicalLogo || team.baseLogo || ''
+    };
+  }
+  function teamForPeak(player, peakYear, fileYear) {
+    if (peakYear === null) return null;
+    const gp = new Map();
+    for (const row of Array.isArray(player?.stats) ? player.stats : []) {
+      if (integer(row?.season) !== peakYear || row?.playoffs) continue;
+      const tid = integer(row.tid);
+      if (tid === null || tid < 0) continue;
+      gp.set(tid, (gp.get(tid) || 0) + Math.max(0, number(row.gp) ?? 0));
+    }
+    if (gp.size) {
+      return [...gp.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+    }
+    // No season stats (preseason or an incomplete archive): use the
+    // franchise recorded in player transactions through that season.
+    let latest = null;
+    for (const tx of Array.isArray(player?.transactions) ? player.transactions : []) {
+      const year = integer(tx?.season), tid = integer(tx?.tid);
+      if (year === null || year > peakYear || tid === null || tid < 0) continue;
+      if (!latest || year > latest.year || (year === latest.year &&
+          (number(tx.phase) ?? 0) >= latest.phase)) {
+        latest = {year, phase: number(tx.phase) ?? 0, tid};
+      }
+    }
+    if (latest) return latest.tid;
+    const draftYear = integer(player?.draft?.year), draftedTid = integer(player?.draft?.tid);
+    if (draftedTid !== null && draftedTid >= 0 &&
+        draftYear !== null && peakYear >= draftYear &&
+        peakYear <= draftYear + 1) return draftedTid;
+    // Only use the current roster for the current season: an old peak
+    // cannot be assigned to the player's present-day franchise.
+    if (peakYear === fileYear && (integer(player?.tid) ?? -1) >= 0)
+      return integer(player.tid);
+    return null;
   }
   function careerData(player) {
     const years = new Map();
@@ -85,58 +146,60 @@
     return {gp: Math.round(gp), ppg: gp ? Math.round(pts / gp * 10) / 10 : null,
       ws: Math.round(ws * 10) / 10, lastTid};
   }
-  function jerseyOf(player, season) {
+  function jerseyOf(player, peakYear, tid, fileYear) {
     const valid = value => {
       const v = value === undefined || value === null ? '' : String(value).trim();
       return /^\d{1,3}$/.test(v) ? v : '';
     };
-    let jersey = valid(player?.jerseyNumber);
-    let newest = -Infinity;
-    for (const stat of Array.isArray(player?.stats) ? player.stats : []) {
-      const year = integer(stat?.season);
-      const candidate = valid(stat?.jerseyNumber);
-      if (year === null || year > season || stat?.playoffs || !candidate ||
-          year < newest) continue;
-      jersey = candidate;
-      newest = year;
+    if (peakYear === null) return '';
+    let jersey = '', maxGames = -1;
+    for (const row of Array.isArray(player?.stats) ? player.stats : []) {
+      if (integer(row?.season) !== peakYear || row.playoffs) continue;
+      if (tid !== null && integer(row.tid) !== tid) continue;
+      const candidate = valid(row.jerseyNumber);
+      if (!candidate) continue;
+      const games = number(row.gp) ?? 0;
+      if (games >= maxGames) { jersey = candidate; maxGames = games; }
     }
+    // Never apply a present-day jersey number to an unrelated past season.
+    if (!jersey && peakYear === fileYear && integer(player?.tid) === tid)
+      jersey = valid(player?.jerseyNumber);
     return jersey;
   }
   function playerInfo(player, season, teams) {
     const pid = integer(player?.pid);
-    // Future draft prospects are not yet a part of the historical collection.
     if (pid === null || pid < 0 || integer(player.tid) === -2) return null;
     const ratings = ratingData(player, season);
     if (ratings.peak === null && number(ratings.selected.pot) === null) return null;
     const career = careerData(player);
-    const rosterTid = integer(player.tid);
-    const tid = rosterTid !== null && rosterTid >= 0 ? rosterTid :
-      career.lastTid ?? integer(player?.draft?.tid);
-    const team = teams.get(tid);
+    const peakYear = ratings.peakSeason;
+    const peakTid = teamForPeak(player, peakYear, season);
+    const historicTeam = peakTid === null ? null : teamAt(teams, peakTid, peakYear);
     const draftYear = integer(player?.draft?.year);
-    const firstYear = draftYear && draftYear > 0 && draftYear <= season
-      ? draftYear : ratings.first ?? season;
-    // The displayed year is the draft year, NOT a yearly card edition.
-    // In BBGM, the latest draft usually happened in the preceding season.
-    // Mark RC only for first-year pros, not all historically drafted players.
     const hadPriorGames = (Array.isArray(player.stats) ? player.stats : [])
-      .some(row => !row?.playoffs && (integer(row?.season) ?? Infinity) < season &&
+      .some(row => !row?.playoffs && (integer(row?.season) ?? Infinity) < peakYear &&
         (number(row?.gp) ?? 0) > 0);
-    const rookie = draftYear !== null && draftYear >= season - 1 &&
-      draftYear <= season && !hadPriorGames;
-    const ovr = number(ratings.selected.ovr), pot = number(ratings.selected.pot);
-    const image = photoUrl(player?.imgURL);
+    const rookie = peakYear !== null && draftYear !== null &&
+      draftYear >= peakYear - 1 && draftYear <= peakYear && !hadPriorGames;
+    const rating = peakYear === null ? ratings.selected : ratings.peakRow;
+    const ovr = ratings.peak;
+    const pot = number(rating.pot);
+    const latestPot = number(ratings.selected.pot);
     return {
       pid, name: nameOf(player),
       firstName: str(player.firstName), lastName: str(player.lastName),
-      jersey: jerseyOf(player, season),
-      team: team?.abbrev || 'DBL', teamName: team?.name || 'League archive',
-      teamLogo: team?.logo || '', publicTeamLogo: photoUrl(team?.logo, true),
-      pos: str(ratings.selected.pos) || str(player.pos) || '—',
-      era: firstYear, rookie, ovr, pot, peak: ratings.peak,
+      jersey: jerseyOf(player, peakYear, peakTid, season),
+      team: historicTeam?.abbrev || 'DBL',
+      teamName: historicTeam?.name || 'Team unavailable',
+      teamLogo: historicTeam?.logo || '',
+      publicTeamLogo: photoUrl(historicTeam?.logo, true),
+      pos: str(rating.pos) || str(player.pos) || '—',
+      era: peakYear, peakVerified: peakYear !== null, rookie, ovr, pot,
+      peak: ratings.peak,
       gp: career.gp, ppg: career.ppg, ws: career.ws,
-      image, publicImage: photoUrl(player?.imgURL, true),
-      score: (ratings.peak ?? 0) * .86 + (pot ?? ratings.peak ?? 0) * .14
+      image: photoUrl(player?.imgURL),
+      publicImage: photoUrl(player?.imgURL, true),
+      score: (ratings.peak ?? 0) * .86 + (latestPot ?? ratings.peak ?? 0) * .14
     };
   }
   function openDb() {
@@ -211,8 +274,14 @@
         teamName: str(row.teamName) || 'League archive',
         teamLogo: photoUrl(row.teamLogo, true),
         pos: str(row.pos) || '—',
-        era: integer(row.era), rookie: row.rookie === true,
-        ovr: number(row.ovr), peak: number(row.peak),
+        // v6 (and earlier) stored draft year and current-season OVR.
+        // Until an export is loaded, don't mislabel those as peak-year data.
+        era: row.peakVerified === true ? integer(row.era) : null,
+        peakVerified: row.peakVerified === true,
+        rookie: row.peakVerified === true && row.rookie === true,
+        ovr: row.peakVerified === true ? number(row.ovr) :
+          (number(row.peak) ?? number(row.ovr)),
+        peak: number(row.peak),
         pot: number(row.pot), gp: number(row.gp), ppg: number(row.ppg),
         ws: number(row.ws), photo: photoUrl(row.photo, true)
       };
@@ -225,10 +294,42 @@
     packs = Math.max(0, integer(value?.packs) ?? 0);
   }
   function snapshot() {
-    return {version: 6, packs, items: [...collection.values()].map(i => ({
+    return {version: 7, packs, items: [...collection.values()].map(i => ({
       ...i, photo: photoUrl(i.photo, true),
       teamLogo: photoUrl(i.teamLogo, true)
     }))};
+  }
+  // Update the card's printed season metadata without changing its
+  // rarity, ownership quantity, portrait or collectible identity.
+  function updateCardFromPlayer(target, player) {
+    const fields = ['name', 'firstName', 'lastName', 'jersey', 'team', 'teamName',
+      'teamLogo', 'pos', 'era', 'rookie', 'ovr', 'pot', 'peak', 'peakVerified',
+      'gp', 'ppg', 'ws'];
+    let modified = false;
+    for (const key of fields) {
+      if (target[key] !== player[key]) {
+        target[key] = player[key];
+        modified = true;
+      }
+    }
+    if (!target.photo && (player.publicImage || player.photo)) {
+      target.photo = player.publicImage || player.photo;
+      modified = true;
+    }
+    return modified;
+  }
+  function refreshCollectedCards() {
+    if (!collectionLoaded || !poolFile || !collection.size) return;
+    let modified = false;
+    for (const item of collection.values()) {
+      const p = poolByPid.get(item.pid);
+      if (!p || !p.peakVerified) continue;
+      // Don't overwrite a later, higher peak with an older uploaded export.
+      if (item.peakVerified && (number(p.peak) ?? -1) < (number(item.peak) ?? -1))
+        continue;
+      if (updateCardFromPlayer(item, p)) modified = true;
+    }
+    if (modified) void save();
   }
   function save() {
     const state = snapshot();
@@ -241,10 +342,11 @@
   const ready = readState().then(state => {
     parseState(state);
     collectionLoaded = true;
+    refreshCollectedCards();
     notify();
     // Persist the normalized editions, including a collection restored from
     // a previous release, even if no new pack is opened.
-    if (state?.items?.length && state.version !== 6) void save();
+    if (state?.items?.length && state.version !== 7) void save();
   }).catch(error => {
     console.warn('Card collection restore failed.', error);
     collectionLoaded = true;
@@ -255,7 +357,7 @@
     if (!collectionLoaded) return false;
     // Serialize the reset behind any in-flight pack saves so an older write
     // can never resurrect cards after the user clears them.
-    const empty = {version: 6, packs: 0, items: []};
+    const empty = {version: 7, packs: 0, items: []};
     saveQueue = saveQueue.catch(() => {}).then(() => writeState(empty));
     const cleared = await saveQueue;
     if (!cleared) {
@@ -307,7 +409,7 @@
         name: p.name, firstName: p.firstName, lastName: p.lastName,
         jersey: p.jersey, team: p.team, teamName: p.teamName,
         teamLogo: p.publicTeamLogo,
-        pos: p.pos, era: p.era, rookie: p.rookie,
+        pos: p.pos, era: p.era, peakVerified: p.peakVerified, rookie: p.rookie,
         ovr: p.ovr, peak: p.peak, pot: p.pot,
         gp: p.gp, ppg: p.ppg, ws: p.ws, photo: p.publicImage
       });
@@ -318,8 +420,13 @@
     if (!collectionLoaded || !Array.isArray(picks) || picks.length !== 5) return false;
     for (const card of picks) {
       const owned = collection.get(card.id);
-      if (owned) owned.count++;
-      else collection.set(card.id, {...card});
+      if (owned) {
+        owned.count++;
+        // An older card's draft-year/current-team data is stale. Refresh
+        // its season details when the newly drawn card is authoritative.
+        if (!owned.peakVerified || (number(card.peak) ?? -1) >= (number(owned.peak) ?? -1))
+          updateCardFromPlayer(owned, card);
+      } else collection.set(card.id, {...card});
     }
     packs++;
     notify();
@@ -342,28 +449,21 @@
         if (!current()) return;
         const tid = integer(team?.tid);
         if (tid === null) return;
-        const seasons = (Array.isArray(team.seasons) ? team.seasons : [])
+        const history = (Array.isArray(team.seasons) ? team.seasons : [])
           .filter(row => (integer(row?.season) ?? Infinity) <= season)
           .sort((a, b) => integer(a.season) - integer(b.season));
-        const row = seasons.length ? seasons[seasons.length - 1] : null;
         const baseLogo = photoUrl(team.imgURL) || photoUrl(team.imgURLSmall);
-        let lastLogo = '';
-        for (const entry of seasons) {
-          const entryLogo = photoUrl(entry.imgURL) || photoUrl(entry.imgURLSmall);
-          if (entryLogo) lastLogo = entryLogo;
-          const abbrev = str(entry.abbrev) || str(team.abbrev);
-          if (abbrev && (lastLogo || baseLogo)) {
-            // Index old franchise abbreviations as well, so an older card
-            // can still show its original team crest after a rebrand.
-            availableLogos.set(abbrev, lastLogo || baseLogo);
-          }
+        let seenLogo = '';
+        for (const row of history) {
+          const logo = photoUrl(row.imgURL) || photoUrl(row.imgURLSmall);
+          if (logo) seenLogo = logo;
+          const abbr = str(row.abbrev);
+          if (abbr && (seenLogo || baseLogo)) availableLogos.set(abbr, seenLogo || baseLogo);
         }
-        const name = [str(row?.region) || str(team.region),
-          str(row?.name) || str(team.name)].filter(Boolean).join(' ');
-        const abbrev = str(row?.abbrev) || str(team.abbrev) || 'DBL';
-        const logo = lastLogo || baseLogo;
-        if (logo && !availableLogos.has(abbrev)) availableLogos.set(abbrev, logo);
-        teams.set(tid, {abbrev, name: name || 'League archive', logo});
+        if (str(team.abbrev) && (seenLogo || baseLogo))
+          availableLogos.set(str(team.abbrev), seenLogo || baseLogo);
+        teams.set(tid, {history, baseLogo, abbrev: str(team.abbrev) || 'DBL',
+          region: str(team.region), name: str(team.name)});
       });
       if (!current()) return;
       const players = [], seen = new Set();
@@ -381,6 +481,7 @@
       teamLogos = availableLogos;
       activeSeason = season;
       poolFile = file;
+      refreshCollectedCards();
     } catch (error) {
       if (!current()) return;
       console.warn('Could not load card player pool.', error);
