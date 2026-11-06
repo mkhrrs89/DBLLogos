@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="./home.css?v=20261103-home-file-upload" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
     <link rel="stylesheet" href="./home-season-preview.css?v=20261106-season-preview" />
+    <link rel="stylesheet" href="./cards.css?v=20261106-collector-launch" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -130,6 +131,7 @@
       <main class="page">
         <nav class="tab-bar panel" aria-label="Main views">
           <button id="homeTabBtn" class="tab-btn active" type="button" aria-selected="true">Home</button>
+          <button id="cardsTabBtn" class="tab-btn" type="button" aria-selected="false">Cards</button>
           <details class="tab-group">
             <summary class="tab-group-toggle">Franchise &amp; Design</summary>
             <div class="tab-group-menu" data-tab-group="design">
@@ -236,6 +238,78 @@
               <p>Games, playoff movement, league news, trades, player feats and more.</p>
             </header>
             <div id="homeUpdatesContent" class="home-updates-content" aria-live="polite"></div>
+          </section>
+        </section>
+
+        <section id="cardsPanel" class="panel dbl-cards-panel" aria-label="DBL digital trading cards" hidden>
+          <header class="dbl-cards-head">
+            <div>
+              <p class="dbl-cards-eyebrow">The Delta Collector Series</p>
+              <h2>Basketball Cards</h2>
+              <p class="dbl-cards-intro">Rip open virtual packs, discover classic DBL players, and build a permanent collection of digital trading cards.</p>
+            </div>
+            <p id="cardsStatus" class="dbl-cards-status" aria-live="polite">Upload a league file to open packs.</p>
+          </header>
+
+          <div class="dbl-cards-room">
+            <section class="dbl-cards-ritual" aria-label="Open basketball card packs">
+              <header class="dbl-cards-ritual-header">
+                <h3>The Pack Room</h3>
+                <p>Five cards per pack · One Rare or better guaranteed · Unlimited free packs</p>
+              </header>
+              <div id="cardsPackStage" class="dbl-cards-pack-stage" aria-live="polite"></div>
+              <div class="dbl-cards-ritual-controls">
+                <button id="cardsOpenPackBtn" class="dbl-cards-open-button" type="button" disabled>Open five-card pack</button>
+              </div>
+              <div id="cardsPackActions" class="dbl-cards-pack-actions" hidden>
+                <button id="cardsRevealAllBtn" class="dbl-cards-action-button" type="button">Reveal all cards</button>
+                <button id="cardsNextPackBtn" class="dbl-cards-action-button" type="button">Next pack</button>
+              </div>
+              <p class="dbl-cards-save-status">Base slot odds: Common 54% · Uncommon 27% · Rare 13% · Epic 5% · Legendary 1%. The final slot upgrades to Rare+ if needed.</p>
+            </section>
+          </div>
+
+          <section class="dbl-cards-binder" aria-label="Your saved card collection">
+            <header class="dbl-cards-binder-header">
+              <div>
+                <h3>My Collection</h3>
+                <p>Your digital binder · Tap any card to flip it over for stats.</p>
+              </div>
+              <p id="cardsSaveStatus" class="dbl-cards-save-status" aria-live="polite">Restoring collection…</p>
+            </header>
+            <div id="cardsCollectionStats" class="dbl-cards-collection-stats"></div>
+            <div class="dbl-cards-filter-row">
+              <label class="dbl-cards-field dbl-cards-field-search" for="cardsSearch">
+                Search players or teams
+                <input id="cardsSearch" type="search" placeholder="Search your binder…" autocomplete="off" />
+              </label>
+              <label class="dbl-cards-field" for="cardsRarityFilter">
+                Rarity
+                <select id="cardsRarityFilter">
+                  <option value="all">All rarities</option>
+                  <option value="common">Common</option>
+                  <option value="uncommon">Uncommon</option>
+                  <option value="rare">Rare</option>
+                  <option value="epic">Epic</option>
+                  <option value="legendary">Legendary</option>
+                </select>
+              </label>
+              <label class="dbl-cards-field" for="cardsSort">
+                Sort by
+                <select id="cardsSort">
+                  <option value="rarity">Rarity (highest first)</option>
+                  <option value="player">Player peak OVR</option>
+                  <option value="name">Player name</option>
+                  <option value="duplicates">Copies owned</option>
+                </select>
+              </label>
+            </div>
+            <p id="cardsCollectionCount" class="dbl-cards-collection-caption" aria-live="polite">0 card editions</p>
+            <div id="cardsCollection" class="dbl-cards-collection">
+              <p class="dbl-cards-empty">Your collection is empty. Open a pack to start collecting.</p>
+            </div>
+            <button id="cardsShowMoreBtn" class="dbl-cards-more" type="button" hidden>Show more cards</button>
+            <p class="dbl-cards-footnote">Fifteen card designs: three artwork variants in each of five rarity tiers. Higher rarities draw from stronger-rated players. This is a free fictional card collection with no money or trading value. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it.</p>
           </section>
         </section>
 
@@ -872,6 +946,8 @@
     <script src="./home-season-preview.js?v=20261106-season-preview"></script>
     <script src="./home-updates.js?v=20261029-digest-accuracy"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
+    <script src="./cards-engine.js?v=20261106-collector-launch"></script>
+    <script src="./cards-ui.js?v=20261106-collector-launch"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>

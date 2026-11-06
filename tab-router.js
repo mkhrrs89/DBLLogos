@@ -7,6 +7,7 @@
   const ACTIVE_TAB_KEY = 'zengm-companion-active-tab:v1';
   const PANEL_BY_TAB_ID = {
     homeTabBtn: 'homePanel',
+    cardsTabBtn: 'cardsPanel',
     logosTabBtn: 'logosPanel',
     logosByYearTabBtn: 'logosByYearPanel',
     logosByTeamTabBtn: 'logosByTeamPanel',
