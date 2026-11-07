@@ -1489,7 +1489,7 @@
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   font-weight: 750;
   line-height: 1;
-  font-size: clamp(8px, 7.2cqw, 26px);
+  font-size: clamp(10px, 9.2cqw, 33px);
   letter-spacing: -.04em;
 }
 .dbl-cards-affiliation {
@@ -1587,7 +1587,7 @@
   left: auto;
   bottom: auto;
   z-index: 6;
-  width: 13.1%;
+  width: 16.5%;
   height: auto;
   min-width: 0;
   aspect-ratio: 1;
