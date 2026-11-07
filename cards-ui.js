@@ -40,6 +40,9 @@
 
   const tierIndex = Object.fromEntries(api.rarities.map((r, i) => [r.id, i]));
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
+  // Undiscovered editions must never appear in the checklist or public
+  // progress totals, even for players who meet their hidden requirements.
+  const checklistTiers = api.rarities.filter(r => !r.mythical);
   const make = (tag, cls, value) => {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -104,13 +107,28 @@
   function showCounters() {
     const s = api.status;
     counter.replaceChildren();
+    // Only offer binder filters for hidden editions after the collector
+    // actually owns one. Normal collection sorting and search still work.
+    for (const tier of api.rarities.filter(r => r.mythical)) {
+      const owned = api.items.some(card => card.rarity === tier.id);
+      const option = Array.from(rarityFilter.options).find(o => o.value === tier.id);
+      if (owned && !option) {
+        const added = make('option', '', tier.label);
+        added.value = tier.id;
+        rarityFilter.appendChild(added);
+      } else if (!owned && option) {
+        if (rarityFilter.value === tier.id) rarityFilter.value = 'all';
+        option.remove();
+      }
+    }
     appendStat(counter, format(s.packs), 'Packs opened');
     appendStat(counter, format(s.count), 'Total cards');
     appendStat(counter, format(s.unique), 'Unique editions');
     appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
       .reduce((n, c) => n + c.count, 0)), 'Black Label pulls');
-    appendStat(counter, format(api.items.filter(c => tierMap[c.rarity]?.mythical)
-      .reduce((n, c) => n + c.count, 0)), 'Mythical pulls');
+    const hiddenPulls = api.items.filter(c => tierMap[c.rarity]?.mythical)
+      .reduce((n, c) => n + c.count, 0);
+    if (hiddenPulls > 0) appendStat(counter, format(hiddenPulls), 'Mythical pulls');
     clearBtn.disabled = clearing || busy || !s.ready || s.count === 0;
     saveStatus.textContent = s.ready
       ? s.savedOK ? 'Collection saved locally in this browser.' :
@@ -460,12 +478,12 @@
   function checklistData() {
     const players = api.checklistPlayers;
     const owned = new Map(api.items.map(card => [card.pid + ':' + card.rarity, card]));
-    const totals = Object.fromEntries(api.rarities.map(tier =>
+    const totals = Object.fromEntries(checklistTiers.map(tier =>
       [tier.id, {label: tier.label, possible: 0, collected: 0}]));
     const all = [];
     let collected = 0;
     for (const player of players) {
-      for (const tier of api.rarities) {
+      for (const tier of checklistTiers) {
         if (!Number.isFinite(player.peak) || player.peak < tier.minOvr) continue;
         const id = player.pid + ':' + tier.id;
         const item = owned.get(id);
@@ -523,7 +541,7 @@
     const progress = all.length ? collected / all.length * 100 : 0;
     checklistCounter(checklistStats, 'Overall · ' + progress.toFixed(1) + '%',
       collected, all.length);
-    for (const tier of api.rarities) {
+    for (const tier of checklistTiers) {
       const t = totals[tier.id];
       checklistCounter(checklistStats, t.label + ' · peak OVR ' + tier.minOvr + '+',
         t.collected, t.possible);
