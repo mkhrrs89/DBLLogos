@@ -306,8 +306,12 @@
       back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO REVEAL'));
       return back;
     }
-    back.appendChild(make('span', 'dbl-cards-back-heading',
-      tierMap[card.rarity]?.mythical ? 'MYTHICAL PLAYER PROFILE' : 'PLAYER PROFILE'));
+    // Echo the front's stacked FLAGSHIP lockup on the player profile.
+    const heading = make('span', 'dbl-cards-back-heading');
+    heading.appendChild(make('strong', 'dbl-cards-back-flagship',
+      tierMap[card.rarity]?.mythical ? 'MYTHICAL' : 'FLAGSHIP'));
+    heading.appendChild(make('span', 'dbl-cards-back-profile', 'PLAYER PROFILE'));
+    back.appendChild(heading);
     back.appendChild(make('strong', 'dbl-cards-back-name', card.name));
     back.appendChild(make('span', 'dbl-cards-back-team', card.teamName));
     const metrics = make('span', 'dbl-cards-back-metrics');
@@ -328,6 +332,14 @@
     back.appendChild(make('span', 'dbl-cards-back-foot',
       (card.era ?? 'DBL') + editionText));
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
+    // The same premium side-rail and moving print foil as the front, only
+    // after reveal; unopened mystery cards remain completely neutral.
+    if (card.rarity !== 'common') {
+      back.appendChild(make('span',
+        'dbl-cards-side-rarity dbl-cards-back-side-rarity',
+        tierMap[card.rarity]?.shortLabel || tierMap[card.rarity]?.label.toUpperCase() || ''));
+    }
+    back.appendChild(make('span', 'dbl-cards-foil'));
     return back;
   }
   function cardElement(card, sealed = false, onFirst = null) {
