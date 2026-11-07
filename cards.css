@@ -1793,3 +1793,206 @@
   }
   .dbl-cards-checklist-player { grid-row: 1; grid-column: 2; }
 }
+
+
+/* MYTHICAL: three exclusive 70+ OVR card treatments.
+   Decorative layers are contained within the same card and flip mechanics.
+   Only revealed cards have a rarity data attribute; mystery backs never leak. */
+.dbl-cards-card[data-rarity^="mythic-"] {
+  --card-metal: #edcf8a;
+  --card-edge: #d0b36d;
+  --card-text: #fff0cf;
+  --card-muted: #dfcaac;
+  --card-rule: rgba(244,213,151,.86);
+  --card-aura: rgba(245,214,147,.28);
+  --flagship-panel: rgba(21,24,38,.66);
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-front {
+  color: var(--card-text);
+  border-color: var(--card-edge);
+  border-width: 2px;
+  box-shadow: 0 15px 34px rgba(0,0,0,.5),
+    0 0 20px var(--mythic-glow,rgba(255,210,130,.28)),
+    inset 0 0 0 2px rgba(255,255,255,.11);
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-front::before {
+  background: var(--flagship-panel);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.15),
+    inset 0 0 18px var(--mythic-glow,rgba(255,210,130,.22));
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-art {
+  border: 2px solid var(--mythic-accent,#e6c17a);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.35),
+    0 0 17px var(--mythic-glow,rgba(255,210,130,.25));
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-first-name,
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-affiliation {
+  color: var(--card-muted);
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-name {
+  color: var(--card-text);
+  text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-ovr-value {
+  color: var(--card-text);
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-team-crest {
+  filter: drop-shadow(0 0 4px var(--mythic-glow,rgba(255,255,255,.3)));
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-front-top {
+  opacity: .84;
+  letter-spacing: .18em;
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-side-rarity {
+  opacity: .85;
+  color: var(--mythic-accent,#f6d38c);
+  font-size: clamp(6px,5.1cqw,16px);
+  font-weight: 900;
+  letter-spacing: .075em;
+  text-shadow: 0 0 8px var(--mythic-glow,rgba(255,205,140,.4));
+}
+.dbl-cards-mythical-aura {
+  position: absolute;
+  inset: 0;
+  display: block;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--mythic-overlay,none);
+  opacity: .65;
+  mix-blend-mode: screen;
+}
+.dbl-cards-mythical-symbol {
+  position: absolute;
+  top: 18%;
+  right: 3%;
+  z-index: 5;
+  width: 11%;
+  text-align: center;
+  pointer-events: none;
+  font-family: Georgia,"Times New Roman",serif;
+  font-size: clamp(12px,8.5cqw,31px);
+  line-height: 1;
+  color: var(--mythic-accent,#f2c577);
+  text-shadow: 0 0 8px var(--mythic-glow,rgba(255,209,132,.55));
+}
+.dbl-cards-mythical-plaque {
+  position: absolute;
+  top: 69%;
+  left: 23%;
+  right: 23%;
+  z-index: 5;
+  padding: 3px 1px;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: Georgia,"Times New Roman",serif;
+  font-variant: small-caps;
+  font-weight: 800;
+  font-size: clamp(5px,3.7cqw,12px);
+  line-height: 1;
+  letter-spacing: .025em;
+  color: var(--mythic-accent,#edcb83);
+  border-top: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  background: rgba(5,8,20,.83);
+  box-shadow: 0 0 10px var(--mythic-glow,rgba(255,207,128,.35));
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-foil {
+  display: block;
+  background: linear-gradient(116deg,transparent 18%,
+    rgba(255,255,255,.03) 30%,rgba(255,255,255,.48) 46%,
+    rgba(255,255,255,.07) 55%,transparent 71%);
+  animation: dbl-card-foil 7.4s ease-in-out infinite;
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-back {
+  border-color: var(--mythic-accent,#efc879);
+  box-shadow: 0 0 15px var(--mythic-glow,rgba(255,200,122,.35));
+}
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-back-heading,
+.dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-back-foot {
+  color: var(--mythic-accent,#efce89);
+}
+
+/* AETHER: astral navy, antique gilding, constellation speckling. */
+.dbl-cards-card[data-rarity="mythic-aether"] {
+  --card-metal: #f8db9a;
+  --card-edge: #e1bc66;
+  --card-text: #ffe9b8;
+  --card-muted: #d5c7bd;
+  --mythic-accent: #ffdc7c;
+  --mythic-glow: rgba(255,216,108,.47);
+  --flagship-panel: rgba(15,23,51,.73);
+  --mythic-overlay:
+    radial-gradient(circle at 23% 25%,rgba(255,237,160,.79) 0 1px,transparent 2px),
+    radial-gradient(circle at 76% 41%,rgba(255,255,224,.8) 0 1px,transparent 2px),
+    radial-gradient(circle at 24% 55%,rgba(255,225,145,.7) 0 1px,transparent 2px),
+    linear-gradient(145deg,transparent 30%,rgba(249,214,121,.13) 56%,transparent 71%);
+}
+.dbl-cards-card[data-rarity="mythic-aether"] .dbl-cards-front {
+  background:
+    radial-gradient(ellipse at 50% 28%,rgba(211,166,81,.28),transparent 55%),
+    repeating-linear-gradient(120deg,transparent 0 19px,rgba(250,216,138,.022) 20px 21px),
+    linear-gradient(145deg,#080d25,#1a2546 49%,#090f27 100%);
+}
+.dbl-cards-card[data-rarity="mythic-aether"] .dbl-cards-art {
+  background: linear-gradient(145deg,#19254a,#10152d);
+}
+
+/* ECLIPSE: near-black obsidian, burnt copper and a corona ring. */
+.dbl-cards-card[data-rarity="mythic-eclipse"] {
+  --card-metal: #ffb485;
+  --card-edge: #ef784b;
+  --card-text: #ffe2c5;
+  --card-muted: #e8ab93;
+  --mythic-accent: #ff935e;
+  --mythic-glow: rgba(255,88,55,.49);
+  --flagship-panel: rgba(34,8,11,.78);
+  --mythic-overlay:
+    radial-gradient(circle at 50% 36%,transparent 0 24%,rgba(252,99,44,.17) 29%,transparent 42%),
+    linear-gradient(25deg,transparent 15%,rgba(255,95,55,.18) 42%,transparent 68%);
+}
+.dbl-cards-card[data-rarity="mythic-eclipse"] .dbl-cards-front {
+  background:
+    radial-gradient(circle at 52% 30%,#070606 0 20%,#a14027 26%,transparent 40%),
+    linear-gradient(147deg,#11090c,#260c14 42%,#030407 70%,#3d1312);
+}
+.dbl-cards-card[data-rarity="mythic-eclipse"] .dbl-cards-art {
+  background: radial-gradient(circle at 50% 28%,#863021,#140e17 68%);
+}
+
+/* AURORA: prismatic ice, teal and violet pigments over deep petrol. */
+.dbl-cards-card[data-rarity="mythic-aurora"] {
+  --card-metal: #bdf8e5;
+  --card-edge: #83e2d3;
+  --card-text: #f4f9ff;
+  --card-muted: #c4e4df;
+  --mythic-accent: #9afde7;
+  --mythic-glow: rgba(91,253,219,.42);
+  --flagship-panel: rgba(8,32,47,.7);
+  --mythic-overlay:
+    linear-gradient(133deg,transparent 13%,rgba(103,253,213,.31) 29%,transparent 44%),
+    linear-gradient(57deg,transparent 33%,rgba(180,133,255,.29) 51%,transparent 69%);
+}
+.dbl-cards-card[data-rarity="mythic-aurora"] .dbl-cards-front {
+  background:
+    radial-gradient(ellipse at 80% 19%,rgba(177,111,255,.45),transparent 52%),
+    radial-gradient(ellipse at 15% 62%,rgba(52,244,202,.31),transparent 58%),
+    linear-gradient(139deg,#061d30,#18384a 45%,#21143a 100%);
+}
+.dbl-cards-card[data-rarity="mythic-aurora"] .dbl-cards-art {
+  background: linear-gradient(145deg,#186e80,#35255c);
+}
+.dbl-cards-checklist-edition[data-rarity="mythic-aether"] {
+  border-color: #c2a35c; color: #c49b4e;
+}
+.dbl-cards-checklist-edition[data-rarity="mythic-eclipse"] {
+  border-color: #d27052; color: #d47f5e;
+}
+.dbl-cards-checklist-edition[data-rarity="mythic-aurora"] {
+  border-color: #50c9b4; color: #49bea9;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dbl-cards-card[data-rarity^="mythic-"] .dbl-cards-foil {
+    animation: none;
+  }
+}

@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
     <link rel="stylesheet" href="./home-season-preview.css?v=20261106-season-preview" />
-    <link rel="stylesheet" href="./cards.css?v=20261106-card-checklist-subtab" />
+    <link rel="stylesheet" href="./cards.css?v=20261107-mythical-trio" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -272,7 +272,7 @@
                 <button id="cardsRevealAllBtn" class="dbl-cards-action-button" type="button">Reveal all cards</button>
                 <button id="cardsNextPackBtn" class="dbl-cards-action-button" type="button">Next pack</button>
               </div>
-              <p class="dbl-cards-save-status">Base pull odds: Base 85% · Chrome 10% · Refractor 4% · Black Label 1%. Each pack guarantees one Refractor+ card when a qualifying player exists, so overall pull rates differ from the base odds.</p>
+              <p class="dbl-cards-save-status">Mythical chance: 0.1% per card slot, shared equally by Aether, Eclipse and Aurora (peak OVR 70+). Other draws retain Base/Chrome/Refractor/Black Label weights of 85/10/4/1. Refractor+ guaranteed when a qualifying player exists.</p>
             </section>
           </div>
 
@@ -301,6 +301,9 @@
                   <option value="crome">Chrome</option>
                   <option value="refractor">Refractor</option>
                   <option value="black-label">Black Label</option>
+                  <option value="mythic-aether">Mythical · Aether</option>
+                  <option value="mythic-eclipse">Mythical · Eclipse</option>
+                  <option value="mythic-aurora">Mythical · Aurora</option>
                 </select>
               </label>
               <label class="dbl-cards-field" for="cardsSort">
@@ -318,7 +321,7 @@
               <p class="dbl-cards-empty">Your collection is empty. Open a pack to start collecting.</p>
             </div>
             <button id="cardsShowMoreBtn" class="dbl-cards-more" type="button" hidden>Show more cards</button>
-            <p class="dbl-cards-footnote">Four card finishes: tan Base, silver Chrome, rainbow Refractor and black holographic Black Label. Every sealed card looks identical until revealed. Minimum peak OVR: Base 35+, Chrome 45+, Refractor 50+, Black Label 55+. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. RC appears only if that peak was during the player's rookie season. Previously collected cards update when you load a league export with their history. This is a free fictional card collection with no money or trading value. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it.</p>
+            <p class="dbl-cards-footnote">Seven card finishes: tan Base, silver Chrome, rainbow Refractor, black holographic Black Label, plus three Mythical treatments: Aether, Eclipse and Aurora. Every sealed card looks identical until revealed. Minimum peak OVR: Base 35+, Chrome 45+, Refractor 50+, Black Label 55+, and all Mythical designs 70+. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. RC appears only if that peak was during the player's rookie season. Previously collected cards update when you load a league export with their history. This is a free fictional card collection with no money or trading value. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it.</p>
           </section>
 
           <section id="cardsChecklistView" class="dbl-cards-checklist" role="tabpanel" aria-labelledby="cardsChecklistTab" hidden>
@@ -340,6 +343,9 @@
                   <option value="crome">Chrome</option>
                   <option value="refractor">Refractor</option>
                   <option value="black-label">Black Label</option>
+                  <option value="mythic-aether">Mythical · Aether</option>
+                  <option value="mythic-eclipse">Mythical · Eclipse</option>
+                  <option value="mythic-aurora">Mythical · Aurora</option>
                 </select>
               </label>
               <label class="dbl-cards-field" for="cardsChecklistOwnership">
@@ -362,7 +368,7 @@
             <p id="cardsChecklistCaption" class="dbl-cards-collection-caption" aria-live="polite"></p>
             <div id="cardsChecklistList" class="dbl-cards-checklist-list" role="list"></div>
             <button id="cardsChecklistMore" class="dbl-cards-more dbl-cards-checklist-more" type="button" hidden>Show more editions</button>
-            <p class="dbl-cards-checklist-note">One entry per player and eligible rarity: Base 35+, Chrome 45+, Refractor 50+, and Black Label 55+ peak OVR. A check means that edition is in your saved collection; duplicates count only once toward completion. The checklist updates with your latest uploaded league file. Cards already owned but absent from that file stay in My Collection.</p>
+            <p class="dbl-cards-checklist-note">One entry per player and eligible rarity: Base 35+, Chrome 45+, Refractor 50+, Black Label 55+, and Aether/Eclipse/Aurora Mythical 70+ peak OVR. A check means that edition is in your saved collection; duplicates count only once toward completion. The checklist updates with your latest uploaded league file. Cards already owned but absent from that file stay in My Collection.</p>
           </section>
         </section>
 
@@ -1000,8 +1006,8 @@
     <script src="./home-season-preview.js?v=20261106-home-team-badges"></script>
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
-    <script src="./cards-engine.js?v=20261106-chrome-no-base-card-label"></script>
-    <script src="./cards-ui.js?v=20261106-chrome-no-base-card-label"></script>
+    <script src="./cards-engine.js?v=20261107-mythical-trio"></script>
+    <script src="./cards-ui.js?v=20261107-mythical-trio"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>

@@ -5,14 +5,23 @@
   const reader = window.DBLLeagueStream;
   if (!hub?.subscribe || !reader?.forEachTopLevelArrayItem || !reader?.readTopLevelValue) return;
 
-  // One visual design per rarity, ordered from entry-level to most exclusive.
-  // Keep the 1% top-tier slot and the Refractor+ guarantee from the old packs.
+  // Three Mythical designs share a combined 0.1% chance PER CARD SLOT.
+  // Preserve existing standard-tier weights and Refractor+ guarantee.
+  const MYTHICAL_RATE = .001;
   const RARITIES = [
     { id: 'common', label: 'Base', chance: 85, pool: 1 },
     { id: 'crome', label: 'Chrome', chance: 10, pool: .72 },
     { id: 'refractor', label: 'Refractor', chance: 4, pool: .42 },
-    { id: 'black-label', label: 'Black Label', chance: 1, pool: .075 }
+    { id: 'black-label', label: 'Black Label', chance: 1, pool: .075 },
+    { id: 'mythic-aether', label: 'Mythical · Aether', shortLabel: 'AETHER',
+      chance: 0.1 / 3, pool: .15, mythical: true },
+    { id: 'mythic-eclipse', label: 'Mythical · Eclipse', shortLabel: 'ECLIPSE',
+      chance: 0.1 / 3, pool: .15, mythical: true },
+    { id: 'mythic-aurora', label: 'Mythical · Aurora', shortLabel: 'AURORA',
+      chance: 0.1 / 3, pool: .15, mythical: true }
   ];
+  const STANDARD_RARITIES = RARITIES.filter(t => !t.mythical);
+  const MYTHICAL_RARITIES = RARITIES.filter(t => t.mythical);
   // Migrate every previously collected card rather than discarding old tiers.
   // Rare + Epic become Refractor; Legendary becomes Black Label.
   // A player's peak OVR must meet the floor for the actual rarity drawn.
@@ -22,7 +31,10 @@
     common: 35,       // Base
     crome: 45,
     refractor: 50,
-    'black-label': 55
+    'black-label': 55,
+    'mythic-aether': 70,
+    'mythic-eclipse': 70,
+    'mythic-aurora': 70
   });
   const OLD_RARITY = Object.freeze({
     common: 'common', uncommon: 'crome', rare: 'refractor',
@@ -382,7 +394,7 @@
     return true;
   }
   function sampleTier(guarantee = false) {
-    const tiers = guarantee ? RARITIES.slice(2) : RARITIES;
+    const tiers = guarantee ? STANDARD_RARITIES.slice(2) : STANDARD_RARITIES;
     const total = tiers.reduce((n, tier) => n + tier.chance, 0);
     let ticket = Math.random() * total;
     for (const tier of tiers) {
@@ -390,6 +402,23 @@
       if (ticket < 0) return tier;
     }
     return tiers[tiers.length - 1];
+  }
+  // Roll Mythical independently so the guaranteed Refractor+ slot never
+  // inflates the 0.1% rate. Each design gets one third of Mythical pulls.
+  function sampleMythical() {
+    if (!pool.some(p => p.peak >= MIN_OVR_BY_RARITY['mythic-aether'])) return null;
+    if (Math.random() >= MYTHICAL_RATE) return null;
+    return MYTHICAL_RARITIES[Math.floor(Math.random() * MYTHICAL_RARITIES.length)];
+  }
+  function pickMythical(tier, taken) {
+    const qualified = pool.filter(p => p.peak >= MIN_OVR_BY_RARITY[tier.id]);
+    if (!qualified.length) return null;
+    const unused = qualified.filter(p => !taken.has(p.pid));
+    const available = unused.length ? unused : qualified;
+    const range = Math.max(1, Math.ceil(available.length * tier.pool));
+    // Maintain the established bias for elite players but let all qualify.
+    const drawFrom = Math.random() < .95 ? range : available.length;
+    return available[Math.floor(Math.random() * drawFrom)];
   }
   // Pick a player whose PEAK OVR qualifies for the drawn edition.
   // If none are available, move DOWN through the tiers, never upward.
@@ -422,12 +451,14 @@
       p.peak >= MIN_OVR_BY_RARITY.refractor);
     for (let i = 0; i < 5; i++) {
       const guarantee = i === 4 && !hasRefractor && !!rareCandidate;
-      const requestedTier = sampleTier(guarantee);
+      const mythicalTier = sampleMythical();
+      const requestedTier = mythicalTier || sampleTier(guarantee);
       const protectedRarePid = hasRefractor ? null : rareCandidate?.pid ?? null;
-      const chosen =
-        pickForRarity(requestedTier, taken, protectedRarePid) ||
-        pickForRarity(requestedTier, taken, protectedRarePid, true);
-      if (!chosen) return []; // In practice, pool is never empty here.
+      const chosen = mythicalTier ?
+        {tier: mythicalTier, player: pickMythical(mythicalTier, taken)} :
+        (pickForRarity(requestedTier, taken, protectedRarePid) ||
+          pickForRarity(requestedTier, taken, protectedRarePid, true));
+      if (!chosen?.player) return []; // A nonempty eligible pool yields a card.
       const {tier, player: p} = chosen;
       if (tierIndex[tier.id] >= 2) hasRefractor = true;
       taken.add(p.pid);

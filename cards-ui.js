@@ -109,6 +109,8 @@
     appendStat(counter, format(s.unique), 'Unique editions');
     appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
       .reduce((n, c) => n + c.count, 0)), 'Black Label pulls');
+    appendStat(counter, format(api.items.filter(c => tierMap[c.rarity]?.mythical)
+      .reduce((n, c) => n + c.count, 0)), 'Mythical pulls');
     clearBtn.disabled = clearing || busy || !s.ready || s.count === 0;
     saveStatus.textContent = s.ready
       ? s.savedOK ? 'Collection saved locally in this browser.' :
@@ -200,7 +202,9 @@
     const front = make('span', 'dbl-cards-face dbl-cards-front');
     // FLAGSHIP and the peak-rating season stack in the top-left.
     const heading = make('span', 'dbl-cards-front-top');
-    heading.appendChild(make('strong', 'dbl-cards-flagship', 'FLAGSHIP'));
+    const edition = tierMap[card.rarity];
+    heading.appendChild(make('strong', 'dbl-cards-flagship',
+      edition?.mythical ? 'MYTHICAL' : 'FLAGSHIP'));
     const issue = make('span', 'dbl-cards-issue');
     issue.appendChild(make('span', 'dbl-cards-year', card.era ?? 'ARCHIVE'));
     heading.appendChild(issue);
@@ -221,6 +225,18 @@
       front.appendChild(rookie);
     }
     front.appendChild(art(card));
+    if (edition?.mythical) {
+      const aura = make('span', 'dbl-cards-mythical-aura');
+      aura.setAttribute('aria-hidden', 'true');
+      front.appendChild(aura);
+      const symbol = make('span', 'dbl-cards-mythical-symbol',
+        card.rarity === 'mythic-eclipse' ? '◉' :
+        card.rarity === 'mythic-aurora' ? '◇' : '✦');
+      symbol.setAttribute('aria-hidden', 'true');
+      front.appendChild(symbol);
+      front.appendChild(make('span', 'dbl-cards-mythical-plaque',
+        '✦  LEGENDS ETERNAL  ✦'));
+    }
 
     // The team crest takes the former OVR slot beside the surname.
     // The peak-year jersey stays inline after the team name.
@@ -248,7 +264,7 @@
     // Premium editions retain their vertical labels; Base is unlettered.
     if (card.rarity !== 'common') {
       const rarity = make('span', 'dbl-cards-side-rarity dbl-cards-rarity-name',
-        tierMap[card.rarity]?.label.toUpperCase() || '');
+        edition?.shortLabel || edition?.label.toUpperCase() || '');
       front.appendChild(rarity);
     }
     front.appendChild(lower);
@@ -272,7 +288,8 @@
       back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO REVEAL'));
       return back;
     }
-    back.appendChild(make('span', 'dbl-cards-back-heading', 'PLAYER PROFILE'));
+    back.appendChild(make('span', 'dbl-cards-back-heading',
+      tierMap[card.rarity]?.mythical ? 'MYTHICAL PLAYER PROFILE' : 'PLAYER PROFILE'));
     back.appendChild(make('strong', 'dbl-cards-back-name', card.name));
     back.appendChild(make('span', 'dbl-cards-back-team', card.teamName));
     const metrics = make('span', 'dbl-cards-back-metrics');
