@@ -245,10 +245,12 @@
     identity.appendChild(details);
     lower.appendChild(identity);
 
-    // Type is spelled downward in the left rail, beside the tall arched photo.
-    const rarity = make('span', 'dbl-cards-side-rarity dbl-cards-rarity-name',
-      tierMap[card.rarity]?.label.toUpperCase() || 'BASE');
-    front.appendChild(rarity);
+    // Premium editions retain their vertical labels; Base is unlettered.
+    if (card.rarity !== 'common') {
+      const rarity = make('span', 'dbl-cards-side-rarity dbl-cards-rarity-name',
+        tierMap[card.rarity]?.label.toUpperCase() || '');
+      front.appendChild(rarity);
+    }
     front.appendChild(lower);
 
     front.appendChild(make('span', 'dbl-cards-foil'));
@@ -286,8 +288,10 @@
       metrics.appendChild(part);
     }
     back.appendChild(metrics);
-    back.appendChild(make('span', 'dbl-cards-back-foot', (card.era ?? 'DBL') +
-      ' · ' + tierMap[card.rarity]?.label.toUpperCase()));
+    const editionText = card.rarity === 'common' ? '' :
+      ' · ' + (tierMap[card.rarity]?.label.toUpperCase() || '');
+    back.appendChild(make('span', 'dbl-cards-back-foot',
+      (card.era ?? 'DBL') + editionText));
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
     return back;
   }
