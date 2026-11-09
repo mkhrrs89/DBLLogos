@@ -431,6 +431,48 @@
     }
     allCollectionsGrid.replaceChildren(fragment);
   }
+  // One-off reveal flourishes: no rarity-specific DOM is added until a card
+  // is actually revealed. The sealed reverse therefore stays a true mystery.
+  const REVEAL_EFFECTS = Object.freeze({
+    crome: {duration: 1100, sparks: 5, spread: .43, glyph: '✦'},
+    refractor: {duration: 1580, sparks: 10, spread: .62, glyph: '✧'},
+    'black-label': {duration: 2100, sparks: 16, spread: .84, glyph: '✦'},
+    'mythic-aether': {duration: 2850, sparks: 21, spread: 1.04, glyph: '✧'},
+    'mythic-eclipse': {duration: 2850, sparks: 21, spread: 1.04, glyph: '✦'},
+    'mythic-aurora': {duration: 2850, sparks: 22, spread: 1.04, glyph: '✧'}
+  });
+
+  function playCardRevealEffect(button, card) {
+    const config = REVEAL_EFFECTS[card.rarity];
+    // Base cards have no extra effect. Respect OS reduced-motion preferences.
+    if (!config || reduced()) return;
+    button.querySelector('.dbl-cards-reveal-fx')?.remove();
+    const fx = make('span', 'dbl-cards-reveal-fx');
+    fx.setAttribute('aria-hidden', 'true');
+    fx.dataset.effect = card.rarity;
+    fx.style.setProperty('--fx-duration', config.duration + 'ms');
+    fx.style.setProperty('--fx-delay', '170ms');
+    fx.appendChild(make('span', 'dbl-cards-reveal-halo'));
+    fx.appendChild(make('span', 'dbl-cards-reveal-ring'));
+    fx.appendChild(make('span', 'dbl-cards-reveal-sigil', config.glyph));
+
+    // Particle trajectories scale to each card; Reveal All stays lightweight.
+    const width = button.getBoundingClientRect().width || 160;
+    for (let index = 0; index < config.sparks; index++) {
+      const angle = -Math.PI / 2 + index * 2 * Math.PI / config.sparks;
+      const distance = width * config.spread * (.75 + (index % 4) * .095);
+      const spark = make('span', 'dbl-cards-reveal-spark',
+        index % 3 === 0 ? config.glyph : '✦');
+      spark.style.setProperty('--fx-x', Math.round(Math.cos(angle) * distance) + 'px');
+      spark.style.setProperty('--fx-y', Math.round(Math.sin(angle) * distance) + 'px');
+      spark.style.setProperty('--fx-stagger', (index % 5) * 40 + 'ms');
+      fx.appendChild(spark);
+    }
+    button.appendChild(fx);
+    // Clean up when finished. Existing card, flip state and click events stay.
+    window.setTimeout(() => fx.remove(), config.duration + 650);
+  }
+
   function cardElement(card, sealed = false, onFirst = null) {
     const button = make('button', 'dbl-cards-card' + (sealed ? ' is-sealed' : ''));
     button.type = 'button';
@@ -452,6 +494,7 @@
         reverse.replaceChildren(...Array.from(newBack.childNodes));
         button.classList.remove('is-sealed');
         button.dataset.rarity = card.rarity;
+        playCardRevealEffect(button, card);
         scheduleNameFit();
         button.setAttribute('aria-label', 'View statistics for ' + card.name +
           ', ' + tierMap[card.rarity]?.label);
@@ -460,6 +503,10 @@
         button.classList.toggle('is-turned');
         button.setAttribute('aria-label', button.classList.contains('is-turned')
           ? 'View front of ' + card.name : 'View statistics for ' + card.name);
+        // Repeat the flourish when turning from the statistics side to the
+        // front, never while displaying the readable statistics reverse.
+        if (!button.classList.contains('is-turned'))
+          playCardRevealEffect(button, card);
       }
     });
     return button;
