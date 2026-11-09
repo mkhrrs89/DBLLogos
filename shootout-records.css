@@ -2,326 +2,174 @@
   min-width: 0;
   padding: 14px;
 }
-
 .shootout-records-header {
   display: flex;
-  align-items: flex-end;
   justify-content: space-between;
+  align-items: flex-end;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
-
-.shootout-records-heading {
-  min-width: 0;
-}
-
-.shootout-records-heading h2 {
-  margin: 0;
-}
-
-.shootout-records-heading .subtle {
-  margin-top: 5px;
-}
-
+.shootout-records-heading { min-width: 0; }
+.shootout-records-heading h2 { margin: 0; }
+.shootout-records-heading .subtle { margin-top: 5px; }
 .shootout-records-sort {
   display: grid;
   gap: 4px;
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: .74rem;
 }
-
 .shootout-records-wrap.empty-state {
   min-height: 220px;
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: rgba(255,255,255,0.02);
+  background: rgba(255,255,255,.02);
 }
-
 .shootout-records-summary {
   margin: 0 0 10px;
+  font-size: .82rem;
   color: var(--muted);
-  font-size: 0.82rem;
 }
-
-.shootout-player-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-.shootout-player-card {
-  min-width: 0;
-  overflow: hidden;
+.shootout-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: rgba(255,255,255,0.03);
+  border-radius: 9px;
+  scrollbar-width: thin;
 }
-
-.shootout-player-main {
-  position: relative;
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  min-height: 96px;
-  border-bottom: 1px solid var(--line);
+.shootout-table-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
-
-.shootout-player-rank {
-  position: absolute;
-  z-index: 2;
-  top: 6px;
-  left: 6px;
-  padding: 2px 5px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
-  color: var(--text);
-  font-size: 0.62rem;
-  font-weight: 800;
+.shootout-results-table {
+  width: 100%;
+  min-width: 845px;
+  border-spacing: 0;
+  border-collapse: separate;
+  background: var(--panel);
+  font-size: .82rem;
   font-variant-numeric: tabular-nums;
 }
-
-.shootout-player-photo {
-  width: 96px;
-  height: 96px;
-  align-self: stretch;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border-right: 1px solid var(--line);
-  background: rgba(255,255,255,0.035);
-  color: var(--accent);
-  font-size: 1.25rem;
-  font-weight: 900;
-}
-
-.shootout-player-photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 20%;
-}
-
-.shootout-player-identity {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.shootout-player-identity h3 {
-  margin: 0;
-  font-size: 1rem;
-  overflow-wrap: anywhere;
-}
-
-.shootout-player-identity span {
+.shootout-results-table caption {
+  caption-side: bottom;
+  text-align: left;
+  font-size: .72rem;
   color: var(--muted);
-  font-size: 0.72rem;
+  padding: 10px 12px;
 }
-
-.shootout-player-record {
-  display: grid;
-  justify-items: end;
-  gap: 2px;
-  padding-right: 12px;
+.shootout-results-table th,
+.shootout-results-table td {
+  padding: 10px 9px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.shootout-results-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+  z-index: 1;
+  border-bottom: 2px solid var(--line-strong);
+}
+.shootout-results-table thead th:first-child { text-align: left; width: 42px; }
+.shootout-results-table thead th:nth-child(2) { text-align: left; min-width: 166px; }
+.shootout-table-sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
   white-space: nowrap;
 }
-
-.shootout-player-record strong {
-  color: var(--accent);
-  font-size: 1.3rem;
-  font-variant-numeric: tabular-nums;
+.shootout-results-table thead th:nth-child(2) .shootout-table-sort { justify-content: flex-start; }
+.shootout-table-sort:hover,
+.shootout-table-sort.is-sorted { color: var(--accent); }
+.shootout-table-sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shootout-sort-indicator { font-size: .68rem; opacity: .75; }
+.shootout-results-table tbody tr:nth-child(even) { background: rgba(128,128,128,.045); }
+.shootout-results-table tbody tr:hover { background: rgba(128,128,128,.09); }
+.shootout-results-table tbody tr:last-child > * { border-bottom: 0; }
+.shootout-results-table tbody td:first-child { text-align: left; color: var(--muted); }
+.shootout-results-table .shootout-player-name {
+  text-align: left;
+  min-width: 166px;
+  max-width: 265px;
+  overflow-wrap: anywhere;
 }
-
-.shootout-player-record span {
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-}
-
-.shootout-player-stats {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  border-bottom: 1px solid var(--line);
-}
-
-.shootout-stat {
-  display: grid;
-  gap: 3px;
-  padding: 9px 8px;
-  border-right: 1px solid var(--line);
-  text-align: center;
-}
-
-.shootout-stat:last-child {
-  border-right: 0;
-}
-
-.shootout-stat span {
-  color: var(--muted);
-  font-size: 0.65rem;
-  line-height: 1.1;
-}
-
-.shootout-stat strong {
-  font-size: 0.86rem;
-  font-variant-numeric: tabular-nums;
-}
-
+.shootout-player-name strong { display: block; font-size: .84rem; color: var(--text); }
+.shootout-player-name small { display: block; margin-top: 2px; font-size: .67rem; font-weight: 500; color: var(--muted); }
+.shootout-results-table td.shootout-numeric { text-align: right; white-space: nowrap; }
+.shootout-history-cell { min-width: 96px; text-align: center; }
+.shootout-history { position: relative; }
 .shootout-history summary {
-  padding: 10px 12px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
   cursor: pointer;
   user-select: none;
+  color: var(--accent);
+  font-size: .72rem;
+  font-weight: 750;
+  white-space: nowrap;
 }
-
-.shootout-history[open] summary {
-  border-bottom: 1px solid var(--line);
-}
-
+.shootout-history summary:focus-visible { outline: 2px solid var(--accent); }
+.shootout-history[open] summary { margin-bottom: 7px; }
 .shootout-history-list {
   display: grid;
+  min-width: 230px;
+  max-width: 320px;
+  max-height: 290px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  text-align: left;
 }
-
 .shootout-history-row {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-columns: 26px minmax(0,1fr);
+  gap: 7px;
   align-items: center;
-  gap: 9px;
-  padding: 9px 12px;
+  padding: 8px;
   border-bottom: 1px solid var(--line);
 }
-
-.shootout-history-row:last-child {
-  border-bottom: 0;
-}
-
+.shootout-history-row:last-child { border-bottom: 0; }
 .shootout-history-result {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  font-size: 0.76rem;
+  height: 25px;
+  width: 25px;
+  border-radius: 50%;
+  font-size: .72rem;
 }
-
 .shootout-history-row.is-win .shootout-history-result {
   color: #b8f5c8;
-  background: rgba(70, 180, 105, 0.16);
-  border: 1px solid rgba(70, 180, 105, 0.32);
+  background: rgba(70,180,105,.16);
+  border: 1px solid rgba(70,180,105,.32);
 }
-
 .shootout-history-row.is-loss .shootout-history-result {
   color: #ffc3c3;
-  background: rgba(215, 80, 80, 0.14);
-  border: 1px solid rgba(215, 80, 80, 0.28);
+  background: rgba(215,80,80,.14);
+  border: 1px solid rgba(215,80,80,.28);
 }
-
-.shootout-history-body {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.shootout-history-body strong {
-  font-size: 0.82rem;
-  overflow-wrap: anywhere;
-}
-
-.shootout-history-body span {
-  color: var(--muted);
-  font-size: 0.7rem;
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 900px) {
-  .shootout-player-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
+.shootout-history-body { display: grid; gap: 2px; min-width: 0; }
+.shootout-history-body strong { font-size: .76rem; overflow-wrap: anywhere; }
+.shootout-history-body span { color: var(--muted); font-size: .68rem; overflow-wrap: anywhere; }
 @media (max-width: 520px) {
-  .shootout-records-panel {
-    padding: 10px;
-  }
-
-  .shootout-records-header {
-    align-items: stretch;
-    gap: 9px;
-    margin-bottom: 10px;
-  }
-
-  .shootout-records-sort .sort-select {
-    width: 100%;
-  }
-
-  .shootout-player-main {
-    grid-template-columns: 82px minmax(0, 1fr) auto;
-    gap: 9px;
-    min-height: 88px;
-  }
-
-  .shootout-player-photo {
-    width: 82px;
-    height: 88px;
-  }
-
-  .shootout-player-record {
-    padding-right: 9px;
-  }
-
-  .shootout-player-record strong {
-    font-size: 1.08rem;
-  }
-
-  .shootout-player-identity h3 {
-    font-size: 0.92rem;
-  }
-
-  .shootout-player-stats {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
-  .shootout-stat {
-    padding: 8px 3px;
-  }
-
-  .shootout-stat span {
-    font-size: 0.58rem;
-  }
-
-  .shootout-stat strong {
-    font-size: 0.76rem;
-  }
-}
-
-@media (max-width: 390px) {
-  .shootout-player-main {
-    grid-template-columns: 74px minmax(0, 1fr) auto;
-  }
-
-  .shootout-player-photo {
-    width: 74px;
-  }
-
-  .shootout-player-record strong {
-    font-size: 1rem;
-  }
-
-  .shootout-stat span {
-    font-size: 0.54rem;
-  }
-
-  .shootout-stat strong {
-    font-size: 0.7rem;
-  }
+  .shootout-records-panel { padding: 10px; }
+  .shootout-records-header { align-items: stretch; gap: 9px; margin-bottom: 10px; }
+  .shootout-records-sort .sort-select { width: 100%; }
+  .shootout-results-table { font-size: .78rem; }
+  .shootout-results-table th,
+  .shootout-results-table td { padding: 8px 7px; }
 }
