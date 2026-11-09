@@ -200,6 +200,7 @@
     const peakYear = ratings.peakSeason;
     const peakTid = teamForPeak(player, peakYear, season);
     const historicTeam = peakTid === null ? null : teamAt(teams, peakTid, peakYear);
+    const franchiseTeam = peakTid === null ? null : teamAt(teams, peakTid, season);
     const draftYear = integer(player?.draft?.year);
     const hadPriorGames = (Array.isArray(player.stats) ? player.stats : [])
       .some(row => !row?.playoffs && (integer(row?.season) ?? Infinity) < peakYear &&
@@ -216,6 +217,10 @@
       jersey: jerseyOf(player, peakYear, peakTid, season),
       team: historicTeam?.abbrev || 'DBL',
       teamName: historicTeam?.name || 'Team unavailable',
+      // Franchise ID is stable across team name/city changes; only the
+      // Checklist uses these read-only fields for completion grouping.
+      franchiseTid: peakTid,
+      franchiseName: franchiseTeam?.name || historicTeam?.name || 'Team unavailable',
       teamLogo: historicTeam?.logo || '',
       publicTeamLogo: photoUrl(historicTeam?.logo, true),
       pos: str(rating.pos) || str(player.pos) || '—',
@@ -580,7 +585,8 @@
     get checklistPlayers() {
       return pool.map(p => ({
         pid: p.pid, name: p.name, teamName: p.teamName,
-        team: p.team, peak: p.peak, era: p.era
+        team: p.team, peak: p.peak, era: p.era,
+        franchiseTid: p.franchiseTid, franchiseName: p.franchiseName
       }));
     },
     ready, subscribe(callback) {
