@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const api = window.DBLCardEngine;
+  const CARDS_SUBTAB_KEY = 'dbl-cards-active-subtab:v1';
   const panel = document.getElementById('cardsPanel');
   const status = document.getElementById('cardsStatus');
   const saveStatus = document.getElementById('cardsSaveStatus');
@@ -657,6 +658,11 @@
   }
   function openCardsSubtab(index, focus = false) {
     activeCardsSubtab = index;
+    try {
+      sessionStorage.setItem(CARDS_SUBTAB_KEY, String(index));
+    } catch (_) {
+      // Card navigation still works without session storage.
+    }
     tabs.forEach(([tab, view], i) => {
       const selected = i === index;
       tab.classList.toggle('is-active', selected);
@@ -758,6 +764,22 @@
       scheduleNameFit();
     }
   });
+  // Match refresh behavior of the main tab router for the nested Cards tabs.
+  let startingCardsSubtab = 0;
+  try {
+    const navigation = window.performance?.getEntriesByType?.('navigation')?.[0];
+    const isReload = navigation
+      ? navigation.type === 'reload'
+      : window.performance?.navigation?.type === 1;
+    if (isReload) {
+      const saved = Number(sessionStorage.getItem(CARDS_SUBTAB_KEY));
+      if (Number.isInteger(saved) && saved >= 0 && saved < tabs.length)
+        startingCardsSubtab = saved;
+    }
+  } catch (_) {
+    // Use Pack Room if navigation timing or storage is unavailable.
+  }
   readyStage();
+  openCardsSubtab(startingCardsSubtab);
   repaint();
 })();
