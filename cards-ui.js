@@ -438,7 +438,7 @@
     }
     revealBtn.disabled = true;
   }
-  function showPulls(picks, token) {
+  function showPulls(picks, token, ownedBeforePack) {
     if (token !== packToken) return;
     busy = false;
     packStage.replaceChildren();
@@ -446,12 +446,22 @@
       'Five cards added to your collection · Tap each card to reveal it'));
     const spread = make('div', 'dbl-cards-pull-grid');
     packCards = picks.map((card, index) => {
+      // Never identify a sealed card as new or previously owned: doing so
+      // could reveal information about its hidden rarity before the flip.
+      const entry = make('div', 'dbl-cards-pull-entry');
+      const status = make('span', 'dbl-cards-pull-status');
+      const alreadyOwned = ownedBeforePack.get(card.id) || 0;
+      entry.appendChild(status);
       const element = cardElement(card, true, () => {
+        status.textContent = alreadyOwned === 0 ? 'NEW CARD' :
+          format(alreadyOwned) + (alreadyOwned === 1 ? ' COPY' : ' COPIES') + ' ALREADY OWNED';
+        status.classList.add(alreadyOwned === 0 ? 'is-new' : 'is-owned');
         if (packCards.every(c => !c.classList.contains('is-sealed'))) revealBtn.disabled = true;
       });
       element.classList.add('dbl-cards-appearing');
       element.style.setProperty('--pack-position', index);
-      spread.appendChild(element);
+      entry.appendChild(element);
+      spread.appendChild(entry);
       return element;
     });
     packStage.appendChild(spread);
@@ -464,6 +474,9 @@
     if (busy || clearing) return;
     const pulled = api.getPack();
     if (pulled.length !== 5) return;
+    // Count copies of each player/rarity edition BEFORE collecting this pack.
+    // The just-opened cards must not inflate the 'already owned' labels.
+    const ownedBeforePack = new Map(api.items.map(card => [card.id, card.count]));
     // Save the pulls immediately. Closing the tab mid-animation cannot
     // discard a pack that was successfully opened.
     if (!api.collectPack(pulled)) return;
@@ -473,7 +486,7 @@
     packStage.replaceChildren(newPackArt(true),
       make('p', 'dbl-cards-stage-note', 'Unsealing your collector pack…'));
     showStatus();
-    window.setTimeout(() => showPulls(pulled, token), reduced() ? 10 : 850);
+    window.setTimeout(() => showPulls(pulled, token, ownedBeforePack), reduced() ? 10 : 850);
   }
   function filteredCards() {
     const q = search.value.trim().toLocaleLowerCase();
