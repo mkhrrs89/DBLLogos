@@ -373,13 +373,8 @@
       'SERIES ' + (card.series ?? api.currentSeries) + ' · ' +
       (card.era ?? 'DBL') + editionText));
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
-    // The same premium side-rail and moving print foil as the front, only
-    // after reveal; unopened mystery cards remain completely neutral.
-    if (card.rarity !== 'common') {
-      back.appendChild(make('span',
-        'dbl-cards-side-rarity dbl-cards-back-side-rarity',
-        tierMap[card.rarity]?.shortLabel || tierMap[card.rarity]?.label.toUpperCase() || ''));
-    }
+    // Keep the revealed back's foil finish, but reserve the vertical
+    // rarity side-rail for the front of the card only.
     back.appendChild(make('span', 'dbl-cards-foil'));
     return back;
   }
