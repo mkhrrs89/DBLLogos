@@ -2437,3 +2437,244 @@
   font-size: .65rem;
   opacity: .72;
 }
+
+/* Rarity-scaled, short-lived flip flourishes. FX is only injected after
+   revealing or turning toward the front; sealed cards reveal no clues. */
+.dbl-cards-reveal-fx {
+  --fx-duration: 1500ms;
+  --fx-delay: 170ms;
+  --fx-ink: #f4fbff;
+  --fx-glow: rgba(199,224,244,.62);
+  --fx-haze: rgba(185,224,250,.21);
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: block;
+  border-radius: inherit;
+  pointer-events: none;
+  isolation: isolate;
+}
+.dbl-cards-reveal-fx::before,
+.dbl-cards-reveal-fx::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.dbl-cards-reveal-fx::before {
+  inset: -8%;
+  z-index: 2;
+  border-radius: 10%;
+  background: radial-gradient(ellipse at 50% 47%, var(--fx-ink) 0%,
+    var(--fx-glow) 17%, transparent 62%);
+  animation: dbl-cards-fx-flash var(--fx-duration) ease-out var(--fx-delay) both;
+}
+.dbl-cards-reveal-fx::after {
+  top: -20%;
+  bottom: -20%;
+  left: -86%;
+  width: 54%;
+  z-index: 3;
+  transform: rotate(18deg);
+  background: linear-gradient(90deg, transparent, var(--fx-glow) 37%,
+    rgba(255,255,255,.94) 50%, transparent 68%);
+  animation: dbl-cards-fx-sweep var(--fx-duration) ease-out var(--fx-delay) both;
+}
+.dbl-cards-reveal-halo {
+  position: absolute;
+  inset: -3%;
+  z-index: 2;
+  display: block;
+  border: 2px solid var(--fx-ink);
+  border-radius: 8px;
+  box-shadow: 0 0 12px var(--fx-glow), inset 0 0 12px var(--fx-haze);
+  animation: dbl-cards-fx-halo var(--fx-duration) ease-out var(--fx-delay) both;
+}
+.dbl-cards-reveal-ring {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: 93%;
+  aspect-ratio: 1;
+  z-index: 3;
+  display: block;
+  border: 2px solid var(--fx-ink);
+  border-radius: 50%;
+  box-shadow: 0 0 18px var(--fx-glow), inset 0 0 12px var(--fx-haze);
+  animation: dbl-cards-fx-ring var(--fx-duration) ease-out var(--fx-delay) both;
+}
+.dbl-cards-reveal-sigil {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  z-index: 4;
+  display: block;
+  color: var(--fx-ink);
+  font: 900 clamp(25px,25cqw,72px)/1 Georgia, serif;
+  text-shadow: 0 0 15px var(--fx-glow);
+  animation: dbl-cards-fx-sigil var(--fx-duration) ease-out var(--fx-delay) both;
+}
+.dbl-cards-reveal-spark {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  z-index: 5;
+  display: block;
+  color: var(--fx-ink);
+  font: 900 clamp(10px,6cqw,21px)/1 Georgia, serif;
+  text-shadow: 0 0 8px var(--fx-glow);
+  animation: dbl-cards-fx-spark var(--fx-duration) cubic-bezier(.16,.65,.32,1)
+    calc(var(--fx-delay) + var(--fx-stagger,0ms)) both;
+}
+/* Chrome: a quick glint and a few silver-print flecks. */
+.dbl-cards-reveal-fx[data-effect="crome"] {
+  --fx-ink: #f8feff;
+  --fx-glow: rgba(199,229,250,.53);
+  --fx-haze: rgba(223,244,255,.25);
+}
+.dbl-cards-reveal-fx[data-effect="crome"] .dbl-cards-reveal-ring,
+.dbl-cards-reveal-fx[data-effect="crome"] .dbl-cards-reveal-sigil {
+  display: none;
+}
+.dbl-cards-reveal-fx[data-effect="crome"]::before { inset: -2%; }
+/* Refractor: prismatic inks and a rainbow edge wave. */
+.dbl-cards-reveal-fx[data-effect="refractor"] {
+  --fx-ink: #f4fbff;
+  --fx-glow: rgba(127,211,245,.72);
+  --fx-haze: rgba(254,144,227,.39);
+}
+.dbl-cards-reveal-fx[data-effect="refractor"]::before {
+  background: conic-gradient(from 30deg at 50% 47%,
+    rgba(254,135,216,.55), rgba(155,162,255,.57),
+    rgba(94,234,219,.55), rgba(255,237,143,.48),
+    rgba(254,135,216,.55));
+  mask-image: radial-gradient(ellipse at center, transparent 15%, black 36%, transparent 72%);
+}
+.dbl-cards-reveal-fx[data-effect="refractor"] .dbl-cards-reveal-ring {
+  border-color: #b2f9ef;
+  box-shadow: 0 0 14px rgba(138,239,239,.77),
+    inset 0 0 13px rgba(255,129,226,.49);
+}
+/* Black Label: a darker, more forceful iridescent shockwave. */
+.dbl-cards-reveal-fx[data-effect="black-label"] {
+  --fx-ink: #eef1ff;
+  --fx-glow: rgba(148,124,251,.86);
+  --fx-haze: rgba(73,156,251,.57);
+}
+.dbl-cards-reveal-fx[data-effect="black-label"]::before {
+  background: radial-gradient(ellipse at 50% 47%, #fff 0%,
+    rgba(149,105,241,.91) 14%, rgba(30,85,168,.59) 33%, transparent 66%);
+}
+.dbl-cards-reveal-fx[data-effect="black-label"] .dbl-cards-reveal-halo {
+  border-width: 3px;
+  box-shadow: 0 0 23px rgba(160,117,251,.88),
+    0 0 43px rgba(79,160,254,.51), inset 0 0 16px rgba(203,181,255,.67);
+}
+/* Ultra-rare treatments: distinct, larger two-stage reveal signatures. */
+.dbl-cards-reveal-fx[data-effect^="mythic-"] {
+  --fx-ink: #fff5d1;
+  --fx-glow: rgba(253,211,129,.96);
+  --fx-haze: rgba(251,198,111,.5);
+}
+.dbl-cards-reveal-fx[data-effect^="mythic-"] .dbl-cards-reveal-halo {
+  inset: -9%;
+  border-width: 3px;
+  border-radius: 13px;
+  box-shadow: 0 0 30px var(--fx-glow), 0 0 70px var(--fx-haze),
+    inset 0 0 24px var(--fx-glow);
+  animation-name: dbl-cards-fx-grand-halo;
+}
+.dbl-cards-reveal-fx[data-effect^="mythic-"] .dbl-cards-reveal-ring {
+  width: 135%;
+  border-width: 3px;
+  border-style: double;
+  animation-name: dbl-cards-fx-grand-ring;
+}
+.dbl-cards-reveal-fx[data-effect^="mythic-"] .dbl-cards-reveal-sigil {
+  animation-name: dbl-cards-fx-grand-sigil;
+}
+.dbl-cards-reveal-fx[data-effect="mythic-aether"] {
+  --fx-ink: #fff7d1;
+  --fx-glow: rgba(255,216,120,.98);
+  --fx-haze: rgba(255,191,67,.52);
+}
+.dbl-cards-reveal-fx[data-effect="mythic-aether"]::before {
+  background: radial-gradient(circle at 50% 47%, #fffce4 0%,
+    rgba(251,220,123,.93) 15%, rgba(202,139,58,.53) 40%, transparent 70%);
+}
+.dbl-cards-reveal-fx[data-effect="mythic-eclipse"] {
+  --fx-ink: #ffe4c7;
+  --fx-glow: rgba(251,101,66,.96);
+  --fx-haze: rgba(163,56,145,.62);
+}
+.dbl-cards-reveal-fx[data-effect="mythic-eclipse"]::before {
+  background: radial-gradient(circle at 50% 47%, rgba(2,1,10,.91) 0 16%,
+    rgba(255,126,78,.95) 23%, rgba(172,50,113,.66) 42%, transparent 73%);
+}
+.dbl-cards-reveal-fx[data-effect="mythic-aurora"] {
+  --fx-ink: #e4fffa;
+  --fx-glow: rgba(92,253,224,.96);
+  --fx-haze: rgba(121,148,255,.62);
+}
+.dbl-cards-reveal-fx[data-effect="mythic-aurora"]::before {
+  background: conic-gradient(from -40deg at 50% 47%, transparent 0%,
+    rgba(92,249,213,.77) 19%, rgba(79,152,251,.64) 38%,
+    rgba(224,134,252,.76) 52%, rgba(95,251,230,.83) 78%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, transparent 8%, black 36%, transparent 72%);
+}
+@keyframes dbl-cards-fx-flash {
+  0%,7% { opacity: 0; transform: scale(.66); }
+  24% { opacity: .95; transform: scale(1.05); }
+  47% { opacity: .45; }
+  100% { opacity: 0; transform: scale(1.48); }
+}
+@keyframes dbl-cards-fx-sweep {
+  0%,10% { opacity: 0; left: -86%; }
+  20% { opacity: 1; }
+  72% { opacity: .8; }
+  100% { opacity: 0; left: 132%; }
+}
+@keyframes dbl-cards-fx-halo {
+  0%,8% { opacity: 0; transform: scale(.89); }
+  30% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.17); }
+}
+@keyframes dbl-cards-fx-ring {
+  0%,12% { opacity: 0; transform: translate(-50%,-50%) scale(.23) rotate(-24deg); }
+  32% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.67) rotate(38deg); }
+}
+@keyframes dbl-cards-fx-sigil {
+  0%,12% { opacity: 0; transform: translate(-50%,-50%) scale(.28) rotate(-42deg); }
+  35% { opacity: .96; transform: translate(-50%,-50%) scale(1.3) rotate(15deg); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(2.3) rotate(80deg); }
+}
+@keyframes dbl-cards-fx-spark {
+  0%,12% { opacity: 0; transform: translate(-50%,-50%) scale(.2) rotate(-25deg); }
+  32% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--fx-x)),
+    calc(-50% + var(--fx-y))) scale(.18) rotate(210deg); }
+}
+@keyframes dbl-cards-fx-grand-halo {
+  0%,7% { opacity: 0; transform: scale(.62) rotate(-8deg); }
+  23% { opacity: 1; transform: scale(1.01); }
+  40% { opacity: .3; }
+  58% { opacity: 1; transform: scale(1.06) rotate(5deg); }
+  100% { opacity: 0; transform: scale(1.4) rotate(15deg); }
+}
+@keyframes dbl-cards-fx-grand-ring {
+  0%,6% { opacity: 0; transform: translate(-50%,-50%) scale(.12) rotate(-42deg); }
+  28% { opacity: 1; }
+  45% { opacity: .25; transform: translate(-50%,-50%) scale(.8) rotate(20deg); }
+  65% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(1.8) rotate(144deg); }
+}
+@keyframes dbl-cards-fx-grand-sigil {
+  0%,9% { opacity: 0; transform: translate(-50%,-50%) scale(.2) rotate(-95deg); }
+  29% { opacity: 1; transform: translate(-50%,-50%) scale(1.3) rotate(0deg); }
+  44% { opacity: 0; }
+  62% { opacity: 1; transform: translate(-50%,-50%) scale(2) rotate(35deg); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(3.3) rotate(110deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dbl-cards-reveal-fx { display: none !important; }
+}
