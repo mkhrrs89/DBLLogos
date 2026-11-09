@@ -19,9 +19,11 @@
   const order = document.getElementById('cardsSort');
   const loadMore = document.getElementById('cardsShowMoreBtn');
   const clearBtn = document.getElementById('cardsClearCollectionBtn');
+  const allCollectionsGrid = document.getElementById('cardsAllCollectionsGrid');
   const tabs = [
     ['cardsPacksTab', 'cardsPackView'],
     ['cardsCollectionTab', 'cardsCollectionView'],
+    ['cardsAllCollectionsTab', 'cardsAllCollectionsView'],
     ['cardsChecklistTab', 'cardsChecklistView']
   ].map(([tab, view]) => [document.getElementById(tab), document.getElementById(view)]);
   const checklistStats = document.getElementById('cardsChecklistStats');
@@ -35,11 +37,18 @@
   if (!api || !panel || !status || !saveStatus || !packStage || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
       !galleryCount || !search || !rarityFilter || !teamFilter || !order || !loadMore ||
-      !clearBtn || tabs.some(([tab, view]) => !tab || !view) ||
+      !clearBtn || !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
       !checklistStats || !checklistSearch || !checklistRarity ||
       !checklistOwnership || !checklistSort || !checklistCaption ||
       !checklistList || !checklistMore) return;
 
+  const ALL_COLLECTIONS_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsAllCollectionsTab');
+  const CHECKLIST_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsChecklistTab');
+  // Collection entries are explicit so future sets can have their own covers.
+  const CARD_COLLECTIONS = [
+    {series: 0, name: 'Series 0', subtitle: 'Original FLAGSHIP set'}
+  ];
+  let activeChecklistSeries = 0;
   const tierIndex = Object.fromEntries(api.rarities.map((r, i) => [r.id, i]));
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Undiscovered editions must never appear in the checklist or public
@@ -371,6 +380,37 @@
     back.appendChild(make('span', 'dbl-cards-foil'));
     return back;
   }
+  function showAllCollections() {
+    const fragment = document.createDocumentFragment();
+    for (const collection of CARD_COLLECTIONS) {
+      const tile = make('button', 'dbl-cards-series-tile');
+      tile.type = 'button';
+      tile.setAttribute('aria-label', 'Open ' + collection.name + ' checklist');
+      // Use the exact sealed reverse used in the Pack Room, not a static
+      // image or a second, separately maintained copy of the design.
+      const cover = make('span', 'dbl-cards-card is-sealed dbl-cards-series-cover');
+      cover.setAttribute('aria-hidden', 'true');
+      const inner = make('span', 'dbl-cards-inner');
+      inner.appendChild(backOf({series: collection.series}, true));
+      cover.appendChild(inner);
+      tile.appendChild(cover);
+      tile.appendChild(make('strong', 'dbl-cards-series-title', collection.name));
+      tile.appendChild(make('span', 'dbl-cards-series-subtitle', collection.subtitle));
+      tile.addEventListener('click', () => {
+        activeChecklistSeries = collection.series;
+        // Open the complete checklist, rather than retaining a previous
+        // rarity/search filter that could make this series look incomplete.
+        checklistSearch.value = '';
+        checklistRarity.value = 'all';
+        checklistOwnership.value = 'all';
+        checklistSort.value = 'name';
+        checklistLimit = 80;
+        openCardsSubtab(CHECKLIST_TAB_INDEX);
+      });
+      fragment.appendChild(tile);
+    }
+    allCollectionsGrid.replaceChildren(fragment);
+  }
   function cardElement(card, sealed = false, onFirst = null) {
     const button = make('button', 'dbl-cards-card' + (sealed ? ' is-sealed' : ''));
     button.type = 'button';
@@ -559,8 +599,13 @@
   // A checklist entry represents one player/rarity edition. Collected marks
   // are read from the saved binder, not independently entered or stored.
   function checklistData() {
-    const players = api.checklistPlayers;
-    const owned = new Map(api.items.map(card => [card.pid + ':' + card.rarity, card]));
+    // Series 0 currently owns the checklist player pool. Only count owned
+    // editions from the series selected through All Collections.
+    const players = activeChecklistSeries === api.currentSeries
+      ? api.checklistPlayers : [];
+    const owned = new Map(api.items
+      .filter(card => (card.series ?? api.currentSeries) === activeChecklistSeries)
+      .map(card => [card.pid + ':' + card.rarity, card]));
     const totals = Object.fromEntries(checklistTiers.map(tier =>
       [tier.id, {label: tier.label, possible: 0, collected: 0}]));
     const all = [];
@@ -596,7 +641,7 @@
     parent.appendChild(box);
   }
   function showChecklist() {
-    if (activeCardsSubtab !== 2 || panel.hidden) return;
+    if (activeCardsSubtab !== CHECKLIST_TAB_INDEX || panel.hidden) return;
     const s = api.status;
     checklistStats.replaceChildren();
     checklistList.replaceChildren();
@@ -688,7 +733,9 @@
   function openCardsSubtab(index, focus = false) {
     activeCardsSubtab = index;
     try {
-      sessionStorage.setItem(CARDS_SUBTAB_KEY, String(index));
+      // Store a stable tab ID rather than an index: adding another card set
+      // section must not change which tab an F5 refresh restores.
+      sessionStorage.setItem(CARDS_SUBTAB_KEY, tabs[index][0].id);
     } catch (_) {
       // Card navigation still works without session storage.
     }
@@ -700,7 +747,8 @@
       view.hidden = !selected;
     });
     if (index === 1) { showGallery(); scheduleNameFit(); }
-    if (index === 2) { checklistLimit = 80; showChecklist(); }
+    if (index === ALL_COLLECTIONS_TAB_INDEX) showAllCollections();
+    if (index === CHECKLIST_TAB_INDEX) { checklistLimit = 80; showChecklist(); }
     if (index === 0) scheduleNameFit();
     if (focus) tabs[index][0].focus();
   }
@@ -709,7 +757,7 @@
     showStatus();
     showCounters();
     if (activeCardsSubtab === 1) showGallery();
-    if (activeCardsSubtab === 2) showChecklist();
+    if (activeCardsSubtab === CHECKLIST_TAB_INDEX) showChecklist();
     // A new file uploaded while Cards is already open should immediately
     // populate the new player pool, not require switching tabs twice.
     if (!panel.hidden) api.ensurePool();
@@ -789,7 +837,7 @@
   window.addEventListener('dbl:tab-change', event => {
     if (event.detail?.panelId === 'cardsPanel') {
       api.ensurePool();
-      if (activeCardsSubtab === 2) showChecklist();
+      if (activeCardsSubtab === CHECKLIST_TAB_INDEX) showChecklist();
       if (activeCardsSubtab === 1) showGallery();
       scheduleNameFit();
     }
@@ -802,9 +850,13 @@
       ? navigation.type === 'reload'
       : window.performance?.navigation?.type === 1;
     if (isReload) {
-      const saved = Number(sessionStorage.getItem(CARDS_SUBTAB_KEY));
-      if (Number.isInteger(saved) && saved >= 0 && saved < tabs.length)
-        startingCardsSubtab = saved;
+      const saved = sessionStorage.getItem(CARDS_SUBTAB_KEY);
+      // Older versions stored numeric indices 0/1/2, with Checklist at 2.
+      const legacyTabIds = ['cardsPacksTab', 'cardsCollectionTab', 'cardsChecklistTab'];
+      const savedTabId = /^\\d+$/.test(saved || '')
+        ? legacyTabIds[Number(saved)] : saved;
+      const restoredIndex = tabs.findIndex(([tab]) => tab.id === savedTabId);
+      if (restoredIndex >= 0) startingCardsSubtab = restoredIndex;
     }
   } catch (_) {
     // Use Pack Room if navigation timing or storage is unavailable.
