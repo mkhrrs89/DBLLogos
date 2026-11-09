@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
     <link rel="stylesheet" href="./home-season-preview.css?v=20261106-season-preview" />
-    <link rel="stylesheet" href="./cards.css?v=20261109-series-dates" />
+    <link rel="stylesheet" href="./cards.css?v=20261109-franchise-completion" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -344,6 +344,13 @@
               <p>Every obtainable player edition in your uploaded league archive. Cards check off automatically when collected.</p>
             </header>
             <div id="cardsChecklistStats" class="dbl-cards-checklist-stats" aria-label="Collection completion by rarity"></div>
+            <section class="dbl-cards-franchise-section" aria-labelledby="cardsChecklistFranchiseHeading">
+              <header class="dbl-cards-franchise-heading">
+                <h4 id="cardsChecklistFranchiseHeading">Franchise Completion</h4>
+                <p>Completion by each player's peak-season franchise. Franchise name changes are grouped together, and duplicate copies count once.</p>
+              </header>
+              <div id="cardsChecklistFranchises" class="dbl-cards-franchise-results" aria-live="polite"></div>
+            </section>
             <div class="dbl-cards-filter-row dbl-cards-checklist-filters">
               <label class="dbl-cards-field dbl-cards-field-search" for="cardsChecklistSearch">
                 Search players or teams
@@ -1019,8 +1026,8 @@
     <script src="./home-season-preview.js?v=20261106-home-team-badges"></script>
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
-    <script src="./cards-engine.js?v=20261109-rarity-cutoffs"></script>
-    <script src="./cards-ui.js?v=20261109-series-dates"></script>
+    <script src="./cards-engine.js?v=20261109-franchise-completion"></script>
+    <script src="./cards-ui.js?v=20261109-franchise-completion"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
