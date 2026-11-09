@@ -153,13 +153,42 @@
     openBtn.disabled = busy || clearing || !s.ready || !s.poolSize || s.loading;
     openBtn.textContent = busy ? 'Opening pack…' : 'Open five-card pack';
   }
+  // GitHub-hosted archival portraits for players without an export photo.
+  // These are display-only: never store an era placeholder in saved cards.
+  const ERA_CARD_PORTRAITS = [
+    [1916, 1917, '1916-1917.jpg'],
+    [1918, 1919, '1918-1919.jpg'],
+    [1920, 1920, '1920.jpg'],
+    [1921, 1923, '1921-1923.jpg'],
+    [1924, 1926, '1924-1926.jpg'],
+    [1927, 1929, '1927-1929.jpg'],
+    [1930, 1936, '1930-1936.jpg'],
+    [1937, 1939, '1937-1939.jpg'],
+    [1940, 1941, '1940-1941.jpg'],
+    [1942, 1945, '1942-1945.jpg'],
+    [1946, 1949, '1946-1949.jpg'],
+    [1950, 1959, '1950-1959.jpg'],
+    [1960, 1965, '1960-1965.jpg'],
+    [1966, 1966, '1966.jpg'],
+    [1967, 1967, '1967.jpg'],
+    [1968, 1968, '1968.jpg']
+  ];
+  function genericPhotoFor(card) {
+    const year = Number(card?.era); // The card's peak OVR season.
+    if (!Number.isInteger(year)) return '';
+    const range = ERA_CARD_PORTRAITS.find(([first, last]) =>
+      year >= first && year <= last);
+    return range ? './assets/' + range[2] : '';
+  }
+
   function art(card) {
     const artArea = make('span', 'dbl-cards-art');
     const initials = card.name.split(/\s+/).slice(0, 2)
       .map(x => x[0] || '').join('').toUpperCase();
     artArea.appendChild(make('span', 'dbl-cards-initials', initials));
-    const source = api.findPhoto(card);
-    if (source) {
+    const customPhoto = api.findPhoto(card);
+    const genericPhoto = genericPhotoFor(card);
+    if (customPhoto || genericPhoto) {
       const image = make('img', 'dbl-cards-player-photo');
       image.alt = '';
       image.width = 200;
@@ -171,8 +200,18 @@
       image.loading = 'lazy';
       image.decoding = 'async';
       image.referrerPolicy = 'no-referrer';
-      image.addEventListener('error', () => image.remove());
-      image.src = source;
+      // Preserve the original image whenever it works. If its link breaks,
+      // try the peak-year portrait; initials remain the last-resort fallback.
+      let usingGenericPhoto = !customPhoto;
+      image.addEventListener('error', () => {
+        if (!usingGenericPhoto && genericPhoto) {
+          usingGenericPhoto = true;
+          image.src = genericPhoto;
+        } else {
+          image.remove();
+        }
+      });
+      image.src = customPhoto || genericPhoto;
       artArea.appendChild(image);
     }
     return artArea;
