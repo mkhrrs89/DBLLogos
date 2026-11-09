@@ -1732,6 +1732,7 @@
 }
 .dbl-cards-room[hidden],
 .dbl-cards-binder[hidden],
+.dbl-cards-all-collections[hidden],
 .dbl-cards-checklist[hidden] { display: none !important; }
 .dbl-cards-checklist {
   min-width: 0;
@@ -2191,4 +2192,67 @@
   .dbl-cards-card.is-sealed .dbl-cards-back-sealed-series {
     font-size: clamp(10px,8.6cqw,23px);
   }
+}
+
+/* Series browser: the cover is the same live sealed card reverse as a pack. */
+.dbl-cards-all-collections {
+  min-width: 0;
+  padding: 12px 0 4px;
+}
+.dbl-cards-series-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 212px), 1fr));
+  gap: 18px;
+  align-items: start;
+  margin: 14px 0 20px;
+}
+.dbl-cards-series-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 13px 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(128,128,128,.045);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.dbl-cards-series-tile:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 10px 22px rgba(0,0,0,.15);
+  transform: translateY(-2px);
+}
+.dbl-cards-series-tile:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.dbl-cards-series-tile > .dbl-cards-series-cover {
+  display: block;
+  flex: none;
+  width: 100%;
+  max-width: 202px;
+  margin-bottom: 9px;
+  pointer-events: none;
+  cursor: inherit;
+}
+.dbl-cards-series-title {
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.dbl-cards-series-subtitle {
+  display: block;
+  color: var(--muted);
+  font-size: .73rem;
+  line-height: 1.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dbl-cards-series-tile { transition: none; }
 }
