@@ -2404,3 +2404,36 @@
   .dbl-cards-franchise-table td { padding: 9px 8px; }
   .dbl-cards-franchise-table .dbl-cards-franchise-name { min-width: 150px; }
 }
+
+/* Sortable franchise-progress headers: percentage-first, reversible columns. */
+.dbl-cards-franchise-sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dbl-cards-franchise-table thead th:first-child .dbl-cards-franchise-sort {
+  justify-content: flex-start;
+}
+.dbl-cards-franchise-sort:hover,
+.dbl-cards-franchise-sort.is-sorted {
+  color: var(--accent);
+}
+.dbl-cards-franchise-sort:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.dbl-cards-franchise-sort-arrow {
+  font-size: .65rem;
+  opacity: .72;
+}
