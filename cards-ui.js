@@ -46,7 +46,13 @@
   const CHECKLIST_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsChecklistTab');
   // Collection entries are explicit so future sets can have their own covers.
   const CARD_COLLECTIONS = [
-    {series: 0, name: 'Series 0', subtitle: 'Original FLAGSHIP set'}
+    {
+      series: 0,
+      name: 'Series 0',
+      subtitle: 'Original FLAGSHIP set',
+      establishedIrl: 'Nov 9, 2026',
+      establishedInGame: '1968'
+    }
   ];
   let activeChecklistSeries = 0;
   const tierIndex = Object.fromEntries(api.rarities.map((r, i) => [r.id, i]));
@@ -396,6 +402,17 @@
       tile.appendChild(cover);
       tile.appendChild(make('strong', 'dbl-cards-series-title', collection.name));
       tile.appendChild(make('span', 'dbl-cards-series-subtitle', collection.subtitle));
+      const dates = make('span', 'dbl-cards-series-dates');
+      for (const [label, value] of [
+        ['IRL established', collection.establishedIrl],
+        ['In-game established', collection.establishedInGame]
+      ]) {
+        const line = make('span', 'dbl-cards-series-date');
+        line.appendChild(make('span', 'dbl-cards-series-date-label', label));
+        line.appendChild(make('strong', 'dbl-cards-series-date-value', value));
+        dates.appendChild(line);
+      }
+      tile.appendChild(dates);
       tile.addEventListener('click', () => {
         activeChecklistSeries = collection.series;
         // Open the complete checklist, rather than retaining a previous
