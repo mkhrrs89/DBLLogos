@@ -42,6 +42,9 @@
   });
   const DATABASE = 'dbl-digital-cards-v1';
   const STORE = 'collections';
+  // All original FLAGSHIP cards belong to the first collectible set.
+  // Keep existing pid:rarity IDs so old collections and duplicates stay intact.
+  const CARD_SERIES = 0;
   const KEY = 'archive';
   const FALLBACK = 'dbl-digital-cards-fallback-v1';
   const tierIndex = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
@@ -288,7 +291,7 @@
       // merging records adds their duplicate quantities, not replacing them.
       const id = pid + ':' + rarity;
       const item = {
-        id, pid, rarity, count: qty,
+        id, pid, rarity, series: CARD_SERIES, count: qty,
         name: str(row.name) || 'Unknown player',
         firstName: str(row.firstName), lastName: str(row.lastName),
         jersey: /^\d{1,3}$/.test(String(row.jersey || '')) ? String(row.jersey) : '',
@@ -464,7 +467,7 @@
       taken.add(p.pid);
       picks.push({
         id: p.pid + ':' + tier.id, pid: p.pid,
-        rarity: tier.id, count: 1,
+        rarity: tier.id, series: CARD_SERIES, count: 1,
         name: p.name, firstName: p.firstName, lastName: p.lastName,
         jersey: p.jersey, team: p.team, teamName: p.teamName,
         teamLogo: p.publicTeamLogo,
@@ -568,6 +571,7 @@
     notify();
   }
   const api = Object.freeze({
+    currentSeries: CARD_SERIES,
     rarities: RARITIES.map(r => Object.freeze({
       ...r, minOvr: MIN_OVR_BY_RARITY[r.id]
     })),
