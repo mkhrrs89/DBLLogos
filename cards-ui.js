@@ -27,6 +27,7 @@
     ['cardsChecklistTab', 'cardsChecklistView']
   ].map(([tab, view]) => [document.getElementById(tab), document.getElementById(view)]);
   const checklistStats = document.getElementById('cardsChecklistStats');
+  const checklistFranchises = document.getElementById('cardsChecklistFranchises');
   const checklistSearch = document.getElementById('cardsChecklistSearch');
   const checklistRarity = document.getElementById('cardsChecklistRarity');
   const checklistOwnership = document.getElementById('cardsChecklistOwnership');
@@ -38,7 +39,7 @@
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
       !galleryCount || !search || !rarityFilter || !teamFilter || !order || !loadMore ||
       !clearBtn || !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
-      !checklistStats || !checklistSearch || !checklistRarity ||
+      !checklistStats || !checklistFranchises || !checklistSearch || !checklistRarity ||
       !checklistOwnership || !checklistSort || !checklistCaption ||
       !checklistList || !checklistMore) return;
 
@@ -638,6 +639,11 @@
         all.push({
           id, pid: player.pid, name: player.name,
           team: player.teamName || player.team || 'Team unavailable',
+          // Use the stable ZenGM franchise TID, not changing team names
+          // or abbreviations, to group each eligible edition.
+          franchiseKey: Number.isInteger(player.franchiseTid) && player.franchiseTid >= 0
+            ? 'tid:' + player.franchiseTid : 'unknown',
+          franchiseName: player.franchiseName || player.teamName || player.team || 'Team unavailable',
           peak: player.peak, era: player.era,
           rarity: tier.id, label: tier.label,
           owned: isOwned, copies: item?.count || 0
@@ -657,10 +663,107 @@
     box.appendChild(track);
     parent.appendChild(box);
   }
+  function franchiseCompletionData(cards) {
+    const groups = new Map();
+    for (const card of cards) {
+      const key = card.franchiseKey;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          name: key === 'unknown' ? 'Unassigned franchise' : card.franchiseName,
+          totals: Object.fromEntries(checklistTiers.map(tier => [
+            tier.id, {collected: 0, possible: 0}
+          ])),
+          overall: {collected: 0, possible: 0}
+        });
+      }
+      const group = groups.get(key);
+      const tier = group.totals[card.rarity];
+      if (!tier) continue;
+      tier.possible++;
+      group.overall.possible++;
+      if (card.owned) {
+        tier.collected++;
+        group.overall.collected++;
+      }
+    }
+    return [...groups.values()].sort((a, b) =>
+      a.name.localeCompare(b.name) || a.key.localeCompare(b.key));
+  }
+
+  function renderFranchiseCompletion(cards) {
+    checklistFranchises.replaceChildren();
+    const groups = franchiseCompletionData(cards);
+    if (!groups.length) {
+      checklistFranchises.appendChild(make('p', 'dbl-cards-empty',
+        'No franchise editions are eligible in this league archive.'));
+      return;
+    }
+
+    const scroll = make('div', 'dbl-cards-franchise-scroll');
+    scroll.tabIndex = 0;
+    scroll.setAttribute('role', 'region');
+    scroll.setAttribute('aria-label', 'Franchise completion by rarity, scroll horizontally to see all editions');
+
+    const table = make('table', 'dbl-cards-franchise-table');
+    const thead = make('thead');
+    const head = make('tr');
+    const franchiseHeader = make('th', '', 'Franchise');
+    franchiseHeader.scope = 'col';
+    head.appendChild(franchiseHeader);
+    for (const tier of checklistTiers) {
+      const th = make('th', '', tier.label);
+      th.scope = 'col';
+      head.appendChild(th);
+    }
+    const overallHeader = make('th', 'is-overall', 'Overall');
+    overallHeader.scope = 'col';
+    head.appendChild(overallHeader);
+    thead.appendChild(head);
+    table.appendChild(thead);
+
+    const tbody = make('tbody');
+    function appendProgressCell(row, tally, label, groupName, overall = false) {
+      const td = make('td', overall ? 'is-overall' : '');
+      if (!tally.possible) {
+        td.appendChild(make('span', 'dbl-cards-franchise-na', '—'));
+        td.title = 'No eligible ' + label + ' editions for ' + groupName;
+      } else {
+        const percent = tally.collected / tally.possible * 100;
+        const count = make('strong', 'dbl-cards-franchise-count',
+          format(tally.collected) + ' / ' + format(tally.possible));
+        const pct = make('span', 'dbl-cards-franchise-percent', percent.toFixed(1) + '%');
+        const track = make('span', 'dbl-cards-franchise-track');
+        const fill = make('span', 'dbl-cards-franchise-fill');
+        fill.style.width = percent.toFixed(2) + '%';
+        track.appendChild(fill);
+        td.append(count, pct, track);
+        td.title = format(tally.collected) + ' of ' + format(tally.possible) +
+          ' ' + label + ' editions collected for ' + groupName;
+      }
+      row.appendChild(td);
+    }
+    for (const group of groups) {
+      const tr = make('tr');
+      const name = make('th', 'dbl-cards-franchise-name', group.name);
+      name.scope = 'row';
+      tr.appendChild(name);
+      for (const tier of checklistTiers) {
+        appendProgressCell(tr, group.totals[tier.id], tier.label, group.name);
+      }
+      appendProgressCell(tr, group.overall, 'overall', group.name, true);
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    scroll.appendChild(table);
+    checklistFranchises.appendChild(scroll);
+  }
+
   function showChecklist() {
     if (activeCardsSubtab !== CHECKLIST_TAB_INDEX || panel.hidden) return;
     const s = api.status;
     checklistStats.replaceChildren();
+    checklistFranchises.replaceChildren();
     checklistList.replaceChildren();
     checklistMore.hidden = true;
     if (!s.ready) {
@@ -691,6 +794,9 @@
       checklistCounter(checklistStats, t.label + ' · peak OVR ' + tier.minOvr + '+',
         t.collected, t.possible);
     }
+    // Compute from the complete eligible Series checklist, not from the
+    // player search, ownership, rarity filters or pagination.
+    renderFranchiseCompletion(all);
     const query = checklistSearch.value.trim().toLocaleLowerCase();
     const rarity = checklistRarity.value;
     const ownership = checklistOwnership.value;
