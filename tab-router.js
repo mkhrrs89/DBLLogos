@@ -129,10 +129,25 @@
     return activate(button, options);
   }
 
-  function openHomeAtStartup() {
-    // Always start on Home, even if a different tab was saved earlier in
-    // sessionStorage. Manual tab navigation and persistence still work.
-    activateById('homeTabBtn', { persist: false, source: 'startup' });
+  function openTabAtStartup() {
+    // Restore the last active tab on F5/Ctrl+R, but keep Home as the entry
+    // point on a new visit. Session storage is per browser tab.
+    let savedTabId = '';
+    try {
+      const navigation = window.performance?.getEntriesByType?.('navigation')?.[0];
+      const isReload = navigation
+        ? navigation.type === 'reload'
+        : window.performance?.navigation?.type === 1;
+      if (isReload) savedTabId = sessionStorage.getItem(ACTIVE_TAB_KEY) || '';
+    } catch (_) {
+      // Storage or navigation timing may be unavailable.
+    }
+    if (savedTabId && activateById(savedTabId, {
+      persist: false, source: 'restore'
+    })) return;
+    // Persist the actual landing tab so refreshing Home never resurrects a
+    // stale tab ID from a previous visit.
+    activateById('homeTabBtn', { persist: true, source: 'startup' });
   }
 
   tabBar.addEventListener('click', (event) => {
@@ -154,5 +169,5 @@
   };
 
   syncActiveGroup(tabBar.querySelector('.tab-btn.active'));
-  window.queueMicrotask(openHomeAtStartup);
+  window.queueMicrotask(openTabAtStartup);
 })();
