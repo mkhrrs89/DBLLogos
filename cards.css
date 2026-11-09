@@ -2120,3 +2120,22 @@
   .dbl-cards-back-foot { font-size: clamp(6px,4.4cqw,12px); }
   .dbl-cards-back-tap { font-size: clamp(6px,4cqw,11px); }
 }
+
+/* Series 0 is printed alongside the peak year; leave the existing
+   portrait, rookie flag, OVR circle and edition side-rail unchanged. */
+.dbl-cards-series-mark {
+  display: inline-block;
+  font-size: .69em;
+  line-height: 1.05;
+  letter-spacing: .045em;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.dbl-cards-series-context {
+  margin: 0 0 5px;
+  font-size: .75rem;
+  font-weight: 850;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
