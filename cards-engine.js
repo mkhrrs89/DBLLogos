@@ -30,8 +30,8 @@
   const MIN_OVR_BY_RARITY = Object.freeze({
     common: 35,       // Base
     crome: 45,
-    refractor: 50,
-    'black-label': 55,
+    refractor: 55,
+    'black-label': 60,
     'mythic-aether': 70,
     'mythic-eclipse': 70,
     'mythic-aurora': 70
