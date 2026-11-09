@@ -1,5 +1,6 @@
 (() => {
   const CACHE_KEY = 'dbl-logo-adjusted-scoring-records:v1';
+  const RECORDS_SUBTAB_KEY = 'dbl-records-active-subtab:v1';
   const RECORD_LIMIT = 50;
 
   const rawBtn = document.getElementById('recordsRawSubtabBtn');
@@ -93,6 +94,11 @@
 
   function setView(view) {
     activeView = view === 'adjusted' ? 'adjusted' : 'raw';
+    try {
+      sessionStorage.setItem(RECORDS_SUBTAB_KEY, activeView);
+    } catch (_) {
+      // Records remain usable when storage is blocked.
+    }
     const adjusted = activeView === 'adjusted';
 
     rawBtn.classList.toggle('active', !adjusted);
@@ -877,5 +883,17 @@
       .sort(compareAdjustedRecords);
   }
 
-  setView('raw');
+  // Preserve Raw vs Adjusted on refresh, without changing fresh visits.
+  let startingView = 'raw';
+  try {
+    const navigation = window.performance?.getEntriesByType?.('navigation')?.[0];
+    const isReload = navigation
+      ? navigation.type === 'reload'
+      : window.performance?.navigation?.type === 1;
+    if (isReload && sessionStorage.getItem(RECORDS_SUBTAB_KEY) === 'adjusted')
+      startingView = 'adjusted';
+  } catch (_) {
+    // Default to Raw when browser storage is unavailable.
+  }
+  setView(startingView);
 })();
