@@ -2256,3 +2256,32 @@
 @media (prefers-reduced-motion: reduce) {
   .dbl-cards-series-tile { transition: none; }
 }
+
+/* Collection creation dates sit below the cover and set subtitle. */
+.dbl-cards-series-dates {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.dbl-cards-series-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: .69rem;
+  line-height: 1.35;
+}
+.dbl-cards-series-date-label {
+  color: var(--muted);
+}
+.dbl-cards-series-date-value {
+  color: var(--text);
+  font-size: .72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
