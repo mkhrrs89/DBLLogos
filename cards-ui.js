@@ -80,6 +80,8 @@
   let nameFitScheduled = false;
   let activeCardsSubtab = 0;
   let checklistLimit = 80;
+  let franchiseSortKey = 'franchise';
+  let franchiseSortDirection = 'asc';
 
   // The outer name field is a fixed-width clipping frame. The INNER text
   // is measured at its natural width, then squeezed horizontally if needed.
@@ -691,9 +693,29 @@
       a.name.localeCompare(b.name) || a.key.localeCompare(b.key));
   }
 
-  function renderFranchiseCompletion(cards) {
+  function compareFranchiseCompletion(a, b) {
+    const fallback = a.name.localeCompare(b.name) || a.key.localeCompare(b.key);
+    if (franchiseSortKey === 'franchise')
+      return franchiseSortDirection === 'asc' ? fallback : -fallback;
+    const key = franchiseSortKey;
+    const aTally = key === 'overall' ? a.overall : a.totals[key];
+    const bTally = key === 'overall' ? b.overall : b.totals[key];
+    // An ineligible edition (—) is always last, regardless of sort direction.
+    if (!aTally?.possible && bTally?.possible) return 1;
+    if (!bTally?.possible && aTally?.possible) return -1;
+    const direction = franchiseSortDirection === 'asc' ? 1 : -1;
+    const aPct = aTally?.possible ? aTally.collected / aTally.possible : 0;
+    const bPct = bTally?.possible ? bTally.collected / bTally.possible : 0;
+    return (aPct - bPct) * direction ||
+      ((aTally?.collected || 0) - (bTally?.collected || 0)) * direction ||
+      ((aTally?.possible || 0) - (bTally?.possible || 0)) * direction ||
+      fallback;
+  }
+
+  function renderFranchiseCompletion(cards, focusKey = null) {
+    const previousScroll = checklistFranchises.querySelector('.dbl-cards-franchise-scroll')?.scrollLeft || 0;
     checklistFranchises.replaceChildren();
-    const groups = franchiseCompletionData(cards);
+    const groups = franchiseCompletionData(cards).sort(compareFranchiseCompletion);
     if (!groups.length) {
       checklistFranchises.appendChild(make('p', 'dbl-cards-empty',
         'No franchise editions are eligible in this league archive.'));
@@ -708,17 +730,40 @@
     const table = make('table', 'dbl-cards-franchise-table');
     const thead = make('thead');
     const head = make('tr');
-    const franchiseHeader = make('th', '', 'Franchise');
-    franchiseHeader.scope = 'col';
-    head.appendChild(franchiseHeader);
-    for (const tier of checklistTiers) {
-      const th = make('th', '', tier.label);
+    function appendSortableHeader(key, label, isOverall = false) {
+      const th = make('th', isOverall ? 'is-overall' : '');
       th.scope = 'col';
+      if (franchiseSortKey === key) {
+        th.setAttribute('aria-sort', franchiseSortDirection === 'asc'
+          ? 'ascending' : 'descending');
+      }
+      const button = make('button', 'dbl-cards-franchise-sort' +
+        (franchiseSortKey === key ? ' is-sorted' : ''));
+      button.type = 'button';
+      button.dataset.sortKey = key;
+      button.setAttribute('aria-label', 'Sort franchises by ' + label +
+        (franchiseSortKey === key ? ', ' + franchiseSortDirection + 'ending' : ''));
+      button.appendChild(make('span', '', label));
+      const indicator = make('span', 'dbl-cards-franchise-sort-arrow',
+        franchiseSortKey === key
+          ? (franchiseSortDirection === 'asc' ? '▲' : '▼') : '↕');
+      indicator.setAttribute('aria-hidden', 'true');
+      button.appendChild(indicator);
+      button.addEventListener('click', () => {
+        if (franchiseSortKey === key) {
+          franchiseSortDirection = franchiseSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          franchiseSortKey = key;
+          franchiseSortDirection = key === 'franchise' ? 'asc' : 'desc';
+        }
+        renderFranchiseCompletion(cards, key);
+      });
+      th.appendChild(button);
       head.appendChild(th);
     }
-    const overallHeader = make('th', 'is-overall', 'Overall');
-    overallHeader.scope = 'col';
-    head.appendChild(overallHeader);
+    appendSortableHeader('franchise', 'Franchise');
+    for (const tier of checklistTiers) appendSortableHeader(tier.id, tier.label);
+    appendSortableHeader('overall', 'Overall', true);
     thead.appendChild(head);
     table.appendChild(thead);
 
@@ -757,6 +802,12 @@
     table.appendChild(tbody);
     scroll.appendChild(table);
     checklistFranchises.appendChild(scroll);
+    scroll.scrollLeft = previousScroll;
+    if (focusKey !== null) {
+      const button = Array.from(scroll.querySelectorAll('.dbl-cards-franchise-sort'))
+        .find(item => item.dataset.sortKey === focusKey);
+      button?.focus({preventScroll: true});
+    }
   }
 
   function showChecklist() {
