@@ -274,15 +274,6 @@
       card.ovr ?? '—'));
     playerMetrics.title = 'Peak overall rating';
     front.appendChild(playerMetrics);
-    // Rookie-only red pennant hangs from the card's top edge.
-    if (api.isRookie(card)) {
-      const rookie = make('span', 'dbl-cards-rookie');
-      rookie.title = 'Rookie card';
-      rookie.setAttribute('aria-label', 'Rookie card');
-      rookie.appendChild(make('span', 'dbl-cards-rookie-letter', 'R'));
-      rookie.appendChild(make('span', 'dbl-cards-rookie-letter', 'C'));
-      front.appendChild(rookie);
-    }
     front.appendChild(art(card));
     if (edition?.mythical) {
       const aura = make('span', 'dbl-cards-mythical-aura');
