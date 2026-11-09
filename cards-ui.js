@@ -264,8 +264,6 @@
       edition?.mythical ? 'MYTHICAL' : 'FLAGSHIP'));
     const issue = make('span', 'dbl-cards-issue');
     issue.appendChild(make('span', 'dbl-cards-year', card.era ?? 'ARCHIVE'));
-    issue.appendChild(make('span', 'dbl-cards-series-mark',
-      'SERIES ' + (card.series ?? api.currentSeries)));
     heading.appendChild(issue);
     front.appendChild(heading);
     // Peak OVR moves to the upper-right in its original circular outline.
@@ -371,6 +369,7 @@
     const editionText = card.rarity === 'common' ? '' :
       ' · ' + (tierMap[card.rarity]?.label.toUpperCase() || '');
     back.appendChild(make('span', 'dbl-cards-back-foot',
+      'SERIES ' + (card.series ?? api.currentSeries) + ' · ' +
       (card.era ?? 'DBL') + editionText));
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
     // The same premium side-rail and moving print foil as the front, only
