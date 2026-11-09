@@ -23,8 +23,14 @@
   let coverageEnd = null;
   let detailedGameStart = null;
   let cachedPayload = loadCache();
+  let sortKey = sortSelect?.value || 'wins';
+  let sortDirection = 'desc';
 
-  sortSelect?.addEventListener('change', render);
+  sortSelect?.addEventListener('change', () => {
+    sortKey = sortSelect.value;
+    sortDirection = sortKey === 'name' ? 'asc' : 'desc';
+    render();
+  });
 
   tabBtn.addEventListener('click', () => {
     void ensureLoaded();
@@ -172,7 +178,7 @@
       coverageEnd = seasons.length ? Math.max(...seasons) : null;
       detailedGameStart = earliestDetailedSeason;
 
-      showLoading('Matching shootout players to photos…');
+      showLoading('Matching shootout players to names…');
 
       const playerInfo = new Map();
       await stream.forEachTopLevelArrayItem(file, 'players', (player) => {
@@ -182,7 +188,6 @@
 
         playerInfo.set(pid, {
           name: getPlayerName(player),
-          imgURL: normalizeImageUrl(player?.imgURL),
         });
       });
 
@@ -363,7 +368,6 @@
       const record = {
         pid,
         name: info.name || fallbackName || `Player ${pid}`,
-        imgURL: info.imgURL || '',
         appearances: 0,
         wins: 0,
         losses: 0,
@@ -402,7 +406,6 @@
     for (const record of byPid.values()) {
       const info = playerInfo.get(record.pid);
       if (info?.name) record.name = info.name;
-      if (info?.imgURL) record.imgURL = info.imgURL;
 
       record.history.sort((a, b) => {
         const seasonDiff = (Number(b.season) || 0) - (Number(a.season) || 0);
@@ -442,6 +445,55 @@
     };
   }
 
+  // A single, column-sortable career table. Keep every player's history
+  // accessible in the final cell without introducing additional player rows.
+  const COLUMNS = [
+    {key: 'name', label: 'Player'},
+    {key: 'appearances', label: 'SO', title: 'Shootout appearances'},
+    {key: 'wins', label: 'W', title: 'Shootout wins'},
+    {key: 'losses', label: 'L', title: 'Shootout losses'},
+    {key: 'winPct', label: 'Win %', title: 'Shootout win percentage'},
+    {key: 'makes', label: 'Makes', title: 'Total shootout makes, including historical results'},
+    {key: 'attempts', label: 'Known shots', title: 'Made/attempted shots from games where attempt counts are available; click to sort by known attempts'},
+    {key: 'shootPct', label: 'Shoot %', title: 'Shooting percentage from games with known attempts'},
+  ];
+
+  function winPercent(player) {
+    return player.appearances > 0 ? player.wins / player.appearances : null;
+  }
+  function shotPercent(player) {
+    return player.attempts > 0 ? player.attemptMakes / player.attempts : null;
+  }
+  function sortableValue(player, key) {
+    if (key === 'winPct') return winPercent(player);
+    if (key === 'shootPct') return shotPercent(player);
+    return key === 'name' ? player.name : Number(player[key]) || 0;
+  }
+  function compareRecords(a, b) {
+    const left = sortableValue(a, sortKey);
+    const right = sortableValue(b, sortKey);
+    // Unknown percentages belong last, even for ascending sorts.
+    if (left === null && right !== null) return 1;
+    if (right === null && left !== null) return -1;
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    const difference = sortKey === 'name'
+      ? String(left).localeCompare(String(right), undefined, {sensitivity: 'base'}) * direction
+      : ((left ?? 0) - (right ?? 0)) * direction;
+    return difference || b.wins - a.wins || a.name.localeCompare(b.name)
+      || a.pid - b.pid;
+  }
+  function sortOn(key) {
+    if (sortKey === key) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    else {
+      sortKey = key;
+      sortDirection = key === 'name' ? 'asc' : 'desc';
+    }
+    // Keep the original sort dropdown functional and synchronized with
+    // column-header sorting.
+    if (sortSelect) sortSelect.value = sortKey;
+    render();
+  }
+
   function render() {
     wrap.className = 'shootout-records-wrap';
     wrap.replaceChildren();
@@ -460,158 +512,128 @@
     if (Number.isFinite(coverageStart) && Number.isFinite(coverageEnd)) {
       summaryParts.push(`history ${coverageStart}–${coverageEnd}`);
     }
-    if (Number.isFinite(detailedGameStart) && Number.isFinite(coverageEnd) && detailedGameStart > coverageStart) {
+    if (Number.isFinite(detailedGameStart) && Number.isFinite(coverageEnd)
+        && detailedGameStart > coverageStart) {
       summaryParts.push(`attempt data ${detailedGameStart}–${coverageEnd}`);
     }
     summary.textContent = summaryParts.join(' · ');
     wrap.appendChild(summary);
 
-    const list = document.createElement('div');
-    list.className = 'shootout-player-grid';
+    const scroll = document.createElement('div');
+    scroll.className = 'shootout-table-scroll';
+    scroll.setAttribute('role', 'region');
+    scroll.setAttribute('aria-label', 'Sortable career shootout results table');
+    scroll.tabIndex = 0;
 
+    const table = document.createElement('table');
+    table.className = 'shootout-results-table';
+
+    const caption = document.createElement('caption');
+    caption.textContent = 'Career shootout results. Click a column heading to sort. Known shots are makes/attempts only where attempts were recorded.';
+    table.appendChild(caption);
+
+    const thead = document.createElement('thead');
+    const headings = document.createElement('tr');
+    const rankTh = document.createElement('th');
+    rankTh.scope = 'col';
+    rankTh.textContent = '#';
+    headings.appendChild(rankTh);
+
+    for (const column of COLUMNS) {
+      const th = document.createElement('th');
+      th.scope = 'col';
+      if (sortKey === column.key) {
+        th.setAttribute('aria-sort', sortDirection === 'asc' ? 'ascending' : 'descending');
+      }
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'shootout-table-sort' + (sortKey === column.key ? ' is-sorted' : '');
+      button.title = column.title || ('Sort by ' + column.label);
+      button.setAttribute('aria-label', 'Sort by ' + (column.title || column.label) +
+        (sortKey === column.key
+          ? ', currently ' + (sortDirection === 'asc' ? 'ascending' : 'descending')
+          : ''));
+      const label = document.createElement('span');
+      label.textContent = column.label;
+      const arrow = document.createElement('span');
+      arrow.className = 'shootout-sort-indicator';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = sortKey !== column.key ? '↕' :
+        sortDirection === 'asc' ? '▲' : '▼';
+      button.append(label, arrow);
+      button.addEventListener('click', () => sortOn(column.key));
+      th.appendChild(button);
+      headings.appendChild(th);
+    }
+    const historyTh = document.createElement('th');
+    historyTh.scope = 'col';
+    historyTh.textContent = 'History';
+    headings.appendChild(historyTh);
+    thead.appendChild(headings);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
     const sorted = records.slice().sort(compareRecords);
     for (const [index, player] of sorted.entries()) {
-      list.appendChild(buildPlayerCard(player, index + 1));
+      tbody.appendChild(buildPlayerRow(player, index + 1));
     }
-
-    wrap.appendChild(list);
+    table.appendChild(tbody);
+    scroll.appendChild(table);
+    wrap.appendChild(scroll);
   }
 
-  function compareRecords(a, b) {
-    const mode = sortSelect?.value || 'wins';
-    const winPct = (player) => player.appearances > 0 ? player.wins / player.appearances : 0;
-    const shootPct = (player) => player.attempts > 0 ? player.attemptMakes / player.attempts : 0;
-
-    const comparators = {
-      wins: () => (b.wins - a.wins)
-        || (b.appearances - a.appearances)
-        || (winPct(b) - winPct(a)),
-      appearances: () => (b.appearances - a.appearances)
-        || (b.wins - a.wins),
-      winPct: () => (winPct(b) - winPct(a))
-        || (b.appearances - a.appearances)
-        || (b.wins - a.wins),
-      shootPct: () => (shootPct(b) - shootPct(a))
-        || (b.attempts - a.attempts)
-        || (b.makes - a.makes),
-      makes: () => (b.makes - a.makes)
-        || (b.attempts - a.attempts),
-      attempts: () => (b.attempts - a.attempts)
-        || (b.makes - a.makes),
-    };
-
-    const difference = (comparators[mode] || comparators.wins)();
-    return difference || a.name.localeCompare(b.name);
+  function numericCell(row, value, label) {
+    const td = document.createElement('td');
+    td.className = 'shootout-numeric';
+    td.textContent = String(value);
+    if (label) td.title = label;
+    row.appendChild(td);
   }
 
-  function buildPlayerCard(player, rank) {
-    const card = document.createElement('article');
-    card.className = 'shootout-player-card';
+  function buildPlayerRow(player, rank) {
+    const tr = document.createElement('tr');
+    tr.className = 'shootout-table-player';
 
-    const main = document.createElement('div');
-    main.className = 'shootout-player-main';
+    numericCell(tr, rank);
+    const name = document.createElement('th');
+    name.scope = 'row';
+    name.className = 'shootout-player-name';
+    const title = document.createElement('strong');
+    title.textContent = player.name;
+    const pid = document.createElement('small');
+    pid.textContent = 'PID ' + player.pid;
+    name.append(title, pid);
+    tr.appendChild(name);
 
-    const rankBadge = document.createElement('span');
-    rankBadge.className = 'shootout-player-rank';
-    rankBadge.textContent = `#${rank}`;
+    numericCell(tr, player.appearances);
+    numericCell(tr, player.wins);
+    numericCell(tr, player.losses);
+    numericCell(tr, formatPercent(player.wins, player.appearances));
+    numericCell(tr, player.makes);
+    numericCell(tr, player.attempts > 0
+      ? player.attemptMakes + '/' + player.attempts : '—',
+      'Known makes / known attempts');
+    numericCell(tr, formatPercent(player.attemptMakes, player.attempts));
 
-    const photo = buildPlayerPhoto(player);
-
-    const identity = document.createElement('div');
-    identity.className = 'shootout-player-identity';
-
-    const name = document.createElement('h3');
-    name.textContent = player.name;
-
-    const pid = document.createElement('span');
-    pid.textContent = `PID ${player.pid}`;
-
-    identity.append(name, pid);
-
-    const record = document.createElement('div');
-    record.className = 'shootout-player-record';
-
-    const recordValue = document.createElement('strong');
-    recordValue.textContent = `${player.wins}–${player.losses}`;
-
-    const recordLabel = document.createElement('span');
-    recordLabel.textContent = 'W–L';
-
-    record.append(recordValue, recordLabel);
-    main.append(rankBadge, photo, identity, record);
-
-    const stats = document.createElement('div');
-    stats.className = 'shootout-player-stats';
-
-    stats.append(
-      buildStat('Shootouts', player.appearances),
-      buildStat('Makes', player.makes),
-      buildStat('Known att.', player.attempts || '—'),
-      buildStat('Shootout %', formatPercent(player.attemptMakes, player.attempts)),
-      buildStat('Win %', formatPercent(player.wins, player.appearances)),
-    );
-
+    const historyCell = document.createElement('td');
+    historyCell.className = 'shootout-history-cell';
     const details = document.createElement('details');
     details.className = 'shootout-history';
-
     const summary = document.createElement('summary');
-    summary.textContent = `Game-by-game history (${player.appearances})`;
+    summary.textContent = 'Games (' + player.appearances + ')';
     details.appendChild(summary);
-
-    const history = document.createElement('div');
-    history.className = 'shootout-history-list';
-
-    for (const game of player.history) {
-      history.appendChild(buildHistoryRow(game));
-    }
-
-    details.appendChild(history);
-    card.append(main, stats, details);
-    return card;
-  }
-
-  function buildPlayerPhoto(player) {
-    const photo = document.createElement('div');
-    photo.className = 'shootout-player-photo';
-
-    if (player.imgURL) {
-      const image = document.createElement('img');
-      image.src = player.imgURL;
-      image.alt = `${player.name} portrait`;
-      image.loading = 'lazy';
-      image.decoding = 'async';
-      image.referrerPolicy = 'no-referrer';
-      image.addEventListener('error', () => {
-        image.remove();
-        addPhotoPlaceholder(photo, player.name);
-      }, { once: true });
-      photo.appendChild(image);
-    } else {
-      addPhotoPlaceholder(photo, player.name);
-    }
-
-    return photo;
-  }
-
-  function addPhotoPlaceholder(photo, name) {
-    photo.classList.add('is-placeholder');
-    const initials = document.createElement('span');
-    initials.textContent = getInitials(name);
-    photo.appendChild(initials);
-  }
-
-  function buildStat(label, value) {
-    const item = document.createElement('div');
-    item.className = 'shootout-stat';
-
-    const statLabel = document.createElement('span');
-    statLabel.textContent = label;
-
-    const statValue = document.createElement('strong');
-    statValue.textContent = String(value);
-
-    item.append(statLabel, statValue);
-    return item;
+    // Defer large game logs until opened; keep one table row per player.
+    details.addEventListener('toggle', () => {
+      if (!details.open || details.dataset.loaded === 'true') return;
+      const history = document.createElement('div');
+      history.className = 'shootout-history-list';
+      for (const game of player.history) history.appendChild(buildHistoryRow(game));
+      details.appendChild(history);
+      details.dataset.loaded = 'true';
+    });
+    historyCell.appendChild(details);
+    tr.appendChild(historyCell);
+    return tr;
   }
 
   function buildHistoryRow(game) {
@@ -730,7 +752,6 @@
         ...record,
         pid: Number(record.pid),
         name: String(record.name || `Player ${record.pid}`),
-        imgURL: normalizeImageUrl(record.imgURL),
         appearances: Number(record.appearances) || 0,
         wins: Number(record.wins) || 0,
         losses: Number(record.losses) || 0,
@@ -767,10 +788,6 @@
       : 'Unknown Player');
   }
 
-  function normalizeImageUrl(value) {
-    return typeof value === 'string' ? value.trim() : '';
-  }
-
   function stripTags(value) {
     return String(value || '').replace(/<[^>]*>/g, '');
   }
@@ -781,12 +798,4 @@
     return textarea.value;
   }
 
-  function getInitials(name) {
-    return String(name || '?')
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() || '')
-      .join('') || '?';
-  }
 })();
