@@ -264,6 +264,8 @@
       edition?.mythical ? 'MYTHICAL' : 'FLAGSHIP'));
     const issue = make('span', 'dbl-cards-issue');
     issue.appendChild(make('span', 'dbl-cards-year', card.era ?? 'ARCHIVE'));
+    issue.appendChild(make('span', 'dbl-cards-series-mark',
+      'SERIES ' + (card.series ?? api.currentSeries)));
     heading.appendChild(issue);
     front.appendChild(heading);
     // Peak OVR moves to the upper-right in its original circular outline.
@@ -419,7 +421,8 @@
     pack.appendChild(make('span', 'dbl-cards-pack-crest', 'DBL / 1916'));
     pack.appendChild(make('strong', 'dbl-cards-pack-name', 'LEGACY'));
     pack.appendChild(make('span', 'dbl-cards-pack-shape', '◇'));
-    pack.appendChild(make('span', 'dbl-cards-pack-series', 'THE COLLECTOR SERIES'));
+    pack.appendChild(make('span', 'dbl-cards-pack-series',
+      'SERIES ' + api.currentSeries + ' · THE COLLECTOR SERIES'));
     pack.appendChild(make('span', 'dbl-cards-pack-guarantee', '5 CARDS · RARE+ GUARANTEED'));
     pack.appendChild(make('span', 'dbl-cards-pack-tear'));
     return pack;
