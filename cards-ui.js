@@ -342,6 +342,7 @@
     if (sealed) {
       back.appendChild(make('span', 'dbl-cards-back-logo', 'DBL'));
       back.appendChild(make('span', 'dbl-cards-back-ornament', '✦'));
+      back.appendChild(make('strong', 'dbl-cards-back-sealed-series', 'SERIES 0'));
       back.appendChild(make('span', 'dbl-cards-back-small', 'LEGENDS NEVER FADE'));
       back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO REVEAL'));
       return back;
