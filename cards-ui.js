@@ -853,7 +853,7 @@
       const saved = sessionStorage.getItem(CARDS_SUBTAB_KEY);
       // Older versions stored numeric indices 0/1/2, with Checklist at 2.
       const legacyTabIds = ['cardsPacksTab', 'cardsCollectionTab', 'cardsChecklistTab'];
-      const savedTabId = /^\\d+$/.test(saved || '')
+      const savedTabId = /^\d+$/.test(saved || '')
         ? legacyTabIds[Number(saved)] : saved;
       const restoredIndex = tabs.findIndex(([tab]) => tab.id === savedTabId);
       if (restoredIndex >= 0) startingCardsSubtab = restoredIndex;
