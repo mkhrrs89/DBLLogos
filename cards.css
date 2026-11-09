@@ -238,9 +238,34 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
-.dbl-cards-pull-grid > .dbl-cards-card {
+.dbl-cards-pull-grid > .dbl-cards-pull-entry {
   flex: 0 0 clamp(139px, 16vw, 202px);
   max-width: 202px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.dbl-cards-pull-entry > .dbl-cards-card {
+  flex: none;
+  width: 100%;
+}
+.dbl-cards-pull-status {
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font: 800 clamp(9px, .9vw, 12px)/1.2 Arial, "Helvetica Neue", sans-serif;
+  letter-spacing: .055em;
+  color: #e9d5b8;
+  white-space: nowrap;
+}
+.dbl-cards-pull-status.is-new {
+  color: #f4d393;
+}
+.dbl-cards-pull-status.is-owned {
+  color: #d4c1b3;
 }
 
 /* Card shell and flipping are shared by opened packs and the collection. */
@@ -963,7 +988,7 @@
 }
 @media (max-width: 800px) {
   .dbl-cards-pull-grid { justify-content: flex-start; width: 100%; padding-left: 5px; padding-right: 5px; }
-  .dbl-cards-pull-grid > .dbl-cards-card { flex-basis: 160px; }
+  .dbl-cards-pull-grid > .dbl-cards-pull-entry { flex-basis: 160px; }
   .dbl-cards-pack-stage { min-height: 335px; }
   .dbl-cards-collection { grid-template-columns: repeat(auto-fill,minmax(min(100%,145px),1fr)); }
 }
@@ -974,7 +999,7 @@
   .dbl-cards-ritual { padding: 12px 8px 18px; }
   .dbl-cards-pack-stage { min-height: 295px; }
   .dbl-cards-pack { width: 178px; }
-  .dbl-cards-pull-grid > .dbl-cards-card { flex-basis: 145px; }
+  .dbl-cards-pull-grid > .dbl-cards-pull-entry { flex-basis: 145px; }
   .dbl-cards-collection { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
   .dbl-cards-front-top { font-size: .43rem; }
   .dbl-cards-name { font-size: clamp(10px,2.6vw,12px); }
