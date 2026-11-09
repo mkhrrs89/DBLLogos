@@ -15,6 +15,7 @@
   const galleryCount = document.getElementById('cardsCollectionCount');
   const search = document.getElementById('cardsSearch');
   const rarityFilter = document.getElementById('cardsRarityFilter');
+  const teamFilter = document.getElementById('cardsTeamFilter');
   const order = document.getElementById('cardsSort');
   const loadMore = document.getElementById('cardsShowMoreBtn');
   const clearBtn = document.getElementById('cardsClearCollectionBtn');
@@ -33,7 +34,7 @@
   const checklistMore = document.getElementById('cardsChecklistMore');
   if (!api || !panel || !status || !saveStatus || !packStage || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
-      !galleryCount || !search || !rarityFilter || !order || !loadMore ||
+      !galleryCount || !search || !rarityFilter || !teamFilter || !order || !loadMore ||
       !clearBtn || tabs.some(([tab, view]) => !tab || !view) ||
       !checklistStats || !checklistSearch || !checklistRarity ||
       !checklistOwnership || !checklistSort || !checklistCaption ||
@@ -488,11 +489,38 @@
     showStatus();
     window.setTimeout(() => showPulls(pulled, token, ownedBeforePack), reduced() ? 10 : 850);
   }
+  function teamNameForCard(card) {
+    const name = String(card.teamName || '').trim();
+    // Older collection records may have a placeholder instead of a team name.
+    return name && name !== 'Team unavailable' && name !== 'League archive'
+      ? name : (String(card.team || '').trim() || name || 'Unknown team');
+  }
+  function syncTeamFilter() {
+    // Only list teams represented by cards in the saved binder, not every
+    // team from the uploaded league or the currently selected rarity.
+    const teams = [...new Set(api.items.map(teamNameForCard))]
+      .sort((a, b) => a.localeCompare(b));
+    const existing = Array.from(teamFilter.options).slice(1).map(option => option.value);
+    if (existing.length === teams.length &&
+        existing.every((value, index) => value === teams[index])) return;
+    const selected = teamFilter.value;
+    const all = make('option', '', 'All teams');
+    all.value = 'all';
+    const options = teams.map(name => {
+      const option = make('option', '', name);
+      option.value = name;
+      return option;
+    });
+    teamFilter.replaceChildren(all, ...options);
+    teamFilter.value = teams.includes(selected) ? selected : 'all';
+  }
   function filteredCards() {
     const q = search.value.trim().toLocaleLowerCase();
     const tier = rarityFilter.value;
+    const selectedTeam = teamFilter.value;
     const result = api.items.filter(item => {
       if (tier !== 'all' && tier !== item.rarity) return false;
+      if (selectedTeam !== 'all' && teamNameForCard(item) !== selectedTeam) return false;
       return !q || item.name.toLocaleLowerCase().includes(q) ||
         item.team.toLocaleLowerCase().includes(q) ||
         item.teamName.toLocaleLowerCase().includes(q);
@@ -512,6 +540,7 @@
     return result;
   }
   function showGallery() {
+    syncTeamFilter();
     const filtered = filteredCards();
     galleryCount.textContent = formattedCount(filtered.length) + ' card edition' +
       (filtered.length === 1 ? '' : 's') + ' shown';
@@ -729,7 +758,7 @@
   openBtn.addEventListener('click', openPack);
   revealBtn.addEventListener('click', revealAll);
   againBtn.addEventListener('click', readyStage);
-  for (const control of [rarityFilter, order, search]) {
+  for (const control of [rarityFilter, teamFilter, order, search]) {
     control.addEventListener(control === search ? 'input' : 'change', () => {
       limit = 36;
       showGallery();
@@ -751,6 +780,7 @@
         limit = 36;
         search.value = '';
         rarityFilter.value = 'all';
+        teamFilter.value = 'all';
         order.value = 'rarity';
         repaint();
       } else {
