@@ -2139,3 +2139,31 @@
   text-transform: uppercase;
   color: var(--muted);
 }
+
+
+/* Printed collection number on the uniform, unrevealed card reverse.
+   Shared by every sealed rarity so it cannot reveal the edition. */
+.dbl-cards-card.is-sealed .dbl-cards-back-sealed-series {
+  position: relative;
+  z-index: 2;
+  display: block;
+  align-self: center;
+  width: fit-content;
+  max-width: 94%;
+  padding: .34em .65em;
+  border-top: 1px solid rgba(93,70,52,.5);
+  border-bottom: 1px solid rgba(93,70,52,.5);
+  color: #513d2c;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  font-size: clamp(.72rem,1.15vw,1.05rem);
+  line-height: 1.08;
+  font-weight: 900;
+  letter-spacing: .17em;
+  text-align: center;
+  white-space: nowrap;
+}
+@supports (font-size: 1cqw) and (container-type: inline-size) {
+  .dbl-cards-card.is-sealed .dbl-cards-back-sealed-series {
+    font-size: clamp(10px,8.6cqw,23px);
+  }
+}
