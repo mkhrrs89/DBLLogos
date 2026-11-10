@@ -2901,7 +2901,7 @@
   min-height: 0;
   padding: 3%;
   border-radius: 50%;
-  background: radial-gradient(ellipse,rgba(255,255,246,.7),rgba(188,138,71,.09) 73%,transparent);
+  background: none;
 }
 .dbl-cards-team-season-emblem > .dbl-cards-team-crest {
   position: relative;
@@ -3006,8 +3006,7 @@
   min-height: 0;
   padding: 0;
   border-radius: 26%;
-  background: radial-gradient(ellipse, rgba(255,255,246,.72),
-    rgba(188,138,71,.06) 80%, transparent);
+  background: none;
 }
 .dbl-cards-team-season-emblem > .dbl-cards-team-crest {
   width: 100%;
