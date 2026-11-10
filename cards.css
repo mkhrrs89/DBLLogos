@@ -3277,7 +3277,8 @@
 .dbl-topps-photo .dbl-cards-initials {
   color: #555; font: 900 clamp(20px,19cqw,60px)/1 Georgia,serif;
 }
-.dbl-topps-player-front.is-rookie .dbl-topps-photo { right: 24%; }
+/* Rookie cards use the exact same portrait width and placement as base
+   1968 Topps cards; only the independent ROOKIE lettering differs. */
 .dbl-topps-rookie-rail {
   position: absolute; top: 7.5%; right: 6.2%; height: 32%; color: #171717;
   font: 400 clamp(10px,6.5cqw,20px)/1 Arial,Helvetica,sans-serif;
