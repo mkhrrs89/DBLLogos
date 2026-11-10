@@ -628,13 +628,23 @@
             (card.playoffRoundsWon === -1 ? ' · MISSED PLAYOFFS' : '');
           kind = 'worst';
         } else if (played && best.includes(card)) {
-          label = best.length > 1 ? 'TIED BEST RECORD' : 'LEAGUE BEST RECORD';
+          const honor = best.length > 1 ? 'TIED BEST RECORD' : 'LEAGUE BEST RECORD';
+          // A regular-season best record isn't a championship; also show
+          // the actual postseason outcome when the archive includes it.
+          const result = card.playoffRoundsWon === -1 ? ' · MISSED PLAYOFFS' :
+            Number.isInteger(card.playoffRoundsWon) && card.playoffRoundsWon >= 0
+              ? ' · ROUND ' + (card.playoffRoundsWon + 1) + ' EXIT' : '';
+          label = honor + result;
           kind = 'best';
         } else if (card.playoffRoundsWon === -1) {
           label = 'MISSED PLAYOFFS'; kind = 'missed';
         } else if (Number.isInteger(card.playoffRoundsWon) &&
             card.playoffRoundsWon >= 0) {
-          label = 'PLAYOFFS · ROUND ' + (card.playoffRoundsWon + 1) + ' EXIT';
+          // When finalists cannot be verified, report playoff progress
+          // rather than incorrectly claiming a champion was eliminated.
+          label = knownFinalists || card.playoffRoundsWon === 0
+            ? 'PLAYOFFS · ROUND ' + (card.playoffRoundsWon + 1) + ' EXIT'
+            : 'PLAYOFFS · ' + card.playoffRoundsWon + ' ROUNDS WON';
           kind = 'playoffs';
         } else {
           label = 'SEASON FINISH UNAVAILABLE'; kind = 'unknown';
