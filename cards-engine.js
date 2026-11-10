@@ -11,9 +11,15 @@
   // One independent Team Season insert roll per eligible pack slot.
   // It cannot replace a slot still required for the Refractor+ guarantee.
   const TEAM_INSERT_RATE = .03;
+  // A separate, plain-paper 1968 Topps test issue. Odds apply per eligible
+  // slot; existing Series 0 rarity guarantees and inserts stay intact.
+  const TOPPS_YEAR = 1968, TOPPS_SERIES = 1, TOPPS_INSERT_RATE = .15;
+  const TOPPS_UNIFORM_SHARE = .20;
   const TEAM_INSERT = Object.freeze({
     id: 'team-season', label: 'Team Season', insert: true
   });
+  const TOPPS_PLAYER = Object.freeze({id: 'topps-1968', label: '1968 Topps', insert: true});
+  const TOPPS_UNIFORM = Object.freeze({id: 'topps-1968-uniform', label: 'Topps Uniform', insert: true});
   const RARITIES = [
     { id: 'common', label: 'Base', chance: 85, pool: 1 },
     { id: 'crome', label: 'Chrome', chance: 10, pool: .72 },
@@ -103,7 +109,7 @@
     return merged;
   }
   const tierIndex = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
-  const tierMap = Object.fromEntries([...RARITIES, TEAM_INSERT].map(r => [r.id, r]));
+  const tierMap = Object.fromEntries([...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM].map(r => [r.id, r]));
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
   const integer = x => Number.isInteger(number(x)) ? number(x) : null;
   const str = x => typeof x === 'string' ? x.trim() : '';
@@ -112,6 +118,7 @@
   let currentFile = null, fileVersion = 0, scanning = false, poolFile = null;
   let pool = [], poolByPid = new Map(), teamLogos = new Map(), activeSeason = null;
   let teamSeasonPool = [], teamSeasonById = new Map();
+  let toppsPlayerPool = [], toppsUniformPool = [], toppsById = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
   let packSources = {}, mergingCollection = false;
   let savedOK = true, saveQueue = Promise.resolve();
@@ -130,6 +137,105 @@
     if (!persist && value.length < 450000 &&
         /^data:image\/(?:jpeg|jpg|png|webp|gif);base64,/i.test(value)) return value;
     return '';
+  }
+  // Collection 1 cards have their own stable IDs and 1968-only metadata.
+  // This normalization is shared by local restore and cross-device imports.
+  function normalizedTopps(row, count, sourceLedger) {
+    if (!row || (row.type !== 'topps-player' && row.type !== 'topps-uniform') ||
+        integer(row.era) !== TOPPS_YEAR || !Number.isInteger(count) ||
+        count < 1 || count > 1000000) return null;
+    const team = str(row.team) || 'DBL';
+    const teamName = str(row.teamName) || 'Unknown team';
+    const tid = integer(row.tid);
+    if (row.type === 'topps-player') {
+      const pid = integer(row.pid);
+      if (row.rarity !== TOPPS_PLAYER.id || pid === null || pid < 0) return null;
+      return {
+        id: 'topps:1968:player:' + pid,
+        type: 'topps-player', rarity: TOPPS_PLAYER.id, series: TOPPS_SERIES,
+        count, sourceCounts: sourceLedger, pid, era: TOPPS_YEAR, tid,
+        name: str(row.name) || 'Unknown player',
+        firstName: str(row.firstName), lastName: str(row.lastName),
+        jersey: /^\d{1,3}$/.test(String(row.jersey || '')) ? String(row.jersey) : '',
+        team, teamName, franchiseName: str(row.franchiseName) || teamName,
+        teamLogo: photoUrl(row.teamLogo, true),
+        pos: str(row.pos) || '—', rookie: row.rookie === true,
+        ovr: number(row.ovr), gp: number(row.gp), ppg: number(row.ppg),
+        rpg: number(row.rpg), apg: number(row.apg), photo: photoUrl(row.photo, true)
+      };
+    }
+    const uniform = str(row.uniform).toLowerCase();
+    if (row.rarity !== TOPPS_UNIFORM.id || tid === null || tid < 0 ||
+        (uniform !== 'home' && uniform !== 'away')) return null;
+    return {
+      id: 'topps:1968:uniform:' + tid + ':' + uniform,
+      type: 'topps-uniform', rarity: TOPPS_UNIFORM.id, series: TOPPS_SERIES,
+      count, sourceCounts: sourceLedger, tid, era: TOPPS_YEAR,
+      uniform, name: teamName + ' · ' + uniform.toUpperCase(),
+      team, teamName, franchiseName: str(row.franchiseName) || teamName,
+      teamLogo: photoUrl(row.teamLogo, true), uniformImage: photoUrl(row.uniformImage, true)
+    };
+  }
+  function updateTopps(target, fresh) {
+    let changed = false;
+    for (const key of ['name','firstName','lastName','jersey','team','teamName',
+      'franchiseName','teamLogo','tid','pos','rookie','ovr','gp','ppg','rpg','apg',
+      'photo','uniformImage']) {
+      if (fresh[key] !== undefined && fresh[key] !== null && fresh[key] !== '' &&
+          fresh[key] !== target[key]) {
+        target[key] = fresh[key];
+        changed = true;
+      }
+    }
+    return changed;
+  }
+  function topperPlayer(player, fileYear, teams) {
+    if (fileYear < TOPPS_YEAR || integer(player?.pid) === null ||
+        integer(player.pid) < 0) return null;
+    const rows = (Array.isArray(player.stats) ? player.stats : [])
+      .filter(x => !x?.playoffs && integer(x?.season) === TOPPS_YEAR &&
+        (integer(x?.tid) ?? -1) >= 0 && (number(x?.gp) ?? 0) > 0);
+    // The current 1968 roster also includes preseason/new players with no GP.
+    const live1968 = fileYear === TOPPS_YEAR && (integer(player.tid) ?? -1) >= 0;
+    if (!rows.length && !live1968) return null;
+    let tid = null, mostGames = -1;
+    for (const row of rows) {
+      const games = number(row.gp) ?? 0;
+      if (games > mostGames) {mostGames = games; tid = integer(row.tid);}
+    }
+    if (tid === null && live1968) tid = integer(player.tid);
+    if (tid === null || !teams.has(tid)) return null;
+    const stats = rows.filter(row => integer(row.tid) === tid);
+    const gp = stats.reduce((sum, row) => sum + (number(row.gp) ?? 0), 0);
+    const pts = stats.reduce((sum, row) => sum + (number(row.pts) ?? 0), 0);
+    const trb = stats.reduce((sum, row) => sum + (number(row.trb) ?? 0), 0);
+    const ast = stats.reduce((sum, row) => sum + (number(row.ast) ?? 0), 0);
+    const hasPreviousGames = (Array.isArray(player.stats) ? player.stats : [])
+      .some(row => !row?.playoffs && (integer(row?.season) ?? Infinity) < TOPPS_YEAR &&
+        (number(row.gp) ?? 0) > 0);
+    const pastRatings = ratingData(player, TOPPS_YEAR);
+    const current = pastRatings.selected;
+    const historic = teamAt(teams, tid, TOPPS_YEAR);
+    const franchise = teamAt(teams, tid, fileYear);
+    const jersey = jerseyOf(player, TOPPS_YEAR, tid, fileYear);
+    return {
+      id: 'topps:1968:player:' + integer(player.pid),
+      type: 'topps-player', rarity: TOPPS_PLAYER.id, series: TOPPS_SERIES,
+      count: 1, pid: integer(player.pid), era: TOPPS_YEAR, tid,
+      name: nameOf(player), firstName: str(player.firstName),
+      lastName: str(player.lastName), jersey,
+      team: historic?.abbrev || 'DBL',
+      teamName: historic?.name || 'Unknown team',
+      franchiseName: franchise?.name || historic?.name || 'Unknown team',
+      teamLogo: photoUrl(historic?.logo, true), logo: historic?.logo || '',
+      pos: str(current.pos) || str(player.pos) || '—',
+      rookie: !hasPreviousGames,
+      ovr: number(current.ovr), gp,
+      ppg: gp ? Math.round(pts / gp * 10) / 10 : 0,
+      rpg: gp ? Math.round(trb / gp * 10) / 10 : 0,
+      apg: gp ? Math.round(ast / gp * 10) / 10 : 0,
+      photo: photoUrl(player.imgURL, true), image: photoUrl(player.imgURL)
+    };
   }
   function ratingData(player, season) {
     let selected = null, mostRecent = -Infinity;
@@ -346,6 +452,16 @@
     collection = new Map();
     for (const row of Array.isArray(value?.items) ? value.items : []) {
       const qty = integer(row?.count);
+      if (row?.type === 'topps-player' || row?.type === 'topps-uniform') {
+        const item = normalizedTopps(row, qty, sourceCounts(row.sourceCounts, qty));
+        if (!item) continue;
+        const old = collection.get(item.id);
+        if (old) {
+          old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
+          old.count = sumSourceCounts(old.sourceCounts);
+        } else collection.set(item.id, item);
+        continue;
+      }
       if (row?.type === 'team-season' && row?.rarity === TEAM_INSERT.id) {
         const tid = integer(row.tid), year = integer(row.era ?? row.season);
         if (tid === null || tid < 0 || year === null || qty === null ||
@@ -447,7 +563,10 @@
         throw Error('The backup contains an invalid card quantity.');
       const origins = sourceCounts(row.sourceCounts, qty, true);
       let item;
-      if (row.type === 'team-season') {
+      if (row.type === 'topps-player' || row.type === 'topps-uniform') {
+        item = normalizedTopps(row, qty, origins);
+        if (!item) throw Error('The backup contains an invalid 1968 Topps card.');
+      } else if (row.type === 'team-season') {
         const tid = integer(row.tid), era = integer(row.era);
         if (row.rarity !== TEAM_INSERT.id || tid === null || tid < 0 ||
             era === null || era < 0)
@@ -518,7 +637,9 @@
       addedCards += mergedCount - current.count;
       current.sourceCounts = joined;
       current.count = mergedCount;
-      if (imported.type === 'team-season') {
+      if (imported.type === 'topps-player' || imported.type === 'topps-uniform') {
+        if (updateTopps(current, imported)) refreshed = true;
+      } else if (imported.type === 'team-season') {
         if (updateTeamSeason(current, imported)) refreshed = true;
       } else if ((imported.peakVerified && !current.peakVerified) ||
           (imported.peakVerified && (imported.peak ?? -1) > (current.peak ?? -1))) {
@@ -623,6 +744,11 @@
     if (!collectionLoaded || mergingCollection || !poolFile || !collection.size) return;
     let modified = false;
     for (const item of collection.values()) {
+      if (item.type === 'topps-player' || item.type === 'topps-uniform') {
+        const live = toppsById.get(item.id);
+        if (live && updateTopps(item, live)) modified = true;
+        continue;
+      }
       if (item.type === 'team-season') {
         const live = teamSeasonById.get(item.id);
         if (live && updateTeamSeason(item, live)) modified = true;
@@ -734,24 +860,47 @@
     const draw = unused.length ? unused : teamSeasonPool;
     return draw[Math.floor(Math.random() * draw.length)];
   }
+  function chooseToppsInsert(takenIds) {
+    const wantUniform = Math.random() < TOPPS_UNIFORM_SHARE;
+    const preferred = wantUniform ? toppsUniformPool : toppsPlayerPool;
+    const fallback = wantUniform ? toppsPlayerPool : toppsUniformPool;
+    const source = preferred.length ? preferred : fallback;
+    if (!source.length) return null;
+    const unused = source.filter(c => !takenIds.has(c.id));
+    const draw = unused.length ? unused : source;
+    return draw[Math.floor(Math.random() * draw.length)];
+  }
   function getPack() {
     if (!collectionLoaded || mergingCollection || !pool.length) return [];
-    const taken = new Set(), takenTeamIds = new Set(), picks = [];
+    const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set(), picks = [];
     let hasRefractor = false;
     const rareCandidate = pool.find(p =>
       p.peak >= MIN_OVR_BY_RARITY.refractor);
     for (let i = 0; i < 5; i++) {
       const guarantee = i === 4 && !hasRefractor && !!rareCandidate;
       const mythicalTier = sampleMythical();
-      // An insert replaces an ordinary slot but never consumes a guaranteed
-      // Refractor+ position. Existing special player rolls retain priority.
-      if (!mythicalTier && !guarantee && teamSeasonPool.length &&
-          Math.random() < TEAM_INSERT_RATE) {
-        const insert = chooseTeamInsert(takenTeamIds);
-        if (insert) {
-          takenTeamIds.add(insert.id);
-          picks.push({...insert, count: 1});
-          continue;
+      // Both inserts share a single roll, so Team Season retains its true
+      // 3% chance and Topps has a 15% chance on each eligible slot.
+      // Neither consumes a Mythical hit or the guaranteed Refractor+ slot.
+      if (!mythicalTier && !guarantee) {
+        const teamChance = teamSeasonPool.length ? TEAM_INSERT_RATE : 0;
+        const toppsChance = toppsById.size ? TOPPS_INSERT_RATE : 0;
+        const roll = Math.random();
+        if (roll < teamChance) {
+          const insert = chooseTeamInsert(takenTeamIds);
+          if (insert) {
+            takenTeamIds.add(insert.id);
+            picks.push({...insert, count: 1});
+            continue;
+          }
+        }
+        if (roll >= teamChance && roll < teamChance + toppsChance) {
+          const insert = chooseToppsInsert(takenToppsIds);
+          if (insert) {
+            takenToppsIds.add(insert.id);
+            picks.push({...insert, count: 1});
+            continue;
+          }
         }
       }
       const requestedTier = mythicalTier || sampleTier(guarantee);
@@ -784,7 +933,9 @@
       if (owned) {
         owned.sourceCounts[thisSourceId] = (owned.sourceCounts[thisSourceId] || 0) + 1;
         owned.count = sumSourceCounts(owned.sourceCounts);
-        if (card.type === 'team-season') {
+        if (card.type === 'topps-player' || card.type === 'topps-uniform') {
+          updateTopps(owned, card);
+        } else if (card.type === 'team-season') {
           updateTeamSeason(owned, card);
         } else {
           // An older player's season data is refreshed only when authoritative.
@@ -949,8 +1100,14 @@
         a.teamName.localeCompare(b.teamName) || a.tid - b.tid);
       if (!current()) return;
       const players = [], seen = new Set();
+      const toppsPlayers = [], seenTopps = new Set();
       await reader.forEachTopLevelArrayItem(file, 'players', player => {
         if (!current()) return;
+        const topps = topperPlayer(player, season, teams);
+        if (topps && !seenTopps.has(topps.pid)) {
+          seenTopps.add(topps.pid);
+          toppsPlayers.push(topps);
+        }
         const data = playerInfo(player, season, teams);
         if (!data || seen.has(data.pid)) return;
         seen.add(data.pid);
@@ -958,10 +1115,42 @@
       });
       if (!current()) return;
       players.sort((a, b) => b.score - a.score || (b.peak ?? 0) - (a.peak ?? 0) || a.pid - b.pid);
+      // One home and one away uniform card per franchise fielding a team in
+      // 1968. Until artwork is uploaded these are intentional placeholders.
+      const toppsUniforms = [];
+      if (season >= TOPPS_YEAR) {
+        const tids1968 = new Set(toppsPlayers.map(p => p.tid));
+        for (const [tid, team] of teams) {
+          if (team.history.some(row => integer(row.season) === TOPPS_YEAR))
+            tids1968.add(tid);
+        }
+        for (const tid of tids1968) {
+          const historical = teamAt(teams, tid, TOPPS_YEAR);
+          if (!historical) continue;
+          const latest = teamAt(teams, tid, season);
+          for (const uniform of ['home', 'away']) {
+            toppsUniforms.push({
+              id: 'topps:1968:uniform:' + tid + ':' + uniform,
+              type: 'topps-uniform', rarity: TOPPS_UNIFORM.id,
+              series: TOPPS_SERIES, count: 1, tid, era: TOPPS_YEAR, uniform,
+              name: historical.name + ' · ' + uniform.toUpperCase(),
+              team: historical.abbrev, teamName: historical.name,
+              franchiseName: latest?.name || historical.name,
+              teamLogo: photoUrl(historical.logo, true), uniformImage: ''
+            });
+          }
+        }
+      }
+      toppsPlayers.sort((a, b) => a.name.localeCompare(b.name) || a.pid - b.pid);
+      toppsUniforms.sort((a, b) => a.teamName.localeCompare(b.teamName) ||
+        a.uniform.localeCompare(b.uniform));
       pool = players;
       poolByPid = new Map(players.map(p => [p.pid, p]));
       teamSeasonPool = teamSeasons;
       teamSeasonById = new Map(teamSeasons.map(team => [team.id, team]));
+      toppsPlayerPool = toppsPlayers;
+      toppsUniformPool = toppsUniforms;
+      toppsById = new Map([...toppsPlayers, ...toppsUniforms].map(card => [card.id, card]));
       teamLogos = availableLogos;
       activeSeason = season;
       poolFile = file;
@@ -972,6 +1161,9 @@
       pool = [];
       teamSeasonPool = [];
       teamSeasonById = new Map();
+      toppsPlayerPool = [];
+      toppsUniformPool = [];
+      toppsById = new Map();
       problem = 'Could not read players from this league file. Try re-uploading it.';
     } finally {
       if (current()) { scanning = false; notify(); }
@@ -990,6 +1182,9 @@
     poolByPid = new Map();
     teamSeasonPool = [];
     teamSeasonById = new Map();
+    toppsPlayerPool = [];
+    toppsUniformPool = [];
+    toppsById = new Map();
     teamLogos = new Map();
     activeSeason = null;
     scanning = false;
@@ -998,7 +1193,7 @@
   }
   const api = Object.freeze({
     currentSeries: CARD_SERIES,
-    rarities: [...RARITIES, TEAM_INSERT].map(r => Object.freeze({
+    rarities: [...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM].map(r => Object.freeze({
       ...r, minOvr: MIN_OVR_BY_RARITY[r.id]
     })),
     exportCollection, previewCollectionMerge, mergeCollection,
@@ -1009,6 +1204,16 @@
         pid: p.pid, name: p.name, teamName: p.teamName,
         team: p.team, peak: p.peak, era: p.era,
         franchiseTid: p.franchiseTid, franchiseName: p.franchiseName
+      }));
+    },
+    // All eligible 1968 Topps player and uniform editions, independently
+    // collected from Series 0 and unaffected by Series 0 OVR floors.
+    get checklistTopps() {
+      return [...toppsPlayerPool, ...toppsUniformPool].map(c => ({
+        id: c.id, type: c.type, rarity: c.rarity, era: TOPPS_YEAR,
+        name: c.name, team: c.team, teamName: c.teamName,
+        franchiseTid: c.tid, franchiseName: c.franchiseName,
+        peak: c.ovr ?? null, rookie: c.rookie === true, uniform: c.uniform
       }));
     },
     // Read-only historical team season catalog for Checklist completion.
@@ -1032,7 +1237,10 @@
       return poolByPid.get(card?.pid)?.rookie === true &&
         card?.era === poolByPid.get(card?.pid)?.era;
     },
-    findPhoto(card) { return poolByPid.get(card.pid)?.image || card.photo || ''; },
+    findPhoto(card) {
+      if (card?.type === 'topps-player') return toppsById.get(card.id)?.image || card.photo || '';
+      return poolByPid.get(card.pid)?.image || card.photo || '';
+    },
     findJersey(card) { return card?.jersey || poolByPid.get(card?.pid)?.jersey || ''; },
     findNameParts(card) {
       const live = poolByPid.get(card?.pid);
@@ -1044,6 +1252,9 @@
     findTeamLogo(card) {
       if (card?.type === 'team-season') {
         return teamSeasonById.get(card.id)?.logo || card.teamLogo || '';
+      }
+      if (card?.type === 'topps-player' || card?.type === 'topps-uniform') {
+        return toppsById.get(card.id)?.logo || card.teamLogo || '';
       }
       const player = poolByPid.get(card.pid);
       return card.teamLogo || teamLogos.get(card.team) ||
