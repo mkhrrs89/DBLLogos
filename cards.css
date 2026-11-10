@@ -1536,7 +1536,9 @@
 }
 .dbl-cards-affiliation-jersey {
   flex: 0 0 auto;
-  white-space: nowrap;
+  /* Flex-item leading blanks are otherwise collapsed: keep the real space
+     before '| #30' instead of rendering 'Stonedogs| #30'. */
+  white-space: pre;
 }
 .dbl-cards-first-name,
 .dbl-cards-name,
@@ -3199,15 +3201,16 @@
   padding-top: 9%;
 }
 
-/* Smaller desktop Pack Room cards, with all contents scaling naturally.
-   The mobile/tablet rules at 800px and below are deliberately untouched. */
+/* Desktop-only Pack Room card size, between the old 165px and 202px
+   limits. Change the actual layout box so every card detail scales with it;
+   mobile and tablet sizes at 800px and below remain unchanged. */
 @media (min-width: 801px) {
   .dbl-cards-pull-grid {
     gap: clamp(7px, 1.3vw, 16px);
   }
   .dbl-cards-pull-grid > .dbl-cards-pull-entry {
-    flex: 0 0 clamp(122px, 13vw, 165px);
-    max-width: 165px;
+    flex: 0 0 clamp(136px, 15vw, 185px);
+    max-width: 185px;
   }
 }
 
@@ -3342,9 +3345,13 @@
   font: 400 clamp(13px,8.6cqw,28px)/1.1 Arial,Helvetica,sans-serif;
 }
 .dbl-topps-uniform-heading {
-  position: absolute; top: 2.1%; left: 4%; right: 4%;
-  font: 400 clamp(10px,7.8cqw,25px)/1.2 Arial,Helvetica,sans-serif;
-  letter-spacing: .17em; white-space: nowrap;
+  position: absolute; top: 3%; left: 2%; right: 2%;
+  /* Fit the complete "1968 UNIFORM CARD" line in the printed card at
+     every supported size, especially compact desktop cards. */
+  font: 400 clamp(8px,5.8cqw,18px)/1.18 Arial,Helvetica,sans-serif;
+  letter-spacing: .09em;
+  white-space: nowrap;
+  text-align: center;
 }
 .dbl-topps-uniform-kind {
   position: absolute; top: 11%; left: 0; right: 0;
@@ -3356,21 +3363,47 @@
   display: flex; justify-content: center; align-items: center;
 }
 .dbl-topps-placeholder-jersey {
-  position: relative; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4%;
-  width: 96%; height: 91%; background: #f1eddd; color: #225342;
-  border: 2px solid #225342; box-shadow: 0 5px 9px rgba(0,0,0,.1);
-  clip-path: polygon(16% 0,32% 5%,68% 5%,84% 0,100% 20%,82% 33%,82% 100%,18% 100%,18% 33%,0 20%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4%;
+  width: 90%;
+  height: 91%;
+  background: #f1eddd;
+  color: #225342;
+  border: 0;
+  /* Sleeveless basketball tank: shoulder straps, scooped neckline,
+     inward-curving open armholes and a straight, untucked jersey hem.
+     It is a placeholder silhouette, not a football/hockey shirt. */
+  clip-path: polygon(
+    22% 2%, 35% 2%,
+    37% 8%, 40% 12%, 45% 15%, 50% 16%, 55% 15%, 60% 12%, 63% 8%, 65% 2%,
+    78% 2%, 77% 9%, 74% 17%, 71% 24%, 69% 31%, 70% 36%, 78% 41%,
+    80% 98%, 20% 98%,
+    22% 41%, 30% 36%, 31% 31%, 29% 24%, 26% 17%, 23% 9%
+  );
 }
 .dbl-topps-placeholder-jersey[data-uniform="away"] {
-  background: #315b51; color: #f1eddd;
+  background: #315b51;
+  color: #f1eddd;
 }
 .dbl-topps-placeholder-collar {
-  position: absolute; top: 1%; left: 35%; right: 35%; height: 16%;
-  background: #fff; border: 5px solid #225342; border-radius: 0 0 50% 50%;
+  position: absolute;
+  top: 1%;
+  left: 34%;
+  right: 34%;
+  height: 17%;
+  box-sizing: border-box;
+  background: transparent;
+  border: clamp(3px,1.6cqw,6px) solid #225342;
+  border-top: 0;
+  border-radius: 0 0 48% 48%;
+  pointer-events: none;
 }
 .dbl-topps-placeholder-jersey[data-uniform="away"] .dbl-topps-placeholder-collar {
-  background: #315b51; border-color: #f1eddd;
+  border-color: #f1eddd;
 }
 .dbl-topps-placeholder-wordmark {
   margin-top: 8%; max-width: 57%; text-align: center; text-transform: uppercase;
@@ -3380,17 +3413,11 @@
 .dbl-topps-placeholder-number {
   font: 900 clamp(32px,25cqw,76px)/1 Arial,Helvetica,sans-serif;
 }
-.dbl-topps-uniform-pending {
-  position: absolute; bottom: 1%; left: 0; right: 0; color: #4a4a4a;
-  font: 600 clamp(6px,3.5cqw,11px)/1.2 Arial,Helvetica,sans-serif;
-  letter-spacing: .1em;
-}
 .dbl-topps-uniform-image {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: contain; z-index: 3;
 }
-.dbl-topps-uniform-art.has-image .dbl-topps-placeholder-jersey,
-.dbl-topps-uniform-art.has-image .dbl-topps-uniform-pending { display: none; }
+.dbl-topps-uniform-art.has-image .dbl-topps-placeholder-jersey { display: none; }
 .dbl-topps-uniform-name {
   position: absolute; bottom: 3%; left: 2%; right: 2%;
   font-size: clamp(12px,9.7cqw,30px); line-height: 1.06;
@@ -3407,4 +3434,15 @@
 }
 .dbl-topps-preview-subtitle {
   font: 600 clamp(8px,6.8cqw,18px)/1 Arial,Helvetica,sans-serif; letter-spacing: .28em;
+}
+
+
+/* Square outer corners for Series 0 card stock (player, Team Season and
+   mystery backs), matching the 1968 Topps issue. This changes the actual
+   card silhouette, not the rounded portrait windows or inner ornaments. */
+.dbl-cards-card,
+.dbl-cards-card .dbl-cards-inner,
+.dbl-cards-card .dbl-cards-face,
+.dbl-cards-pull-grid .dbl-cards-card {
+  border-radius: 0;
 }
