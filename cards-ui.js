@@ -58,6 +58,9 @@
   ];
   let activeChecklistSeries = 0;
   const tierIndex = Object.fromEntries(api.rarities.map((r, i) => [r.id, i]));
+  // Inserts are rarer than Refractors but less scarce than Black Label.
+  // Do not rank them above the intentionally hidden rarest editions.
+  tierIndex['team-season'] = 2.5;
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Undiscovered editions must never appear in the checklist or public
   // progress totals, even for players who meet their hidden requirements.
