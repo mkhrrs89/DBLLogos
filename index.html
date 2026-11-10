@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
     <link rel="stylesheet" href="./home-season-preview.css?v=20261106-season-preview" />
-    <link rel="stylesheet" href="./cards.css?v=20261110-team-season-finishes" />
+    <link rel="stylesheet" href="./cards.css?v=20261110-collection-merge" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -290,9 +290,16 @@
               </div>
               <div class="dbl-cards-binder-actions">
                 <p id="cardsSaveStatus" class="dbl-cards-save-status" aria-live="polite">Restoring collection…</p>
+                <div class="dbl-cards-transfer-actions">
+                  <button id="cardsExportCollectionBtn" type="button" class="dbl-cards-transfer-button" disabled>Export Collection</button>
+                  <button id="cardsMergeCollectionBtn" type="button" class="dbl-cards-transfer-button" disabled>Import &amp; Merge</button>
+                  <input id="cardsImportCollectionFile" type="file" accept=".json,application/json" hidden />
+                </div>
                 <button id="cardsClearCollectionBtn" type="button" class="dbl-cards-clear-button" disabled>Clear Collection</button>
               </div>
             </header>
+            <p id="cardsMergeFeedback" class="dbl-cards-merge-feedback" role="status" aria-live="polite"></p>
+            <p class="dbl-cards-transfer-explainer">Export your collection as a JSON backup, then import it on another device to combine cards, duplicate copies, and packs opened. You can transfer in either direction; importing an updated backup won't double-count old pulls. No automatic cloud syncing.</p>
             <div id="cardsCollectionStats" class="dbl-cards-collection-stats"></div>
             <div class="dbl-cards-filter-row">
               <label class="dbl-cards-field dbl-cards-field-search" for="cardsSearch">
@@ -1032,8 +1039,8 @@
     <script src="./home-season-preview.js?v=20261106-home-team-badges"></script>
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
-    <script src="./cards-engine.js?v=20261110-team-season-finishes"></script>
-    <script src="./cards-ui.js?v=20261110-team-season-finishes"></script>
+    <script src="./cards-engine.js?v=20261110-collection-merge"></script>
+    <script src="./cards-ui.js?v=20261110-collection-merge"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
