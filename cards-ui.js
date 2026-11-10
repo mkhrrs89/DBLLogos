@@ -543,8 +543,10 @@
     // Mystery cards have no rarity-dependent styling until flipped over.
     // Revealed cards and cards already owned use their proper rarity color.
     if (!sealed) button.dataset.rarity = card.rarity;
+    const cardLabel = isTeamSeason(card)
+      ? String(card.era) + ' ' + card.name : card.name;
     button.setAttribute('aria-label', sealed ? 'Reveal mystery DBL card' :
-      'View statistics for ' + card.name + ', ' + tierMap[card.rarity]?.label);
+      'View statistics for ' + cardLabel + ', ' + tierMap[card.rarity]?.label);
     const inner = make('span', 'dbl-cards-inner');
     inner.appendChild(frontOf(card));
     const reverse = backOf(card, sealed);
@@ -560,13 +562,13 @@
         button.dataset.rarity = card.rarity;
         playCardRevealEffect(button, card);
         scheduleNameFit();
-        button.setAttribute('aria-label', 'View statistics for ' + card.name +
+        button.setAttribute('aria-label', 'View statistics for ' + cardLabel +
           ', ' + tierMap[card.rarity]?.label);
         if (onFirst) onFirst();
       } else {
         button.classList.toggle('is-turned');
         button.setAttribute('aria-label', button.classList.contains('is-turned')
-          ? 'View front of ' + card.name : 'View statistics for ' + card.name);
+          ? 'View front of ' + cardLabel : 'View statistics for ' + cardLabel);
         // Repeat the flourish when turning from the statistics side to the
         // front, never while displaying the readable statistics reverse.
         if (!button.classList.contains('is-turned'))
@@ -685,7 +687,8 @@
       if (selectedTeam !== 'all' && teamNameForCard(item) !== selectedTeam) return false;
       return !q || item.name.toLocaleLowerCase().includes(q) ||
         item.team.toLocaleLowerCase().includes(q) ||
-        item.teamName.toLocaleLowerCase().includes(q);
+        item.teamName.toLocaleLowerCase().includes(q) ||
+        String(item.era ?? '').includes(q);
     });
     switch (order.value) {
       case 'name': result.sort((a, b) => a.name.localeCompare(b.name)); break;
