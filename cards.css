@@ -3252,3 +3252,168 @@
   animation: dbl-cards-fx-sweep var(--fx-duration) ease-out var(--fx-delay) both;
   pointer-events: none;
 }
+
+
+/* 1968 TOPPS test issue: deliberately plain white paper, monochrome portrait,
+   no added chrome/refractor/black-label treatments. Rarity remains hidden
+   while cards are sealed; these selectors apply after reveal. */
+.dbl-cards-card[data-rarity="topps-1968"],
+.dbl-cards-card[data-rarity="topps-1968-uniform"] {
+  --card-edge: #ddd; --card-text: #111; --card-muted: #222; --card-aura: transparent;
+}
+.dbl-cards-card[data-rarity="topps-1968"] .dbl-cards-front,
+.dbl-cards-card[data-rarity="topps-1968"] .dbl-cards-back,
+.dbl-cards-card[data-rarity="topps-1968-uniform"] .dbl-cards-front,
+.dbl-cards-card[data-rarity="topps-1968-uniform"] .dbl-cards-back,
+.dbl-topps-collection-preview {
+  box-sizing: border-box; background: #fff; color: #101010; border: 1px solid #ddd;
+  border-radius: 0; box-shadow: 0 5px 16px rgba(0,0,0,.25);
+}
+.dbl-cards-card[data-rarity="topps-1968"] .dbl-cards-inner,
+.dbl-cards-card[data-rarity="topps-1968-uniform"] .dbl-cards-inner { border-radius: 0; }
+.dbl-topps-front, .dbl-topps-uniform-front { position: absolute; text-align: center; }
+.dbl-topps-player-front .dbl-topps-photo.dbl-cards-art {
+  position: absolute; top: 4.7%; bottom: 20.2%; left: 14%; right: 14%;
+  border: 0; border-radius: 0; overflow: hidden; background: #dfdedb;
+}
+.dbl-topps-photo .dbl-cards-player-photo {
+  filter: grayscale(1) contrast(.98) sepia(.06);
+  object-position: center top !important;
+}
+.dbl-topps-photo .dbl-cards-initials {
+  color: #555; font: 900 clamp(20px,19cqw,60px)/1 Georgia,serif;
+}
+.dbl-topps-player-front.is-rookie .dbl-topps-photo { right: 24%; }
+.dbl-topps-rookie-rail {
+  position: absolute; top: 7.5%; right: 6.2%; height: 32%; color: #171717;
+  font: 400 clamp(10px,6.5cqw,20px)/1 Arial,Helvetica,sans-serif;
+  writing-mode: vertical-rl; text-orientation: upright; letter-spacing: .13em;
+}
+.dbl-topps-player-name, .dbl-topps-uniform-name, .dbl-topps-back-name {
+  display: block; font-family: "Cooper Black","Bookman Old Style","Brush Script MT",Georgia,serif;
+  font-style: italic; font-weight: 900; letter-spacing: -.045em;
+  color: #090909; text-align: center; text-wrap: balance; overflow-wrap: anywhere;
+}
+.dbl-topps-player-name {
+  position: absolute; bottom: 8.5%; left: 2%; right: 2%;
+  font-size: clamp(12px,10.5cqw,32px); line-height: 1.05; max-height: 13%;
+}
+.dbl-topps-identity {
+  position: absolute; bottom: 3.6%; left: 2%; right: 2%;
+  color: #252525; font: 400 clamp(8px,5.2cqw,16px)/1.15 Arial,Helvetica,sans-serif;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dbl-topps-back { display: block; padding: 0; text-align: center; }
+.dbl-topps-back-name {
+  position: absolute; top: 5.5%; left: 5%; right: 5%;
+  font-size: clamp(13px,10.4cqw,32px); line-height: 1.04; max-height: 12%;
+}
+.dbl-topps-back-identity {
+  position: absolute; top: 16.2%; left: 4%; right: 4%; color: #1c1c1c;
+  font: 400 clamp(7px,4.7cqw,15px)/1.13 Arial,Helvetica,sans-serif;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dbl-topps-back-logo-circle {
+  position: absolute; left: 50%; top: 22.5%; transform: translateX(-50%);
+  width: 29%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border: 1px solid #222; border-radius: 50%; overflow: hidden;
+}
+.dbl-topps-back-logo-circle .dbl-cards-team-crest {
+  flex: none; width: 78%; height: 78%; aspect-ratio: auto;
+}
+.dbl-topps-back-logo-circle .dbl-cards-team-initials {
+  font-size: clamp(9px,7cqw,18px);
+}
+.dbl-topps-back-stats {
+  position: absolute; top: 45.8%; left: 8%; right: 8%; bottom: 12%;
+  display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+  align-content: center; justify-items: center; gap: 3%;
+  box-sizing: border-box; border: 1px solid #555; color: #222; padding: 4% 3%;
+}
+.dbl-topps-back-stats-title {
+  grid-column: 1 / -1;
+  font: 700 clamp(8px,5.2cqw,16px)/1.2 Arial,Helvetica,sans-serif;
+  letter-spacing: .08em; margin-bottom: 4%;
+}
+.dbl-topps-back-stat {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-width: 0; font-family: Arial,Helvetica,sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.dbl-topps-back-stat strong { font-size: clamp(11px,7.4cqw,22px); }
+.dbl-topps-back-stat span { font-size: clamp(7px,4.1cqw,12px); }
+.dbl-topps-uniform-note {
+  grid-column: 1 / -1;
+  font: 400 clamp(8px,5.1cqw,15px)/1.5 Arial,Helvetica,sans-serif;
+}
+.dbl-topps-back-footer {
+  position: absolute; bottom: 3.3%; left: 0; right: 0;
+  font: 400 clamp(13px,8.6cqw,28px)/1.1 Arial,Helvetica,sans-serif;
+}
+.dbl-topps-uniform-heading {
+  position: absolute; top: 2.1%; left: 4%; right: 4%;
+  font: 400 clamp(10px,7.8cqw,25px)/1.2 Arial,Helvetica,sans-serif;
+  letter-spacing: .17em; white-space: nowrap;
+}
+.dbl-topps-uniform-kind {
+  position: absolute; top: 11%; left: 0; right: 0;
+  font: 400 clamp(12px,10.2cqw,33px)/1 Arial,Helvetica,sans-serif;
+  letter-spacing: .22em;
+}
+.dbl-topps-uniform-art {
+  position: absolute; top: 20%; bottom: 15%; left: 5%; right: 5%;
+  display: flex; justify-content: center; align-items: center;
+}
+.dbl-topps-placeholder-jersey {
+  position: relative; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4%;
+  width: 96%; height: 91%; background: #f1eddd; color: #225342;
+  border: 2px solid #225342; box-shadow: 0 5px 9px rgba(0,0,0,.1);
+  clip-path: polygon(16% 0,32% 5%,68% 5%,84% 0,100% 20%,82% 33%,82% 100%,18% 100%,18% 33%,0 20%);
+}
+.dbl-topps-placeholder-jersey[data-uniform="away"] {
+  background: #315b51; color: #f1eddd;
+}
+.dbl-topps-placeholder-collar {
+  position: absolute; top: 1%; left: 35%; right: 35%; height: 16%;
+  background: #fff; border: 5px solid #225342; border-radius: 0 0 50% 50%;
+}
+.dbl-topps-placeholder-jersey[data-uniform="away"] .dbl-topps-placeholder-collar {
+  background: #315b51; border-color: #f1eddd;
+}
+.dbl-topps-placeholder-wordmark {
+  margin-top: 8%; max-width: 57%; text-align: center; text-transform: uppercase;
+  font: 900 clamp(11px,8.8cqw,27px)/1.1 Arial,Helvetica,sans-serif;
+  overflow-wrap: anywhere;
+}
+.dbl-topps-placeholder-number {
+  font: 900 clamp(32px,25cqw,76px)/1 Arial,Helvetica,sans-serif;
+}
+.dbl-topps-uniform-pending {
+  position: absolute; bottom: 1%; left: 0; right: 0; color: #4a4a4a;
+  font: 600 clamp(6px,3.5cqw,11px)/1.2 Arial,Helvetica,sans-serif;
+  letter-spacing: .1em;
+}
+.dbl-topps-uniform-image {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; z-index: 3;
+}
+.dbl-topps-uniform-art.has-image .dbl-topps-placeholder-jersey,
+.dbl-topps-uniform-art.has-image .dbl-topps-uniform-pending { display: none; }
+.dbl-topps-uniform-name {
+  position: absolute; bottom: 3%; left: 2%; right: 2%;
+  font-size: clamp(12px,9.7cqw,30px); line-height: 1.06;
+}
+.dbl-topps-collection-preview {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 7%; width: 100%; height: 100%;
+}
+.dbl-topps-preview-date {
+  font: 700 clamp(20px,18cqw,54px)/1 Georgia,serif; letter-spacing: .06em;
+}
+.dbl-topps-preview-wordmark {
+  font: italic 900 clamp(27px,23cqw,66px)/1 Georgia,serif; letter-spacing: -.05em;
+}
+.dbl-topps-preview-subtitle {
+  font: 600 clamp(8px,6.8cqw,18px)/1 Arial,Helvetica,sans-serif; letter-spacing: .28em;
+}
