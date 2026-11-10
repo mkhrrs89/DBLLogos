@@ -375,7 +375,10 @@
   function toppsBack(card) {
     const back = make('span', 'dbl-cards-face dbl-cards-back dbl-topps-back');
     const uniform = isToppsUniform(card);
-    back.appendChild(make('strong', 'dbl-topps-back-name',
+    // Only player names mirror the groovy front lettering; uniform/team
+    // titles on the reverse retain their original printed style.
+    back.appendChild(make('strong', uniform ? 'dbl-topps-back-name' :
+      'dbl-topps-back-name dbl-topps-back-player-name',
       uniform ? card.teamName : card.name));
     back.appendChild(make('span', 'dbl-topps-back-identity',
       uniform ? ((card.uniform || 'home').toUpperCase() + ' UNIFORM') :
