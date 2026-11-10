@@ -20,6 +20,10 @@
   const order = document.getElementById('cardsSort');
   const loadMore = document.getElementById('cardsShowMoreBtn');
   const clearBtn = document.getElementById('cardsClearCollectionBtn');
+  const exportBtn = document.getElementById('cardsExportCollectionBtn');
+  const mergeBtn = document.getElementById('cardsMergeCollectionBtn');
+  const mergeFile = document.getElementById('cardsImportCollectionFile');
+  const mergeFeedback = document.getElementById('cardsMergeFeedback');
   const allCollectionsGrid = document.getElementById('cardsAllCollectionsGrid');
   const tabs = [
     ['cardsPacksTab', 'cardsPackView'],
@@ -39,7 +43,8 @@
   if (!api || !panel || !status || !saveStatus || !packStage || !packsOpenedTotal || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
       !galleryCount || !search || !rarityFilter || !teamFilter || !order || !loadMore ||
-      !clearBtn || !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
+      !clearBtn || !exportBtn || !mergeBtn || !mergeFile || !mergeFeedback ||
+      !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
       !checklistStats || !checklistFranchises || !checklistSearch || !checklistRarity ||
       !checklistOwnership || !checklistSort || !checklistCaption ||
       !checklistList || !checklistMore) return;
@@ -80,6 +85,7 @@
   const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   let busy = false;
   let clearing = false;
+  let transferBusy = false;
   let packToken = 0;
   let packCards = [];
   let limit = 36;
@@ -163,7 +169,10 @@
     const hiddenPulls = api.items.filter(c => tierMap[c.rarity]?.mythical)
       .reduce((n, c) => n + c.count, 0);
     if (hiddenPulls > 0) appendStat(counter, format(hiddenPulls), 'Mythical pulls');
-    clearBtn.disabled = clearing || busy || !s.ready || s.count === 0;
+    clearBtn.disabled = clearing || busy || transferBusy || s.merging ||
+      !s.ready || s.count === 0;
+    exportBtn.disabled = !s.ready || clearing || transferBusy || s.merging;
+    mergeBtn.disabled = !s.ready || busy || clearing || transferBusy || s.merging;
     saveStatus.textContent = s.ready
       ? s.savedOK ? 'Collection saved locally in this browser.' :
         'Browser storage is unavailable. Collection may be lost after a refresh.'
@@ -184,7 +193,8 @@
       else status.textContent =
         'Open the Cards tab to load players from the uploaded league file.';
     }
-    openBtn.disabled = busy || clearing || !s.ready || !s.poolSize || s.loading;
+    openBtn.disabled = busy || clearing || transferBusy || s.merging ||
+      !s.ready || !s.poolSize || s.loading;
     openBtn.textContent = busy ? 'Opening pack…' : 'Open five-card pack';
   }
   // GitHub-hosted archival portraits for players without an export photo.
@@ -1128,8 +1138,105 @@
     });
   }
   loadMore.addEventListener('click', () => { limit += 36; showGallery(); });
+  // Browser-local collection backups (not the full ZenGM league file).
+  // All copy/pack totals are source-aware so repeated and two-way imports
+  // do not count the same previously transferred pulls twice.
+  function transferMessage(message, error = false) {
+    mergeFeedback.textContent = message;
+    mergeFeedback.classList.toggle('is-error', error);
+  }
+  exportBtn.addEventListener('click', () => {
+    if (!api.status.ready || transferBusy || clearing || api.status.merging) return;
+    try {
+      const backup = api.exportCollection();
+      const contents = JSON.stringify(backup);
+      const blob = new Blob([contents], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'DBL-Cards-Collection-' +
+        new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+      transferMessage('Collection backup prepared. Save the JSON file somewhere you can access from your other device.');
+    } catch (error) {
+      console.warn('Card collection export failed.', error);
+      transferMessage('Could not export the collection: ' + (error.message || 'Unknown error'), true);
+    }
+  });
+  mergeBtn.addEventListener('click', () => {
+    if (!api.status.ready || busy || clearing || transferBusy || api.status.merging) return;
+    mergeFile.click();
+  });
+  mergeFile.addEventListener('change', async () => {
+    const file = mergeFile.files?.[0];
+    // Reset immediately: selecting the same backup again must work.
+    mergeFile.value = '';
+    if (!file || transferBusy || busy || clearing || api.status.merging) return;
+    if (file.size > 20 * 1024 * 1024) {
+      transferMessage('This backup is too large to import (20 MB maximum).', true);
+      return;
+    }
+    transferBusy = true;
+    showCounters();
+    showStatus();
+    try {
+      const text = typeof file.text === 'function'
+        ? await file.text()
+        : await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(reader.error || Error('Could not read the file.'));
+            reader.readAsText(file);
+          });
+      const backup = JSON.parse(text);
+      const preview = api.previewCollectionMerge(backup);
+      if (preview.unchanged) {
+        transferMessage('This collection is already included here. No cards or pack counts were changed.');
+        return;
+      }
+      const additions = '+' + format(preview.addedCards) + ' card copies, +' +
+        format(preview.addedEditions) + ' unique editions, +' +
+        format(preview.addedPacks) + ' packs opened.';
+      const proceed = window.confirm(
+        'Merge this DBL Cards backup into the collection on this device?\n\n' +
+        additions + '\n\n' +
+        'After merging: ' + format(preview.totalCards) + ' cards, ' +
+        format(preview.totalEditions) + ' unique editions, ' +
+        format(preview.totalPacks) + ' packs opened.\n\n' +
+        'Nothing you already own will be removed. For extra safety, ' +
+        'you can export this device’s collection before merging.'
+      );
+      if (!proceed) {
+        transferMessage('Import cancelled. Your collection was not changed.');
+        return;
+      }
+      const result = await api.mergeCollection(backup);
+      if (!result.saved) {
+        transferMessage('Could not save the merged collection. Your existing cards were kept.', true);
+        return;
+      }
+      transferMessage('Collections merged! Added ' + format(result.addedCards) +
+        ' card copies and ' + format(result.addedPacks) + ' packs. ' +
+        'You now have ' + format(result.totalEditions) + ' unique editions. ' +
+        'Export again to transfer the combined collection to your other device.');
+      if (activeCardsSubtab === 1) showGallery();
+      if (activeCardsSubtab === CHECKLIST_TAB_INDEX) showChecklist();
+    } catch (error) {
+      console.warn('Card collection merge failed.', error);
+      transferMessage('Import failed: ' + (error.message || 'Invalid backup file') +
+        '. Your collection was not changed.', true);
+    } finally {
+      transferBusy = false;
+      showCounters();
+      showStatus();
+    }
+  });
   clearBtn.addEventListener('click', async () => {
-    if (clearing || busy || !api.status.ready || !api.status.count) return;
+    if (clearing || busy || transferBusy || api.status.merging ||
+        !api.status.ready || !api.status.count) return;
     const okay = window.confirm(
       'Permanently clear all collected cards, duplicates, and pack counts on this device? This cannot be undone.'
     );
@@ -1145,6 +1252,7 @@
         rarityFilter.value = 'all';
         teamFilter.value = 'all';
         order.value = 'rarity';
+        transferMessage('');
         repaint();
       } else {
         saveStatus.textContent = 'Could not clear the collection because the save failed. Your cards were kept.';
