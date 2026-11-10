@@ -38,6 +38,10 @@
   const checklistOwnership = document.getElementById('cardsChecklistOwnership');
   const checklistSort = document.getElementById('cardsChecklistSort');
   const checklistCaption = document.getElementById('cardsChecklistCaption');
+  const checklistSeriesContext = document.getElementById('cardsChecklistSeriesContext');
+  const checklistDescription = document.getElementById('cardsChecklistDescription');
+  const checklistFranchiseDescription = document.getElementById('cardsChecklistFranchiseDescription');
+  const checklistNote = document.getElementById('cardsChecklistNote');
   const checklistList = document.getElementById('cardsChecklistList');
   const checklistMore = document.getElementById('cardsChecklistMore');
   if (!api || !panel || !status || !saveStatus || !packStage || !packsOpenedTotal || !openBtn ||
@@ -47,7 +51,8 @@
       !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
       !checklistStats || !checklistFranchises || !checklistSearch || !checklistRarity ||
       !checklistOwnership || !checklistSort || !checklistCaption ||
-      !checklistList || !checklistMore) return;
+      !checklistList || !checklistMore || !checklistSeriesContext ||
+      !checklistDescription || !checklistFranchiseDescription || !checklistNote) return;
 
   const ALL_COLLECTIONS_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsAllCollectionsTab');
   const CHECKLIST_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsChecklistTab');
@@ -1119,6 +1124,18 @@
 
   function showChecklist() {
     if (activeCardsSubtab !== CHECKLIST_TAB_INDEX || panel.hidden) return;
+    const topps = activeChecklistSeries === 1;
+    checklistSeriesContext.textContent = topps
+      ? '1968 Topps · Test Issue' : 'Series 0 · Original FLAGSHIP set';
+    checklistDescription.textContent = topps
+      ? 'Every 1968-active player, including rookies, and home/away uniform inserts from the uploaded league archive.'
+      : 'Every obtainable player edition and historical team-season insert in your uploaded league archive. Cards check off automatically when collected.';
+    checklistFranchiseDescription.textContent = topps
+      ? '1968 Topps player and uniform completion, grouped by 1968 franchise. Duplicates count once.'
+      : 'Completion by franchise, including peak-season player editions and historical Team Season inserts. Name changes stay grouped; duplicates count once.';
+    checklistNote.textContent = topps
+      ? 'One plain-paper 1968 Topps card per eligible player, with rookie styling for first-season players, plus one home and one away uniform placeholder per 1968 team. No Chrome or other premium versions. The checklist comes from the uploaded league export; owned cards remain saved even when that file is unloaded.'
+      : 'One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR, plus one Team Season insert per recorded team-season. Duplicates count once. Owned cards missing from a newer export stay in My Collection.';
     const s = api.status;
     checklistStats.replaceChildren();
     checklistFranchises.replaceChildren();
