@@ -84,21 +84,24 @@
   let franchiseSortKey = 'franchise';
   let franchiseSortDirection = 'asc';
 
-  // The outer name field is a fixed-width clipping frame. The INNER text
-  // is measured at its natural width, then squeezed horizontally if needed.
-  // Transforming that inner text (not the outer field) prevents layout overflow.
+  // The outer name field clips nothing except true overflow; squeeze the
+  // actual surname letters horizontally to fit. Measure LAYOUT width here,
+  // not getBoundingClientRect(): pack entrance effects and 3D card flips
+  // transform that visual rectangle and falsely report narrower text.
   function fitName(name) {
     const glyphs = name.querySelector('.dbl-cards-surname-glyphs');
     if (!glyphs) return;
-    glyphs.style.transform = '';
     const available = name.clientWidth;
     if (available <= 0) return; // The cards panel may still be hidden.
-    const natural = glyphs.getBoundingClientRect?.().width ||
-      glyphs.scrollWidth || 0;
-    if (natural <= 0 || natural <= available - 2) return;
+    // scrollWidth/offsetWidth ignore transient transforms and remain reliable
+    // while the sealed back rotates away to reveal the front.
+    const natural = Math.max(glyphs.scrollWidth || 0, glyphs.offsetWidth || 0);
+    if (natural <= 0) return;
+    const innerWidth = Math.max(1, available - 7); // breathing room at right edge
     glyphs.style.transformOrigin = 'left center';
-    glyphs.style.transform = 'scaleX(' +
-      Math.min(1, Math.max(.01, (available - 2) / natural)).toFixed(5) + ')';
+    glyphs.style.transform = natural > innerWidth
+      ? 'scaleX(' + Math.min(1, innerWidth / natural).toFixed(5) + ')'
+      : '';
   }
   function fitVisibleNames() {
     for (const root of [gallery, packStage]) {
