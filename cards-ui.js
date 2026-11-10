@@ -61,7 +61,10 @@
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Undiscovered editions must never appear in the checklist or public
   // progress totals, even for players who meet their hidden requirements.
-  const checklistTiers = api.rarities.filter(r => !r.mythical);
+  const checklistTiers = api.rarities.filter(r => !r.mythical && !r.insert);
+  const insertTier = api.rarities.find(r => r.insert);
+  const completionTiers = insertTier ? [...checklistTiers, insertTier] : checklistTiers;
+  const isTeamSeason = card => card?.type === 'team-season';
   const make = (tag, cls, value) => {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -150,6 +153,8 @@
     appendStat(counter, format(s.packs), 'Packs opened');
     appendStat(counter, format(s.count), 'Total cards');
     appendStat(counter, format(s.unique), 'Unique editions');
+    appendStat(counter, format(api.items.filter(c => isTeamSeason(c))
+      .reduce((n, c) => n + c.count, 0)), 'Team Season inserts');
     appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
       .reduce((n, c) => n + c.count, 0)), 'Black Label pulls');
     const hiddenPulls = api.items.filter(c => tierMap[c.rarity]?.mythical)
@@ -281,7 +286,55 @@
       first: name.slice(0, breakAt), last: name.slice(breakAt + 1)
     };
   }
+  function teamSeasonFront(card) {
+    const front = make('span', 'dbl-cards-face dbl-cards-front dbl-cards-team-season-front');
+    front.appendChild(make('span', 'dbl-cards-team-season-masthead', 'DBL · HISTORIC TEAM INSERT'));
+    front.appendChild(make('strong', 'dbl-cards-team-season-year', card.era ?? '—'));
+    const emblem = make('span', 'dbl-cards-team-season-emblem');
+    emblem.appendChild(teamCrest(card));
+    front.appendChild(emblem);
+    front.appendChild(make('span', 'dbl-cards-team-season-name', card.teamName));
+    const known = Number.isFinite(card.won) && Number.isFinite(card.lost);
+    const record = known ? format(card.won) + ' – ' + format(card.lost) +
+      (Number.isFinite(card.tied) && card.tied > 0 ? ' – ' + format(card.tied) : '') :
+      'SEASON ARCHIVE';
+    front.appendChild(make('span', 'dbl-cards-team-season-record', record));
+    front.appendChild(make('span', 'dbl-cards-team-season-foot',
+      'SERIES ' + (card.series ?? api.currentSeries) + ' · TEAM SEASON'));
+    return front;
+  }
+
+  function teamSeasonBack(card, back) {
+    const heading = make('span', 'dbl-cards-back-heading');
+    heading.appendChild(make('strong', 'dbl-cards-back-flagship', 'TEAM SEASON'));
+    heading.appendChild(make('span', 'dbl-cards-back-profile', 'FRANCHISE ARCHIVE'));
+    back.appendChild(heading);
+    back.appendChild(make('strong', 'dbl-cards-back-name', String(card.era) + ' ' + card.teamName));
+    back.appendChild(make('span', 'dbl-cards-back-team', card.team));
+    const metrics = make('span', 'dbl-cards-back-metrics');
+    const games = Number.isFinite(card.won) && Number.isFinite(card.lost)
+      ? card.won + card.lost + (Number.isFinite(card.tied) ? card.tied : 0) : null;
+    const pct = games > 0 && Number.isFinite(card.won)
+      ? (card.won / games * 100).toFixed(1) + '%' : '—';
+    for (const [value, label] of [
+      [format(card.won), 'WINS'], [format(card.lost), 'LOSSES'],
+      [pct, 'WIN %'], [Number.isFinite(card.playoffRoundsWon) &&
+        card.playoffRoundsWon >= 0 ? format(card.playoffRoundsWon) : '—', 'PLAYOFF ROUNDS']
+    ]) {
+      const metric = make('span', 'dbl-cards-back-metric');
+      metric.appendChild(make('strong', '', value));
+      metric.appendChild(make('span', '', label));
+      metrics.appendChild(metric);
+    }
+    back.appendChild(metrics);
+    back.appendChild(make('span', 'dbl-cards-back-foot',
+      'SERIES ' + (card.series ?? api.currentSeries) + ' · HISTORIC TEAM · ' + card.era));
+    back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
+    return back;
+  }
+
   function frontOf(card) {
+    if (isTeamSeason(card)) return teamSeasonFront(card);
     const front = make('span', 'dbl-cards-face dbl-cards-front');
     // FLAGSHIP and the peak-rating season stack in the top-left.
     const heading = make('span', 'dbl-cards-front-top');
@@ -363,6 +416,7 @@
       back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO REVEAL'));
       return back;
     }
+    if (isTeamSeason(card)) return teamSeasonBack(card, back);
     // Echo the front's stacked FLAGSHIP lockup on the player profile.
     const heading = make('span', 'dbl-cards-back-heading');
     heading.appendChild(make('strong', 'dbl-cards-back-flagship',
@@ -445,7 +499,8 @@
     'black-label': {duration: 2100, sparks: 16, spread: .84, glyph: '✦'},
     'mythic-aether': {duration: 2850, sparks: 21, spread: 1.04, glyph: '✧'},
     'mythic-eclipse': {duration: 2850, sparks: 21, spread: 1.04, glyph: '✦'},
-    'mythic-aurora': {duration: 2850, sparks: 22, spread: 1.04, glyph: '✧'}
+    'mythic-aurora': {duration: 2850, sparks: 22, spread: 1.04, glyph: '✧'},
+    'team-season': {duration: 1450, sparks: 9, spread: .58, glyph: '◆'}
   });
 
   function playCardRevealEffect(button, card) {
@@ -678,8 +733,8 @@
       ? api.checklistPlayers : [];
     const owned = new Map(api.items
       .filter(card => (card.series ?? api.currentSeries) === activeChecklistSeries)
-      .map(card => [card.pid + ':' + card.rarity, card]));
-    const totals = Object.fromEntries(checklistTiers.map(tier =>
+      .map(card => [card.id, card]));
+    const totals = Object.fromEntries(completionTiers.map(tier =>
       [tier.id, {label: tier.label, possible: 0, collected: 0}]));
     const all = [];
     let collected = 0;
@@ -705,6 +760,29 @@
         });
       }
     }
+    const seasons = activeChecklistSeries === api.currentSeries
+      ? api.checklistTeamSeasons : [];
+    if (insertTier) {
+      for (const season of seasons) {
+        const item = owned.get(season.id);
+        const isOwned = !!item;
+        totals[insertTier.id].possible++;
+        if (isOwned) {
+          totals[insertTier.id].collected++;
+          collected++;
+        }
+        all.push({
+          id: season.id, type: 'team-season',
+          name: season.name + ' (' + season.era + ')',
+          team: season.teamName, era: season.era, peak: null,
+          franchiseKey: Number.isInteger(season.tid) && season.tid >= 0
+            ? 'tid:' + season.tid : 'unknown',
+          franchiseName: season.franchiseName || season.teamName,
+          rarity: insertTier.id, label: insertTier.label,
+          owned: isOwned, copies: item?.count || 0
+        });
+      }
+    }
     return {all, totals, collected};
   }
   function checklistCounter(parent, label, collected, possible) {
@@ -726,7 +804,7 @@
         groups.set(key, {
           key,
           name: key === 'unknown' ? 'Unassigned franchise' : card.franchiseName,
-          totals: Object.fromEntries(checklistTiers.map(tier => [
+          totals: Object.fromEntries(completionTiers.map(tier => [
             tier.id, {collected: 0, possible: 0}
           ])),
           overall: {collected: 0, possible: 0}
@@ -815,7 +893,7 @@
       head.appendChild(th);
     }
     appendSortableHeader('franchise', 'Franchise');
-    for (const tier of checklistTiers) appendSortableHeader(tier.id, tier.label);
+    for (const tier of completionTiers) appendSortableHeader(tier.id, tier.label);
     appendSortableHeader('overall', 'Overall', true);
     thead.appendChild(head);
     table.appendChild(thead);
@@ -846,7 +924,7 @@
       const name = make('th', 'dbl-cards-franchise-name', group.name);
       name.scope = 'row';
       tr.appendChild(name);
-      for (const tier of checklistTiers) {
+      for (const tier of completionTiers) {
         appendProgressCell(tr, group.totals[tier.id], tier.label, group.name);
       }
       appendProgressCell(tr, group.overall, 'overall', group.name, true);
@@ -898,6 +976,10 @@
       checklistCounter(checklistStats, t.label + ' · peak OVR ' + tier.minOvr + '+',
         t.collected, t.possible);
     }
+    if (insertTier) {
+      const t = totals[insertTier.id];
+      checklistCounter(checklistStats, 'Team Season inserts', t.collected, t.possible);
+    }
     // Compute from the complete eligible Series checklist, not from the
     // player search, ownership, rarity filters or pagination.
     renderFranchiseCompletion(all);
@@ -944,7 +1026,8 @@
       details.appendChild(make('span', '', card.team +
         (card.era === null ? '' : ' · ' + card.era)));
       entry.appendChild(details);
-      entry.appendChild(make('span', 'dbl-cards-checklist-ovr', 'OVR ' + card.peak));
+      entry.appendChild(make('span', 'dbl-cards-checklist-ovr',
+        card.type === 'team-season' ? 'TEAM' : 'OVR ' + card.peak));
       const edition = make('span', 'dbl-cards-checklist-edition', card.label);
       edition.dataset.rarity = card.rarity;
       entry.appendChild(edition);
