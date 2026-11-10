@@ -21,10 +21,10 @@
   const TOPPS_PLAYER = Object.freeze({id: 'topps-1968', label: '1968 Topps', insert: true});
   const TOPPS_UNIFORM = Object.freeze({id: 'topps-1968-uniform', label: 'Topps Uniform', insert: true});
   const RARITIES = [
-    { id: 'common', label: 'Base', chance: 85, pool: 1 },
+    { id: 'common', label: 'Base', chance: 87.5, pool: 1 },
     { id: 'crome', label: 'Chrome', chance: 10, pool: .72 },
-    { id: 'refractor', label: 'Refractor', chance: 4, pool: .42 },
-    { id: 'black-label', label: 'Black Label', chance: 1, pool: .075 },
+    { id: 'refractor', label: 'Refractor', chance: 2, pool: .42 },
+    { id: 'black-label', label: 'Black Label', chance: .5, pool: .075 },
     { id: 'mythic-aether', label: 'Mythical · Aether', shortLabel: 'AETHER',
       chance: 0.1 / 3, pool: .15, mythical: true },
     { id: 'mythic-eclipse', label: 'Mythical · Eclipse', shortLabel: 'ECLIPSE',
