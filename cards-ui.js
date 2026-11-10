@@ -301,23 +301,23 @@
   }
   function teamSeasonFront(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-cards-team-season-front');
-    front.appendChild(make('span', 'dbl-cards-team-season-masthead', 'DBL · HISTORIC TEAM INSERT'));
+    front.appendChild(make('span', 'dbl-cards-team-season-masthead', 'HISTORIC TEAMS OF THE DBL'));
     front.appendChild(make('strong', 'dbl-cards-team-season-year', card.era ?? '—'));
     const emblem = make('span', 'dbl-cards-team-season-emblem');
     emblem.appendChild(teamCrest(card));
     front.appendChild(emblem);
     front.appendChild(make('span', 'dbl-cards-team-season-name', card.teamName));
-    const finish = make('span', 'dbl-cards-team-season-finish',
-      card.finish || 'SEASON FINISH UNAVAILABLE');
-    finish.dataset.finish = card.finishKind || 'unknown';
-    front.appendChild(finish);
     const known = Number.isFinite(card.won) && Number.isFinite(card.lost);
     const record = known ? format(card.won) + ' – ' + format(card.lost) +
       (Number.isFinite(card.tied) && card.tied > 0 ? ' – ' + format(card.tied) : '') :
       'SEASON ARCHIVE';
     front.appendChild(make('span', 'dbl-cards-team-season-record', record));
-    front.appendChild(make('span', 'dbl-cards-team-season-foot',
-      'SERIES ' + (card.series ?? api.currentSeries) + ' · TEAM SEASON'));
+    // The season result replaces the old Series 0 footer: show it exactly
+    // once, as unboxed lettering matching the rest of the vintage card.
+    const finish = make('span', 'dbl-cards-team-season-foot dbl-cards-team-season-finish',
+      card.finish || 'SEASON FINISH UNAVAILABLE');
+    finish.dataset.finish = card.finishKind || 'unknown';
+    front.appendChild(finish);
     return front;
   }
 
