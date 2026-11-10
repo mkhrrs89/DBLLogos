@@ -3446,3 +3446,144 @@
 .dbl-cards-pull-grid .dbl-cards-card {
   border-radius: 0;
 }
+
+
+/* 1968 Topps: a bolder, sweeping mid-century script for the FRONT player
+   name only. Uniform names, stats, Series 0 and reverse typography retain
+   their existing styles. The font is loaded once by the HTML stylesheet. */
+.dbl-cards-card .dbl-topps-player-front .dbl-topps-player-name {
+  font-family: "Lobster", "Cooper Black", "Brush Script MT", Georgia, cursive;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: -.035em;
+  font-size: clamp(13px, 10.8cqw, 33px);
+  line-height: 1.08;
+  text-shadow: .02em .02em 0 rgba(0,0,0,.12);
+}
+
+/* The global Series 0 reverse styles place every direct child at
+   position:relative. Previously that rule overrode the Topps absolute
+   layout and pushed the logo and stat panel below the card! Give this
+   independent plain-white Topps reverse a real, proportionate five-row
+   printed layout instead. No animation or Series 0 rules are modified. */
+.dbl-cards-back.dbl-topps-back {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 17% 8% 21% minmax(0, 1fr) 11%;
+  align-content: stretch;
+  align-items: center;
+  justify-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  gap: 0;
+  padding: 6.5% 7.5% 5.5%;
+  background: #fff;
+  border: 1px solid #ddd;
+  font-weight: 400;
+  text-align: center;
+}
+.dbl-cards-card[data-rarity="topps-1968"] .dbl-topps-back::before,
+.dbl-cards-card[data-rarity="topps-1968-uniform"] .dbl-topps-back::before {
+  content: none;
+}
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-name,
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-identity,
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-logo-circle,
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-stats,
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-footer {
+  position: relative;
+  inset: auto;
+  transform: none;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  max-height: none;
+  margin: 0;
+}
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-name {
+  grid-row: 1;
+  align-self: center;
+  font-size: clamp(13px, 10.1cqw, 30px);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-identity {
+  grid-row: 2;
+  align-self: start;
+  font: 400 clamp(7px, 4.6cqw, 14px)/1.22 Arial, Helvetica, sans-serif;
+  color: #222;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  text-wrap: balance;
+}
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-logo-circle {
+  grid-row: 3;
+  align-self: center;
+  justify-self: center;
+  width: 27%;
+  max-width: 80px;
+  aspect-ratio: 1;
+  border: 1px solid #222;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-stats {
+  grid-row: 4;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  grid-template-rows: auto minmax(0,1fr) minmax(0,1fr);
+  align-content: stretch;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  gap: 3%;
+  padding: 5% 4%;
+  border: 1px solid #555;
+  background: #fff;
+  color: #222;
+}
+.dbl-topps-back-stats > .dbl-topps-back-stats-title {
+  align-self: center;
+  grid-column: 1 / -1;
+  margin: 0;
+  font: 700 clamp(8px, 5.1cqw, 15px)/1.15 Arial,Helvetica,sans-serif;
+  letter-spacing: .075em;
+}
+.dbl-topps-back-stats .dbl-topps-back-stat {
+  width: 100%;
+  align-self: center;
+  justify-self: stretch;
+  gap: 2px;
+}
+.dbl-topps-back-stats .dbl-topps-back-stat strong {
+  font-size: clamp(12px, 8.7cqw, 24px);
+  line-height: 1.05;
+}
+.dbl-topps-back-stats .dbl-topps-back-stat span {
+  font-size: clamp(7px, 4.15cqw, 11px);
+  line-height: 1.1;
+}
+.dbl-topps-back-stats > .dbl-topps-uniform-note {
+  display: block;
+  grid-column: 1 / -1;
+  align-self: center;
+  padding: 0 5%;
+  font: 400 clamp(10px, 6.8cqw, 18px)/1.35 Georgia,serif;
+  text-wrap: balance;
+}
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-footer {
+  grid-row: 5;
+  align-self: end;
+  font: 400 clamp(13px, 9.3cqw, 28px)/1.05 Arial,Helvetica,sans-serif;
+  letter-spacing: .015em;
+  color: #111;
+}
