@@ -59,6 +59,13 @@
       subtitle: 'Original FLAGSHIP set',
       establishedIrl: 'Nov 9, 2026',
       establishedInGame: '1968'
+    },
+    {
+      series: 1,
+      name: '1968 Topps',
+      subtitle: '1968 test issue · Base, rookies & uniform inserts',
+      establishedIrl: 'Nov 10, 2026',
+      establishedInGame: '1968'
     }
   ];
   let activeChecklistSeries = 0;
@@ -66,13 +73,21 @@
   // Inserts are rarer than Refractors but less scarce than Black Label.
   // Do not rank them above the intentionally hidden rarest editions.
   tierIndex['team-season'] = 2.5;
+  tierIndex['topps-1968'] = 1.5;
+  tierIndex['topps-1968-uniform'] = 2.6;
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Undiscovered editions must never appear in the checklist or public
   // progress totals, even for players who meet their hidden requirements.
   const checklistTiers = api.rarities.filter(r => !r.mythical && !r.insert);
   const insertTier = api.rarities.find(r => r.insert);
   const completionTiers = insertTier ? [...checklistTiers, insertTier] : checklistTiers;
+  const toppsCompletionTiers = api.rarities.filter(r =>
+    r.id === 'topps-1968' || r.id === 'topps-1968-uniform');
+  const activeCompletionTiers = () => activeChecklistSeries === 1
+    ? toppsCompletionTiers : completionTiers;
   const isTeamSeason = card => card?.type === 'team-season';
+  const isToppsPlayer = card => card?.type === 'topps-player';
+  const isToppsUniform = card => card?.type === 'topps-uniform';
   const make = (tag, cls, value) => {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -162,6 +177,8 @@
     appendStat(counter, format(s.packs), 'Packs opened');
     appendStat(counter, format(s.count), 'Total cards');
     appendStat(counter, format(s.unique), 'Unique editions');
+    appendStat(counter, format(api.items.filter(c => c.series === 1)
+      .reduce((n, c) => n + c.count, 0)), '1968 Topps pulls');
     appendStat(counter, format(api.items.filter(c => isTeamSeason(c))
       .reduce((n, c) => n + c.count, 0)), 'Team Season inserts');
     appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
@@ -299,6 +316,95 @@
       first: name.slice(0, breakAt), last: name.slice(breakAt + 1)
     };
   }
+  // Plain-paper 1968 Topps test card fronts and statistics reverse.
+  function toppsIdentity(card) {
+    const num = api.findJersey?.(card);
+    return make('span', 'dbl-topps-identity',
+      (card.pos || '—') + ' | ' + (card.teamName || card.team || 'DBL') +
+      (num ? ' | #' + num : ''));
+  }
+  function toppsPlayerFront(card) {
+    const front = make('span', 'dbl-cards-face dbl-cards-front dbl-topps-front dbl-topps-player-front');
+    if (card.rookie) front.classList.add('is-rookie');
+    const portrait = art(card);
+    portrait.classList.add('dbl-topps-photo');
+    front.appendChild(portrait);
+    if (card.rookie)
+      front.appendChild(make('span', 'dbl-topps-rookie-rail', 'ROOKIE'));
+    front.appendChild(make('strong', 'dbl-topps-player-name', card.name));
+    front.appendChild(toppsIdentity(card));
+    return front;
+  }
+  function toppsUniformFront(card) {
+    const front = make('span', 'dbl-cards-face dbl-cards-front dbl-topps-front dbl-topps-uniform-front');
+    front.appendChild(make('span', 'dbl-topps-uniform-heading', '1968 UNIFORM CARD'));
+    front.appendChild(make('span', 'dbl-topps-uniform-kind',
+      (card.uniform || 'home').toUpperCase()));
+    const artwork = make('span', 'dbl-topps-uniform-art');
+    if (card.uniformImage) {
+      const img = make('img', 'dbl-topps-uniform-image');
+      img.alt = (card.uniform || 'Home') + ' uniform for ' + card.teamName;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.addEventListener('error', () => {
+        img.remove();
+        artwork.classList.remove('has-image');
+      });
+      img.src = card.uniformImage;
+      artwork.appendChild(img);
+      artwork.classList.add('has-image');
+    }
+    // Replaceable jersey placeholder: no image assets are required yet.
+    const jersey = make('span', 'dbl-topps-placeholder-jersey');
+    jersey.dataset.uniform = card.uniform || 'home';
+    jersey.appendChild(make('span', 'dbl-topps-placeholder-collar'));
+    const parts = (card.teamName || '').split(' ');
+    jersey.appendChild(make('strong', 'dbl-topps-placeholder-wordmark',
+      parts.length > 1 ? parts.slice(0, -1).join(' ') : card.team || 'DBL'));
+    jersey.appendChild(make('span', 'dbl-topps-placeholder-number', '00'));
+    artwork.appendChild(jersey);
+    artwork.appendChild(make('span', 'dbl-topps-uniform-pending', 'UNIFORM ARTWORK PENDING'));
+    front.appendChild(artwork);
+    front.appendChild(make('strong', 'dbl-topps-uniform-name', card.teamName));
+    return front;
+  }
+  function toppsBack(card) {
+    const back = make('span', 'dbl-cards-face dbl-cards-back dbl-topps-back');
+    const uniform = isToppsUniform(card);
+    back.appendChild(make('strong', 'dbl-topps-back-name',
+      uniform ? card.teamName : card.name));
+    back.appendChild(make('span', 'dbl-topps-back-identity',
+      uniform ? ((card.uniform || 'home').toUpperCase() + ' UNIFORM') :
+        (card.pos || '—') + ' | ' + (card.teamName || card.team) +
+        (api.findJersey?.(card) ? ' | #' + api.findJersey(card) : '')));
+    const circle = make('span', 'dbl-topps-back-logo-circle');
+    circle.appendChild(teamCrest(card));
+    back.appendChild(circle);
+    const stats = make('span', 'dbl-topps-back-stats');
+    if (uniform) {
+      stats.appendChild(make('strong', 'dbl-topps-back-stats-title', 'TEAM UNIFORM'));
+      stats.appendChild(make('span', 'dbl-topps-uniform-note',
+        '1968 ' + (card.uniform || 'home').toUpperCase() +
+        ' · UNIFORM IMAGE TO BE ADDED'));
+    } else {
+      stats.appendChild(make('strong', 'dbl-topps-back-stats-title', '1968 SEASON'));
+      for (const [value, label] of [
+        [format(card.gp), 'GAMES'],
+        [format(card.ppg, 1), 'PTS / GAME'],
+        [format(card.rpg, 1), 'REB / GAME'],
+        [format(card.apg, 1), 'AST / GAME']
+      ]) {
+        const entry = make('span', 'dbl-topps-back-stat');
+        entry.appendChild(make('strong', '', value));
+        entry.appendChild(make('span', '', label));
+        stats.appendChild(entry);
+      }
+    }
+    back.appendChild(stats);
+    back.appendChild(make('span', 'dbl-topps-back-footer', '1968 TOPPS'));
+    return back;
+  }
+
   function teamSeasonFront(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-cards-team-season-front');
     front.appendChild(make('span', 'dbl-cards-team-season-masthead', 'HISTORIC TEAMS OF THE DBL'));
@@ -355,6 +461,8 @@
   }
 
   function frontOf(card) {
+    if (isToppsPlayer(card)) return toppsPlayerFront(card);
+    if (isToppsUniform(card)) return toppsUniformFront(card);
     if (isTeamSeason(card)) return teamSeasonFront(card);
     const front = make('span', 'dbl-cards-face dbl-cards-front');
     // FLAGSHIP and the peak-rating season stack in the top-left.
@@ -437,6 +545,7 @@
       back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO REVEAL'));
       return back;
     }
+    if (isToppsPlayer(card) || isToppsUniform(card)) return toppsBack(card);
     if (isTeamSeason(card)) return teamSeasonBack(card, back);
     // Echo the front's stacked FLAGSHIP lockup on the player profile.
     const heading = make('span', 'dbl-cards-back-heading');
@@ -481,7 +590,15 @@
       const cover = make('span', 'dbl-cards-card is-sealed dbl-cards-series-cover');
       cover.setAttribute('aria-hidden', 'true');
       const inner = make('span', 'dbl-cards-inner');
-      inner.appendChild(backOf({series: collection.series}, true));
+      if (collection.series === 1) {
+        // Cover art may show the set; actual sealed pack backs stay identical.
+        const printed = make('span', 'dbl-cards-face dbl-cards-front dbl-topps-collection-preview');
+        printed.appendChild(make('strong', 'dbl-topps-preview-date', '1968'));
+        printed.appendChild(make('strong', 'dbl-topps-preview-wordmark', 'TOPPS'));
+        printed.appendChild(make('span', 'dbl-topps-preview-subtitle', 'TEST ISSUE'));
+        inner.appendChild(printed);
+        cover.classList.remove('is-sealed');
+      } else inner.appendChild(backOf({series: collection.series}, true));
       cover.appendChild(inner);
       tile.appendChild(cover);
       tile.appendChild(make('strong', 'dbl-cards-series-title', collection.name));
@@ -769,6 +886,31 @@
       [tier.id, {label: tier.label, possible: 0, collected: 0}]));
     const all = [];
     let collected = 0;
+    if (activeChecklistSeries === 1) {
+      const all = [], totals = Object.fromEntries(toppsCompletionTiers.map(t =>
+        [t.id, {label: t.label, possible: 0, collected: 0}]));
+      let collected = 0;
+      for (const card of api.checklistTopps) {
+        const item = owned.get(card.id), isOwned = !!item;
+        const stat = totals[card.rarity];
+        if (!stat) continue;
+        stat.possible++;
+        if (isOwned) {stat.collected++; collected++;}
+        all.push({
+          id: card.id, type: card.type, name: card.name,
+          team: card.teamName, era: 1968,
+          franchiseKey: Number.isInteger(card.franchiseTid) && card.franchiseTid >= 0
+            ? 'tid:' + card.franchiseTid : 'unknown',
+          franchiseName: card.franchiseName || card.teamName,
+          peak: card.peak, rarity: card.rarity,
+          label: card.type === 'topps-uniform' ? 'Topps Uniform · ' +
+            String(card.uniform || '').toUpperCase() :
+            (card.rookie ? 'Topps Rookie' : 'Topps Base'),
+          owned: isOwned, copies: item?.count || 0
+        });
+      }
+      return {all, totals, collected};
+    }
     for (const player of players) {
       for (const tier of checklistTiers) {
         if (!Number.isFinite(player.peak) || player.peak < tier.minOvr) continue;
@@ -835,7 +977,7 @@
         groups.set(key, {
           key,
           name: key === 'unknown' ? 'Unassigned franchise' : card.franchiseName,
-          totals: Object.fromEntries(completionTiers.map(tier => [
+          totals: Object.fromEntries(activeCompletionTiers().map(tier => [
             tier.id, {collected: 0, possible: 0}
           ])),
           overall: {collected: 0, possible: 0}
@@ -924,7 +1066,7 @@
       head.appendChild(th);
     }
     appendSortableHeader('franchise', 'Franchise');
-    for (const tier of completionTiers) appendSortableHeader(tier.id, tier.label);
+    for (const tier of activeCompletionTiers()) appendSortableHeader(tier.id, tier.label);
     appendSortableHeader('overall', 'Overall', true);
     thead.appendChild(head);
     table.appendChild(thead);
@@ -955,7 +1097,7 @@
       const name = make('th', 'dbl-cards-franchise-name', group.name);
       name.scope = 'row';
       tr.appendChild(name);
-      for (const tier of completionTiers) {
+      for (const tier of activeCompletionTiers()) {
         appendProgressCell(tr, group.totals[tier.id], tier.label, group.name);
       }
       appendProgressCell(tr, group.overall, 'overall', group.name, true);
@@ -1002,14 +1144,21 @@
     const progress = all.length ? collected / all.length * 100 : 0;
     checklistCounter(checklistStats, 'Overall · ' + progress.toFixed(1) + '%',
       collected, all.length);
-    for (const tier of checklistTiers) {
-      const t = totals[tier.id];
-      checklistCounter(checklistStats, t.label + ' · peak OVR ' + tier.minOvr + '+',
-        t.collected, t.possible);
-    }
-    if (insertTier) {
-      const t = totals[insertTier.id];
-      checklistCounter(checklistStats, 'Team Season inserts', t.collected, t.possible);
+    if (activeChecklistSeries === 1) {
+      for (const tier of toppsCompletionTiers) {
+        const t = totals[tier.id];
+        checklistCounter(checklistStats, t.label, t.collected, t.possible);
+      }
+    } else {
+      for (const tier of checklistTiers) {
+        const t = totals[tier.id];
+        checklistCounter(checklistStats, t.label + ' · peak OVR ' + tier.minOvr + '+',
+          t.collected, t.possible);
+      }
+      if (insertTier) {
+        const t = totals[insertTier.id];
+        checklistCounter(checklistStats, 'Team Season inserts', t.collected, t.possible);
+      }
     }
     // Compute from the complete eligible Series checklist, not from the
     // player search, ownership, rarity filters or pagination.
@@ -1058,7 +1207,9 @@
         (card.era === null ? '' : ' · ' + card.era)));
       entry.appendChild(details);
       entry.appendChild(make('span', 'dbl-cards-checklist-ovr',
-        card.type === 'team-season' ? 'TEAM' : 'OVR ' + card.peak));
+        card.type === 'team-season' ? 'TEAM' :
+          card.type === 'topps-uniform' ? 'KIT' :
+          card.type === 'topps-player' ? '1968' : 'OVR ' + card.peak));
       const edition = make('span', 'dbl-cards-checklist-edition', card.label);
       edition.dataset.rarity = card.rarity;
       entry.appendChild(edition);
