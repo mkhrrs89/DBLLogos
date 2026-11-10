@@ -340,25 +340,122 @@
     front.appendChild(toppsIdentity(card));
     return front;
   }
+  // Uniform assets are ordinary files in the public GitHub Pages site:
+  // assets/uniforms/1968/<historical-team>-home|away.png/webp/jpg.
+  // Read the public GitHub directory once so filenames and extensions
+  // (including uppercase .PNG) are matched exactly. An unavailable listing
+  // gracefully falls back to checking the conventional asset paths.
+  const uniformDirectoryUrl =
+    'https://api.github.com/repos/mkhrrs89/DBLLogos/contents/assets/uniforms/1968?ref=main';
+  const uniformAssetRoot = './assets/uniforms/1968/';
+  const uniformImageResults = new Map();
+  let uniformDirectoryPromise = null;
+  function uniformKey(text) {
+    return String(text || '').normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+  function uniformDirectory() {
+    if (uniformDirectoryPromise) return uniformDirectoryPromise;
+    if (typeof window.fetch !== 'function') {
+      uniformDirectoryPromise = Promise.resolve(null);
+      return uniformDirectoryPromise;
+    }
+    uniformDirectoryPromise = window.fetch(uniformDirectoryUrl, {
+      headers: {'Accept': 'application/vnd.github+json'}
+    }).then(response => {
+      if (!response.ok) return null;
+      return response.json();
+    }).then(entries => {
+      if (!Array.isArray(entries)) return null;
+      const found = new Map();
+      for (const entry of entries) {
+        if (entry?.type !== 'file') continue;
+        const name = String(entry.name || '');
+        // Never create paths from arbitrary GitHub API input.
+        if (!/^[a-z0-9][a-z0-9_.-]*\.(png|webp|jpe?g)$/i.test(name)) continue;
+        const match = /^(.+)-(home|away)\.(png|webp|jpe?g)$/i.exec(name);
+        if (!match) continue;
+        found.set(uniformKey(match[1]) + ':' + match[2].toLowerCase(),
+          uniformAssetRoot + encodeURIComponent(name));
+      }
+      return found;
+    }).catch(() => null);
+    return uniformDirectoryPromise;
+  }
+  function uniformFallbackUrls(card) {
+    const name = String(card.teamName || '').normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+    const words = name.split(/\s+/).filter(Boolean);
+    if (!words.length || !/^(home|away)$/i.test(card.uniform || '')) return [];
+    const side = card.uniform.toLowerCase();
+    // Most artwork uses compact city names: sanfrancisco-zephyrs-home.png.
+    // Also recognize standard hyphenated names: san-francisco-zephyrs.
+    const stems = [...new Set([
+      words.slice(0, -1).join('') + '-' + words[words.length - 1],
+      words.join('-')
+    ])].filter(stem => /^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(stem));
+    const urls = [];
+    for (const stem of stems) {
+      for (const ext of ['png', 'PNG', 'webp', 'jpg', 'jpeg'])
+        urls.push(uniformAssetRoot + stem + '-' + side + '.' + ext);
+    }
+    return urls;
+  }
+  function applyUniformImage(artwork, card) {
+    const side = String(card.uniform || '').toLowerCase();
+    if (side !== 'home' && side !== 'away') return;
+    const key = uniformKey(card.teamName) + ':' + side;
+    const cached = uniformImageResults.get(key);
+    if (cached === null && !card.uniformImage) return;
+    const addImage = candidates => {
+      const urls = [...new Set(candidates.filter(Boolean))];
+      if (!urls.length) return;
+      const img = make('img', 'dbl-topps-uniform-image');
+      img.alt = side.toUpperCase() + ' uniform for ' + card.teamName;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      let index = 0;
+      img.addEventListener('load', () => {
+        uniformImageResults.set(key, img.src);
+        artwork.classList.add('has-image');
+      });
+      img.addEventListener('error', () => {
+        artwork.classList.remove('has-image');
+        if (index < urls.length) img.src = urls[index++];
+        else {
+          uniformImageResults.set(key, null);
+          img.remove();
+        }
+      });
+      artwork.appendChild(img);
+      img.src = urls[index++];
+    };
+    if (typeof cached === 'string') {
+      addImage([card.uniformImage, cached]);
+      return;
+    }
+    void uniformDirectory().then(directory => {
+      const found = directory?.get(key);
+      // If the directory was successfully listed and the team was absent,
+      // don't generate a wave of unnecessary 404s for placeholder cards.
+      addImage([
+        card.uniformImage,
+        found,
+        ...(directory === null ? uniformFallbackUrls(card) : [])
+      ]);
+    });
+  }
+
   function toppsUniformFront(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-topps-front dbl-topps-uniform-front');
     front.appendChild(make('span', 'dbl-topps-uniform-heading', '1968 UNIFORM CARD'));
     front.appendChild(make('span', 'dbl-topps-uniform-kind',
       (card.uniform || 'home').toUpperCase()));
     const artwork = make('span', 'dbl-topps-uniform-art');
-    if (card.uniformImage) {
-      const img = make('img', 'dbl-topps-uniform-image');
-      img.alt = (card.uniform || 'Home') + ' uniform for ' + card.teamName;
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      img.addEventListener('error', () => {
-        img.remove();
-        artwork.classList.remove('has-image');
-      });
-      img.src = card.uniformImage;
-      artwork.appendChild(img);
-      artwork.classList.add('has-image');
-    }
+    // Artwork overlays the jersey only after the actual image loads.
+    // Missing files keep the default sleeveless basketball mockup.
+    applyUniformImage(artwork, card);
     // Replaceable jersey placeholder: no image assets are required yet.
     const jersey = make('span', 'dbl-topps-placeholder-jersey');
     jersey.dataset.uniform = card.uniform || 'home';
