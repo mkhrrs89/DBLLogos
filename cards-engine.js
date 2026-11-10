@@ -418,6 +418,173 @@
         teamLogo: photoUrl(i.teamLogo, true)
       }))};
   }
+  function exportCollection() {
+    if (!collectionLoaded) throw Error('Your collection is still loading.');
+    return {
+      format: BACKUP_FORMAT, backupVersion: BACKUP_VERSION,
+      exportedAt: new Date().toISOString(), ...snapshot()
+    };
+  }
+
+  function validateImportBackup(backup) {
+    if (!backup || typeof backup !== 'object' || Array.isArray(backup) ||
+        backup.format !== BACKUP_FORMAT || backup.backupVersion !== BACKUP_VERSION ||
+        backup.version !== STATE_VERSION) {
+      throw Error('This is not a supported DBL Cards collection backup.');
+    }
+    if (!Array.isArray(backup.items) || backup.items.length > 50000)
+      throw Error('The collection backup has an invalid card list.');
+    if (!Number.isSafeInteger(backup.packs) || backup.packs < 0 ||
+        backup.packs > 100000000)
+      throw Error('The collection backup has an invalid pack total.');
+    const incomingPacks = sourceCounts(backup.packSources, backup.packs, true);
+    const cards = new Map();
+    for (const row of backup.items) {
+      if (!row || typeof row !== 'object' || Array.isArray(row))
+        throw Error('The backup contains an invalid card.');
+      const qty = row.count;
+      if (!Number.isSafeInteger(qty) || qty < 1 || qty > 1000000)
+        throw Error('The backup contains an invalid card quantity.');
+      const origins = sourceCounts(row.sourceCounts, qty, true);
+      let item;
+      if (row.type === 'team-season') {
+        const tid = integer(row.tid), era = integer(row.era);
+        if (row.rarity !== TEAM_INSERT.id || tid === null || tid < 0 ||
+            era === null || era < 0)
+          throw Error('The backup contains an invalid Team Season insert.');
+        const id = 'team:' + tid + ':' + era;
+        item = {
+          id, type: 'team-season', rarity: TEAM_INSERT.id, series: CARD_SERIES,
+          count: qty, sourceCounts: origins, tid, era,
+          name: str(row.name) || str(row.teamName) || 'Unknown team',
+          teamName: str(row.teamName) || str(row.name) || 'Unknown team',
+          team: str(row.team) || 'DBL', teamLogo: photoUrl(row.teamLogo, true),
+          franchiseName: str(row.franchiseName) || str(row.teamName) || 'Unknown team',
+          won: number(row.won), lost: number(row.lost),
+          tied: number(row.tied), playoffRoundsWon: number(row.playoffRoundsWon),
+          finish: str(row.finish), finishKind: str(row.finishKind)
+        };
+      } else {
+        const pid = integer(row.pid);
+        const rarity = OLD_RARITY[row.rarity] || row.rarity;
+        if (row.type || pid === null || pid < 0 ||
+            !tierMap[rarity] || rarity === TEAM_INSERT.id)
+          throw Error('The backup contains an invalid player edition.');
+        const id = pid + ':' + rarity;
+        item = {
+          id, pid, rarity, series: CARD_SERIES, count: qty, sourceCounts: origins,
+          name: str(row.name) || 'Unknown player',
+          firstName: str(row.firstName), lastName: str(row.lastName),
+          jersey: /^\d{1,3}$/.test(String(row.jersey || ''))
+            ? String(row.jersey) : '',
+          team: str(row.team) || 'DBL',
+          teamName: str(row.teamName) || 'League archive',
+          teamLogo: photoUrl(row.teamLogo, true),
+          pos: str(row.pos) || '—',
+          era: row.peakVerified === true ? integer(row.era) : null,
+          peakVerified: row.peakVerified === true,
+          rookie: row.peakVerified === true && row.rookie === true,
+          ovr: row.peakVerified === true ? number(row.ovr) :
+            (number(row.peak) ?? number(row.ovr)),
+          peak: number(row.peak), pot: number(row.pot),
+          gp: number(row.gp), ppg: number(row.ppg), ws: number(row.ws),
+          photo: photoUrl(row.photo, true)
+        };
+      }
+      // Never trust user-edited IDs; build them from actual canonical fields.
+      if (cards.has(item.id)) throw Error('The backup contains duplicate card rows.');
+      cards.set(item.id, item);
+    }
+    return {cards, packSources: incomingPacks};
+  }
+
+  function planCollectionMerge(backup) {
+    if (!collectionLoaded) throw Error('Your collection is still restoring.');
+    const incoming = validateImportBackup(backup);
+    const next = new Map([...collection].map(([id, item]) =>
+      [id, {...item, sourceCounts: {...item.sourceCounts}}]));
+    let addedCards = 0, addedEditions = 0, refreshed = false;
+    for (const [id, imported] of incoming.cards) {
+      const current = next.get(id);
+      if (!current) {
+        next.set(id, {...imported, sourceCounts: {...imported.sourceCounts}});
+        addedCards += imported.count;
+        addedEditions++;
+        continue;
+      }
+      const joined = unionSourceCounts(current.sourceCounts, imported.sourceCounts);
+      const mergedCount = sumSourceCounts(joined);
+      if (mergedCount > 1000000) throw Error('Merged copies exceed the collection limit.');
+      addedCards += mergedCount - current.count;
+      current.sourceCounts = joined;
+      current.count = mergedCount;
+      if (imported.type === 'team-season') {
+        if (updateTeamSeason(current, imported)) refreshed = true;
+      } else if ((imported.peakVerified && !current.peakVerified) ||
+          (imported.peakVerified && (imported.peak ?? -1) > (current.peak ?? -1))) {
+        if (updateCardFromPlayer(current, imported)) refreshed = true;
+      }
+      for (const key of ['photo', 'teamLogo']) {
+        if (!current[key] && imported[key]) {
+          current[key] = imported[key];
+          refreshed = true;
+        }
+      }
+    }
+    const nextPackSources = unionSourceCounts(packSources, incoming.packSources);
+    const nextPacks = sumSourceCounts(nextPackSources);
+    if (nextPacks > 100000000) throw Error('Merged pack totals exceed the collection limit.');
+    const addedPacks = nextPacks - packs;
+    const info = {
+      addedCards, addedEditions, addedPacks,
+      totalCards: [...next.values()].reduce((n, card) => n + card.count, 0),
+      totalEditions: next.size, totalPacks: nextPacks,
+      unchanged: addedCards === 0 && addedPacks === 0 && !refreshed
+    };
+    return {info, next, nextPacks, nextPackSources};
+  }
+
+  function previewCollectionMerge(backup) {
+    if (mergingCollection) throw Error('A collection merge is already running.');
+    return planCollectionMerge(backup).info;
+  }
+
+  async function mergeCollection(backup) {
+    if (mergingCollection) throw Error('A collection merge is already running.');
+    const plan = planCollectionMerge(backup);
+    if (plan.info.unchanged) return {...plan.info, saved: true};
+    mergingCollection = true;
+    notify();
+    // Queue behind any in-flight pack/upgrade saves, and don't update RAM
+    // until the merged state is actually written. On failure, nothing is lost.
+    const state = {
+      version: STATE_VERSION, packs: plan.nextPacks,
+      packSources: {...plan.nextPackSources},
+      items: [...plan.next.values()].map(item => ({
+        ...item, sourceCounts: {...item.sourceCounts},
+        photo: photoUrl(item.photo, true),
+        teamLogo: photoUrl(item.teamLogo, true)
+      }))
+    };
+    const committed = saveQueue.catch(() => {}).then(() => writeState(state));
+    saveQueue = committed;
+    try {
+      const saved = await committed;
+      if (!saved) {
+        savedOK = false;
+        return {...plan.info, saved: false};
+      }
+      collection = plan.next;
+      packSources = plan.nextPackSources;
+      packs = plan.nextPacks;
+      savedOK = true;
+      return {...plan.info, saved: true};
+    } finally {
+      mergingCollection = false;
+      notify();
+    }
+  }
+
   // Update the card's printed season metadata without changing its
   // rarity, ownership quantity, portrait or collectible identity.
   function updateCardFromPlayer(target, player) {
@@ -453,7 +620,7 @@
     return modified;
   }
   function refreshCollectedCards() {
-    if (!collectionLoaded || !poolFile || !collection.size) return;
+    if (!collectionLoaded || mergingCollection || !poolFile || !collection.size) return;
     let modified = false;
     for (const item of collection.values()) {
       if (item.type === 'team-season') {
@@ -834,6 +1001,7 @@
     rarities: [...RARITIES, TEAM_INSERT].map(r => Object.freeze({
       ...r, minOvr: MIN_OVR_BY_RARITY[r.id]
     })),
+    exportCollection, previewCollectionMerge, mergeCollection,
     // A compact, read-only catalog built from the currently uploaded export.
     // Never modify or infer ownership here; saved collections remain separate.
     get checklistPlayers() {
