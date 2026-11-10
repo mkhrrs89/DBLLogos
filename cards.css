@@ -2689,7 +2689,11 @@
   gap: clamp(12px, 1.5vw, 22px);
   justify-content: flex-start; /* safe fallback if the row overflows */
   padding: 20px 14px 30px;
-  scroll-snap-type: x proximity;
+  /* Native momentum is faster and easier to interrupt for the next reveal
+     than the old proximity snap, which kept settling after each swipe. */
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  overscroll-behavior-x: contain;
   scroll-padding-inline: 14px;
 }
 @supports (justify-content: safe center) {
@@ -2699,7 +2703,7 @@
   flex: 0 0 clamp(235px, 22vw, 300px);
   max-width: 300px;
   gap: 10px;
-  scroll-snap-align: start;
+  scroll-snap-align: none;
 }
 .dbl-cards-pull-grid .dbl-cards-card {
   border-radius: 9px;
@@ -2811,4 +2815,11 @@
   letter-spacing: .085em;
   text-transform: uppercase;
   color: #c9b6a2;
+}
+
+/* Faster front/back response while ripping packs. Collection flips retain
+   their existing timing, and the reveal flourishes remain unchanged. */
+.dbl-cards-pull-grid .dbl-cards-inner {
+  transition-duration: .44s;
+  transition-timing-function: cubic-bezier(.2,.78,.26,1);
 }
