@@ -6,13 +6,13 @@
   if (!hub?.subscribe || !reader?.forEachTopLevelArrayItem || !reader?.readTopLevelValue) return;
 
   // Three Mythical designs share a combined 0.1% chance PER CARD SLOT.
-  // Preserve existing standard-tier weights and Refractor+ guarantee.
+  // Keep standard-tier pull weights independent, with no guaranteed rarity.
   const MYTHICAL_RATE = .001;
   // One independent Team Season insert roll per eligible pack slot.
-  // It cannot replace a slot still required for the Refractor+ guarantee.
+  // Its roll never changes the standard player-card rarity weights.
   const TEAM_INSERT_RATE = .03;
   // A separate, plain-paper 1968 Topps test issue. Odds apply per eligible
-  // slot; existing Series 0 rarity guarantees and inserts stay intact.
+  // slot; all five slots now follow the published odds without guarantees.
   const TOPPS_YEAR = 1968, TOPPS_SERIES = 1, TOPPS_INSERT_RATE = .15;
   const TOPPS_UNIFORM_SHARE = .20;
   const TEAM_INSERT = Object.freeze({
@@ -804,18 +804,17 @@
     notify();
     return true;
   }
-  function sampleTier(guarantee = false) {
-    const tiers = guarantee ? STANDARD_RARITIES.slice(2) : STANDARD_RARITIES;
-    const total = tiers.reduce((n, tier) => n + tier.chance, 0);
+  function sampleTier() {
+    const total = STANDARD_RARITIES.reduce((n, tier) => n + tier.chance, 0);
     let ticket = Math.random() * total;
-    for (const tier of tiers) {
+    for (const tier of STANDARD_RARITIES) {
       ticket -= tier.chance;
       if (ticket < 0) return tier;
     }
-    return tiers[tiers.length - 1];
+    return STANDARD_RARITIES[STANDARD_RARITIES.length - 1];
   }
-  // Roll Mythical independently so the guaranteed Refractor+ slot never
-  // inflates the 0.1% rate. Each design gets one third of Mythical pulls.
+  // Roll Mythical independently at 0.1% per card slot, with no
+  // guaranteed upgrade. Each design gets one third of Mythical pulls.
   function sampleMythical() {
     if (!pool.some(p => p.peak >= MIN_OVR_BY_RARITY['mythic-aether'])) return null;
     if (Math.random() >= MYTHICAL_RATE) return null;
@@ -834,15 +833,12 @@
   // Pick a player whose PEAK OVR qualifies for the drawn edition.
   // If none are available, move DOWN through the tiers, never upward.
   // Reuse a player only as a last resort for tiny league files.
-  function pickForRarity(requestedTier, taken, protectedRarePid, allowDuplicates = false) {
+  function pickForRarity(requestedTier, taken, allowDuplicates = false) {
     for (let level = tierIndex[requestedTier.id]; level >= 0; level--) {
       const tier = RARITIES[level];
       const threshold = MIN_OVR_BY_RARITY[tier.id];
       const available = pool.filter(p => p.peak >= threshold &&
-        (allowDuplicates || !taken.has(p.pid)) &&
-        // Protect the last possible Refractor+ player for the guaranteed
-        // slot, when no Refractor+ has been drawn earlier in the pack.
-        !(level < 2 && protectedRarePid === p.pid));
+        (allowDuplicates || !taken.has(p.pid)));
       if (!available.length) continue;
       // Retain the previous stronger-player bias within each eligible tier.
       const range = Math.max(1, Math.ceil(available.length * tier.pool));
@@ -873,16 +869,11 @@
   function getPack() {
     if (!collectionLoaded || mergingCollection || !pool.length) return [];
     const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set(), picks = [];
-    let hasRefractor = false;
-    const rareCandidate = pool.find(p =>
-      p.peak >= MIN_OVR_BY_RARITY.refractor);
     for (let i = 0; i < 5; i++) {
-      const guarantee = i === 4 && !hasRefractor && !!rareCandidate;
       const mythicalTier = sampleMythical();
-      // Both inserts share a single roll, so Team Season retains its true
-      // 3% chance and Topps has a 15% chance on each eligible slot.
-      // Neither consumes a Mythical hit or the guaranteed Refractor+ slot.
-      if (!mythicalTier && !guarantee) {
+      // Both inserts share a single roll: Team Season at 3% and 1968
+      // Topps at 15% of non-Mythical slots, with no protected fifth slot.
+      if (!mythicalTier) {
         const teamChance = teamSeasonPool.length ? TEAM_INSERT_RATE : 0;
         const toppsChance = toppsById.size ? TOPPS_INSERT_RATE : 0;
         const roll = Math.random();
@@ -903,15 +894,13 @@
           }
         }
       }
-      const requestedTier = mythicalTier || sampleTier(guarantee);
-      const protectedRarePid = hasRefractor ? null : rareCandidate?.pid ?? null;
+      const requestedTier = mythicalTier || sampleTier();
       const chosen = mythicalTier ?
         {tier: mythicalTier, player: pickMythical(mythicalTier, taken)} :
-        (pickForRarity(requestedTier, taken, protectedRarePid) ||
-          pickForRarity(requestedTier, taken, protectedRarePid, true));
+        (pickForRarity(requestedTier, taken) ||
+          pickForRarity(requestedTier, taken, true));
       if (!chosen?.player) return []; // A nonempty eligible pool yields a card.
       const {tier, player: p} = chosen;
-      if (tierIndex[tier.id] >= 2) hasRefractor = true;
       taken.add(p.pid);
       picks.push({
         id: p.pid + ':' + tier.id, pid: p.pid,
