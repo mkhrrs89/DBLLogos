@@ -2983,3 +2983,113 @@
   background: radial-gradient(ellipse at 50% 47%,rgba(255,246,204,.85),
     rgba(220,163,76,.48) 30%,transparent 67%);
 }
+
+
+/* Enlarged historical crest: devote nearly the full card width to the
+   season's team mark while retaining the year, name, record and new finish
+   ribbon. Scoped exclusively to Team Season inserts. */
+.dbl-cards-team-season-front {
+  padding: 5.4% 5% 7%;
+  gap: 1%;
+}
+.dbl-cards-team-season-masthead {
+  font-size: clamp(8px, 4.2cqw, 14px);
+  padding-bottom: 2%;
+}
+.dbl-cards-team-season-year {
+  font-size: clamp(28px, 20cqw, 68px);
+}
+.dbl-cards-team-season-emblem {
+  box-sizing: border-box;
+  width: 98%;
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0;
+  border-radius: 26%;
+  background: radial-gradient(ellipse, rgba(255,255,246,.72),
+    rgba(188,138,71,.06) 80%, transparent);
+}
+.dbl-cards-team-season-emblem > .dbl-cards-team-crest {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: auto;
+  font-size: clamp(40px, 33cqw, 96px);
+}
+.dbl-cards-team-season-emblem .dbl-cards-team-logo {
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+.dbl-cards-team-season-emblem .dbl-cards-team-initials {
+  font-size: clamp(32px, 33cqw, 95px);
+}
+.dbl-cards-team-season-name {
+  font-size: clamp(14px, 8.5cqw, 29px);
+  line-height: 1;
+}
+.dbl-cards-team-season-record {
+  padding: 1.6% 0;
+  font-size: clamp(10px, 6.1cqw, 20px);
+}
+.dbl-cards-team-season-finish {
+  position: relative;
+  z-index: 3;
+  display: block;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  flex: 0 0 auto;
+  padding: 2% 4%;
+  background: rgba(92,62,31,.11);
+  border: 1px solid rgba(95,61,26,.44);
+  border-radius: 3px;
+  color: #51351e;
+  font: 900 clamp(9px,5.2cqw,18px)/1.14 "Trebuchet MS",Arial,sans-serif;
+  text-align: center;
+  letter-spacing: .045em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.dbl-cards-team-season-finish[data-finish="champion"],
+.dbl-cards-team-season-back-finish[data-finish="champion"] {
+  color: #58330b;
+  background: linear-gradient(90deg,rgba(241,190,81,.7),rgba(255,240,155,.9));
+  border-color: #af7b20;
+  box-shadow: 0 0 8px rgba(238,177,56,.27);
+}
+.dbl-cards-team-season-finish[data-finish="finalist"],
+.dbl-cards-team-season-back-finish[data-finish="finalist"] {
+  color: #444954;
+  background: rgba(223,226,226,.78);
+  border-color: #818690;
+}
+.dbl-cards-team-season-finish[data-finish="worst"],
+.dbl-cards-team-season-back-finish[data-finish="worst"] {
+  color: #733c32;
+  background: rgba(177,90,64,.11);
+  border-color: rgba(151,70,43,.52);
+}
+.dbl-cards-team-season-finish[data-finish="best"],
+.dbl-cards-team-season-back-finish[data-finish="best"] {
+  color: #294a36;
+  background: rgba(114,166,106,.2);
+  border-color: rgba(69,113,54,.54);
+}
+.dbl-cards-team-season-back-finish {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 2.2% 3%;
+  border: 1px solid rgba(95,61,26,.43);
+  border-radius: 3px;
+  background: rgba(92,62,31,.1);
+  color: #50351e;
+  font: 900 clamp(8px, 5.1cqw, 17px)/1.15 "Trebuchet MS",Arial,sans-serif;
+  letter-spacing: .04em;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
