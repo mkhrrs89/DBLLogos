@@ -8,6 +8,12 @@
   // Three Mythical designs share a combined 0.1% chance PER CARD SLOT.
   // Preserve existing standard-tier weights and Refractor+ guarantee.
   const MYTHICAL_RATE = .001;
+  // One independent Team Season insert roll per eligible pack slot.
+  // It cannot replace a slot still required for the Refractor+ guarantee.
+  const TEAM_INSERT_RATE = .03;
+  const TEAM_INSERT = Object.freeze({
+    id: 'team-season', label: 'Team Season', insert: true
+  });
   const RARITIES = [
     { id: 'common', label: 'Base', chance: 85, pool: 1 },
     { id: 'crome', label: 'Chrome', chance: 10, pool: .72 },
@@ -48,7 +54,7 @@
   const KEY = 'archive';
   const FALLBACK = 'dbl-digital-cards-fallback-v1';
   const tierIndex = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
-  const tierMap = Object.fromEntries(RARITIES.map(r => [r.id, r]));
+  const tierMap = Object.fromEntries([...RARITIES, TEAM_INSERT].map(r => [r.id, r]));
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
   const integer = x => Number.isInteger(number(x)) ? number(x) : null;
   const str = x => typeof x === 'string' ? x.trim() : '';
@@ -56,6 +62,7 @@
   const listeners = new Set();
   let currentFile = null, fileVersion = 0, scanning = false, poolFile = null;
   let pool = [], poolByPid = new Map(), teamLogos = new Map(), activeSeason = null;
+  let teamSeasonPool = [], teamSeasonById = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
   let savedOK = true, saveQueue = Promise.resolve();
   let problem = '';
@@ -288,7 +295,29 @@
   function parseState(value) {
     collection = new Map();
     for (const row of Array.isArray(value?.items) ? value.items : []) {
-      const pid = integer(row?.pid), qty = integer(row?.count);
+      const qty = integer(row?.count);
+      if (row?.type === 'team-season' && row?.rarity === TEAM_INSERT.id) {
+        const tid = integer(row.tid), year = integer(row.era ?? row.season);
+        if (tid === null || tid < 0 || year === null || qty === null ||
+            qty < 1 || qty > 1000000) continue;
+        const id = 'team:' + tid + ':' + year;
+        const item = {
+          id, type: 'team-season', rarity: TEAM_INSERT.id, series: CARD_SERIES,
+          count: qty, tid, era: year,
+          name: str(row.name) || str(row.teamName) || 'Unknown team',
+          teamName: str(row.teamName) || str(row.name) || 'Unknown team',
+          team: str(row.team) || 'DBL',
+          teamLogo: photoUrl(row.teamLogo, true),
+          franchiseName: str(row.franchiseName) || str(row.teamName) || 'Unknown team',
+          won: number(row.won), lost: number(row.lost),
+          tied: number(row.tied), playoffRoundsWon: number(row.playoffRoundsWon)
+        };
+        const old = collection.get(id);
+        if (old) old.count += qty;
+        else collection.set(id, item);
+        continue;
+      }
+      const pid = integer(row?.pid);
       const rarity = OLD_RARITY[row?.rarity] || row?.rarity;
       if (pid === null || pid < 0 || qty === null || qty < 1 || qty > 1000000 ||
           !tierMap[rarity]) continue;
@@ -348,10 +377,29 @@
     }
     return modified;
   }
+  function updateTeamSeason(target, season) {
+    let modified = false;
+    for (const key of ['name', 'team', 'teamName', 'teamLogo',
+      'franchiseName', 'won', 'lost', 'tied', 'playoffRoundsWon']) {
+      // Preserve saved metadata if a newly uploaded league export does
+      // not have the corresponding historical value.
+      if (season[key] !== null && season[key] !== '' &&
+          target[key] !== season[key]) {
+        target[key] = season[key];
+        modified = true;
+      }
+    }
+    return modified;
+  }
   function refreshCollectedCards() {
     if (!collectionLoaded || !poolFile || !collection.size) return;
     let modified = false;
     for (const item of collection.values()) {
+      if (item.type === 'team-season') {
+        const live = teamSeasonById.get(item.id);
+        if (live && updateTeamSeason(item, live)) modified = true;
+        continue;
+      }
       const p = poolByPid.get(item.pid);
       if (!p || !p.peakVerified) continue;
       // Don't overwrite a later, higher peak with an older uploaded export.
@@ -451,15 +499,32 @@
     }
     return null;
   }
+  function chooseTeamInsert(takenTeamIds) {
+    if (!teamSeasonPool.length) return null;
+    const unused = teamSeasonPool.filter(card => !takenTeamIds.has(card.id));
+    const draw = unused.length ? unused : teamSeasonPool;
+    return draw[Math.floor(Math.random() * draw.length)];
+  }
   function getPack() {
     if (!collectionLoaded || !pool.length) return [];
-    const taken = new Set(), picks = [];
+    const taken = new Set(), takenTeamIds = new Set(), picks = [];
     let hasRefractor = false;
     const rareCandidate = pool.find(p =>
       p.peak >= MIN_OVR_BY_RARITY.refractor);
     for (let i = 0; i < 5; i++) {
       const guarantee = i === 4 && !hasRefractor && !!rareCandidate;
       const mythicalTier = sampleMythical();
+      // An insert replaces an ordinary slot but never consumes a guaranteed
+      // Refractor+ position. Existing special player rolls retain priority.
+      if (!mythicalTier && !guarantee && teamSeasonPool.length &&
+          Math.random() < TEAM_INSERT_RATE) {
+        const insert = chooseTeamInsert(takenTeamIds);
+        if (insert) {
+          takenTeamIds.add(insert.id);
+          picks.push({...insert, count: 1});
+          continue;
+        }
+      }
       const requestedTier = mythicalTier || sampleTier(guarantee);
       const protectedRarePid = hasRefractor ? null : rareCandidate?.pid ?? null;
       const chosen = mythicalTier ?
@@ -489,10 +554,13 @@
       const owned = collection.get(card.id);
       if (owned) {
         owned.count++;
-        // An older card's draft-year/current-team data is stale. Refresh
-        // its season details when the newly drawn card is authoritative.
-        if (!owned.peakVerified || (number(card.peak) ?? -1) >= (number(owned.peak) ?? -1))
-          updateCardFromPlayer(owned, card);
+        if (card.type === 'team-season') {
+          updateTeamSeason(owned, card);
+        } else {
+          // An older player's season data is refreshed only when authoritative.
+          if (!owned.peakVerified || (number(card.peak) ?? -1) >= (number(owned.peak) ?? -1))
+            updateCardFromPlayer(owned, card);
+        }
       } else collection.set(card.id, {...card});
     }
     packs++;
@@ -533,6 +601,36 @@
           region: str(team.region), name: str(team.name)});
       });
       if (!current()) return;
+      // Each historical team.seasons row is one collectible team/year pair.
+      // Preserve names, abbreviations and records from that specific year.
+      const teamSeasons = [];
+      const seenTeamSeasons = new Set();
+      for (const [tid, team] of teams) {
+        for (const row of team.history) {
+          const year = integer(row?.season);
+          if (year === null || year > season) continue;
+          const id = 'team:' + tid + ':' + year;
+          if (seenTeamSeasons.has(id)) continue;
+          seenTeamSeasons.add(id);
+          const historical = teamAt(teams, tid, year);
+          const latest = teamAt(teams, tid, season);
+          teamSeasons.push({
+            id, type: 'team-season', rarity: TEAM_INSERT.id,
+            series: CARD_SERIES, tid, era: year, count: 1,
+            name: historical?.name || 'Unknown team',
+            teamName: historical?.name || 'Unknown team',
+            team: historical?.abbrev || 'DBL',
+            teamLogo: photoUrl(historical?.logo, true),
+            logo: historical?.logo || '',
+            franchiseName: latest?.name || historical?.name || 'Unknown team',
+            won: number(row.won), lost: number(row.lost),
+            tied: number(row.tied), playoffRoundsWon: number(row.playoffRoundsWon)
+          });
+        }
+      }
+      teamSeasons.sort((a, b) => a.era - b.era ||
+        a.teamName.localeCompare(b.teamName) || a.tid - b.tid);
+      if (!current()) return;
       const players = [], seen = new Set();
       await reader.forEachTopLevelArrayItem(file, 'players', player => {
         if (!current()) return;
@@ -545,6 +643,8 @@
       players.sort((a, b) => b.score - a.score || (b.peak ?? 0) - (a.peak ?? 0) || a.pid - b.pid);
       pool = players;
       poolByPid = new Map(players.map(p => [p.pid, p]));
+      teamSeasonPool = teamSeasons;
+      teamSeasonById = new Map(teamSeasons.map(team => [team.id, team]));
       teamLogos = availableLogos;
       activeSeason = season;
       poolFile = file;
@@ -553,6 +653,8 @@
       if (!current()) return;
       console.warn('Could not load card player pool.', error);
       pool = [];
+      teamSeasonPool = [];
+      teamSeasonById = new Map();
       problem = 'Could not read players from this league file. Try re-uploading it.';
     } finally {
       if (current()) { scanning = false; notify(); }
@@ -569,6 +671,8 @@
     poolFile = null;
     pool = [];
     poolByPid = new Map();
+    teamSeasonPool = [];
+    teamSeasonById = new Map();
     teamLogos = new Map();
     activeSeason = null;
     scanning = false;
@@ -577,7 +681,7 @@
   }
   const api = Object.freeze({
     currentSeries: CARD_SERIES,
-    rarities: RARITIES.map(r => Object.freeze({
+    rarities: [...RARITIES, TEAM_INSERT].map(r => Object.freeze({
       ...r, minOvr: MIN_OVR_BY_RARITY[r.id]
     })),
     // A compact, read-only catalog built from the currently uploaded export.
@@ -587,6 +691,14 @@
         pid: p.pid, name: p.name, teamName: p.teamName,
         team: p.team, peak: p.peak, era: p.era,
         franchiseTid: p.franchiseTid, franchiseName: p.franchiseName
+      }));
+    },
+    // Read-only historical team season catalog for Checklist completion.
+    get checklistTeamSeasons() {
+      return teamSeasonPool.map(card => ({
+        id: card.id, tid: card.tid, era: card.era, name: card.name,
+        teamName: card.teamName, team: card.team,
+        franchiseName: card.franchiseName, rarity: TEAM_INSERT.id
       }));
     },
     ready, subscribe(callback) {
@@ -611,6 +723,9 @@
       };
     },
     findTeamLogo(card) {
+      if (card?.type === 'team-season') {
+        return teamSeasonById.get(card.id)?.logo || card.teamLogo || '';
+      }
       const player = poolByPid.get(card.pid);
       return card.teamLogo || teamLogos.get(card.team) ||
         (player?.team === card.team ? player.teamLogo : '') || '';
