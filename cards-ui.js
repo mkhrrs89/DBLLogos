@@ -368,7 +368,6 @@
       parts.length > 1 ? parts.slice(0, -1).join(' ') : card.team || 'DBL'));
     jersey.appendChild(make('span', 'dbl-topps-placeholder-number', '00'));
     artwork.appendChild(jersey);
-    artwork.appendChild(make('span', 'dbl-topps-uniform-pending', 'UNIFORM ARTWORK PENDING'));
     front.appendChild(artwork);
     front.appendChild(make('strong', 'dbl-topps-uniform-name', card.teamName));
     return front;
