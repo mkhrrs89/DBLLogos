@@ -2678,3 +2678,105 @@
 @media (prefers-reduced-motion: reduce) {
   .dbl-cards-reveal-fx { display: none !important; }
 }
+
+/* Pack Room display-only enlargement. The card's actual layout box grows,
+   rather than using transform:scale(), so portrait framing, text measured in
+   cqw, click targets, flip effects and its 0.70 aspect ratio grow together.
+   The binder, cover gallery and saved collection are not affected. */
+.dbl-cards-pull-grid {
+  box-sizing: border-box;
+  width: 100%;
+  gap: clamp(12px, 1.5vw, 22px);
+  justify-content: flex-start; /* safe fallback if the row overflows */
+  padding: 20px 14px 30px;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 14px;
+}
+@supports (justify-content: safe center) {
+  .dbl-cards-pull-grid { justify-content: safe center; }
+}
+.dbl-cards-pull-grid > .dbl-cards-pull-entry {
+  flex: 0 0 clamp(235px, 22vw, 300px);
+  max-width: 300px;
+  gap: 10px;
+  scroll-snap-align: start;
+}
+.dbl-cards-pull-grid .dbl-cards-card {
+  border-radius: 9px;
+}
+.dbl-cards-pull-grid .dbl-cards-inner {
+  border-radius: inherit;
+}
+.dbl-cards-pull-grid .dbl-cards-pull-status {
+  min-height: 21px;
+  font-size: clamp(11px, 1vw, 14px);
+}
+@media (max-width: 800px) {
+  .dbl-cards-pull-grid > .dbl-cards-pull-entry {
+    flex-basis: clamp(220px, 32vw, 270px);
+    max-width: 270px;
+  }
+}
+@media (max-width: 500px) {
+  .dbl-cards-pull-grid {
+    padding-left: 12px;
+    padding-right: 12px;
+    scroll-padding-inline: 12px;
+  }
+  .dbl-cards-pull-grid > .dbl-cards-pull-entry {
+    flex-basis: clamp(220px, 63vw, 250px);
+    max-width: 250px;
+  }
+}
+/* Preserve proportional lettering on the larger cards even where the normal
+   binder-friendly maximum font sizes would otherwise stop the text growing. */
+@supports (font-size: 1cqw) and (container-type: inline-size) {
+  .dbl-cards-pull-grid .dbl-cards-back-logo {
+    font-size: clamp(27px, 22cqw, 74px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-ornament {
+    font-size: clamp(32px, 30cqw, 91px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-small {
+    font-size: clamp(8px, 4.4cqw, 14px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-tap {
+    font-size: clamp(8px, 4cqw, 13px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-heading {
+    font-size: clamp(10px, 5.8cqw, 18px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-name {
+    font-size: clamp(11px, 9.2cqw, 29px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-team {
+    font-size: clamp(8px, 5cqw, 16px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-foot {
+    font-size: clamp(7px, 4.4cqw, 14px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-metric strong {
+    font-size: clamp(11px, 8.2cqw, 26px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-back-metric span {
+    font-size: clamp(7px, 4.1cqw, 13px);
+  }
+  .dbl-cards-pull-grid .dbl-cards-card.is-sealed .dbl-cards-back-sealed-series {
+    font-size: clamp(11px, 8.6cqw, 28px);
+  }
+}
+/* Older browsers without cqw still get legible lettering in the larger
+   pack cards; modern browsers use the exact card width as the scale source. */
+@supports not (font-size: 1cqw) {
+  .dbl-cards-pull-grid .dbl-cards-front-top { font-size: 16px; }
+  .dbl-cards-pull-grid .dbl-cards-ovr-value { font-size: 26px; }
+  .dbl-cards-pull-grid .dbl-cards-first-name { font-size: 19px; }
+  .dbl-cards-pull-grid .dbl-cards-name { font-size: 39px; }
+  .dbl-cards-pull-grid .dbl-cards-affiliation { font-size: 14px; }
+  .dbl-cards-pull-grid .dbl-cards-front-foot { font-size: 13px; }
+  .dbl-cards-pull-grid .dbl-cards-back-logo { font-size: 61px; }
+  .dbl-cards-pull-grid .dbl-cards-back-ornament { font-size: 77px; }
+  .dbl-cards-pull-grid .dbl-cards-back-small { font-size: 12px; }
+  .dbl-cards-pull-grid .dbl-cards-back-name { font-size: 23px; }
+  .dbl-cards-pull-grid .dbl-cards-back-metric strong { font-size: 20px; }
+}
