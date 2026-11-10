@@ -534,6 +534,13 @@
     fx.dataset.effect = card.rarity;
     fx.style.setProperty('--fx-duration', config.duration + 'ms');
     fx.style.setProperty('--fx-delay', '170ms');
+    // Confine ONLY the one-time glint to the card surface for these three
+    // grades. The flash, halo, ring, symbol and particles can still burst
+    // beyond the card edge because the main FX layer remains unclipped.
+    if (card.rarity === 'crome' || card.rarity === 'refractor' ||
+        card.rarity === 'black-label') {
+      fx.appendChild(make('span', 'dbl-cards-reveal-sweep-window'));
+    }
     fx.appendChild(make('span', 'dbl-cards-reveal-halo'));
     fx.appendChild(make('span', 'dbl-cards-reveal-ring'));
     fx.appendChild(make('span', 'dbl-cards-reveal-sigil', config.glyph));
