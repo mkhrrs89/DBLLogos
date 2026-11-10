@@ -3638,3 +3638,34 @@
   aspect-ratio: 1;
   margin: 0 auto;
 }
+
+
+/* 1968 Topps backs: use the same Candice-first font stack, weight,
+   spacing and responsive size as the player names on the front. Do not
+   change team names on uniform-card backs or any Series 0 lettering. */
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-player-name {
+  font-family: "Candice Pro", "ITC Candice", "Candice", "Shrikhand", "Lobster", Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: -.065em;
+  font-size: clamp(13px, 10.25cqw, 32px);
+  line-height: 1.12;
+  text-shadow: none;
+}
+
+/* Keep the centered team mark wholly above the outlined stat panel.
+   Height follows the reserved logo row, even for unusually tall team
+   emblems; a small upward offset adds visible breathing room. */
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-logo-circle {
+  width: auto;
+  height: 90%;
+  max-width: 37%;
+  max-height: 100%;
+  aspect-ratio: 1;
+  transform: translateY(-1.5cqw);
+}
+
+/* Quieter 1968 TOPPS imprint at the very bottom of the reverse. */
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-footer {
+  font-size: clamp(10px, 6.6cqw, 20px);
+}
