@@ -53,6 +53,55 @@
   const CARD_SERIES = 0;
   const KEY = 'archive';
   const FALLBACK = 'dbl-digital-cards-fallback-v1';
+  const DEVICE_KEY = 'dbl-digital-cards-source-id-v1';
+  const BACKUP_FORMAT = 'dbl-collection-backup';
+  const BACKUP_VERSION = 1;
+  const STATE_VERSION = 8; // v7 cards upgrade in place, preserving every copy.
+  const SOURCE_ID_RE = /^[a-f0-9]{32}$/;
+  function deviceSourceId() {
+    try {
+      const previous = window.localStorage.getItem(DEVICE_KEY);
+      if (SOURCE_ID_RE.test(previous || '')) return previous;
+    } catch (_) { /* IndexedDB may still be available. */ }
+    const bytes = new Uint8Array(16);
+    if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    const id = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    try { window.localStorage.setItem(DEVICE_KEY, id); } catch (_) {}
+    return id;
+  }
+  const thisSourceId = deviceSourceId();
+  function sourceCounts(raw, fallbackCount = 0, strict = false) {
+    const result = Object.create(null);
+    let total = 0;
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      for (const [id, qty] of Object.entries(raw)) {
+        if (!SOURCE_ID_RE.test(id) || !Number.isInteger(qty) || qty < 1 || qty > 1000000) {
+          if (strict) throw Error('Backup has an invalid source counter.');
+          continue;
+        }
+        total += qty;
+        if (total > 100000000) {
+          if (strict) throw Error('Backup source counts exceed the allowed limit.');
+          break;
+        }
+        result[id] = qty;
+      }
+    } else if (strict) throw Error('Backup is missing its source counters.');
+    if (strict && total !== fallbackCount)
+      throw Error('Backup counters do not match its stored totals.');
+    if (!strict && total !== fallbackCount) {
+      return fallbackCount > 0 ? {[thisSourceId]: fallbackCount} : {};
+    }
+    return result;
+  }
+  const sumSourceCounts = counts => Object.values(counts).reduce((sum, n) => sum + n, 0);
+  function unionSourceCounts(a, b) {
+    const merged = {...a};
+    for (const [id, count] of Object.entries(b))
+      merged[id] = Math.max(merged[id] || 0, count);
+    return merged;
+  }
   const tierIndex = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
   const tierMap = Object.fromEntries([...RARITIES, TEAM_INSERT].map(r => [r.id, r]));
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
@@ -64,6 +113,7 @@
   let pool = [], poolByPid = new Map(), teamLogos = new Map(), activeSeason = null;
   let teamSeasonPool = [], teamSeasonById = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
+  let packSources = {}, mergingCollection = false;
   let savedOK = true, saveQueue = Promise.resolve();
   let problem = '';
 
@@ -314,8 +364,11 @@
           finish: str(row.finish), finishKind: str(row.finishKind)
         };
         const old = collection.get(id);
-        if (old) old.count += qty;
-        else collection.set(id, item);
+        item.sourceCounts = sourceCounts(row.sourceCounts, qty);
+        if (old) {
+          old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
+          old.count = sumSourceCounts(old.sourceCounts);
+        } else collection.set(id, item);
         continue;
       }
       const pid = integer(row?.pid);
@@ -345,19 +398,25 @@
         pot: number(row.pot), gp: number(row.gp), ppg: number(row.ppg),
         ws: number(row.ws), photo: photoUrl(row.photo, true)
       };
+      item.sourceCounts = sourceCounts(row.sourceCounts, qty);
       const existing = collection.get(id);
       if (existing) {
-        existing.count += qty;
+        existing.sourceCounts = unionSourceCounts(existing.sourceCounts, item.sourceCounts);
+        existing.count = sumSourceCounts(existing.sourceCounts);
         if (!existing.photo && item.photo) existing.photo = item.photo;
       } else collection.set(id, item);
     }
     packs = Math.max(0, integer(value?.packs) ?? 0);
+    packSources = sourceCounts(value?.packSources, packs);
+    packs = sumSourceCounts(packSources);
   }
   function snapshot() {
-    return {version: 7, packs, items: [...collection.values()].map(i => ({
-      ...i, photo: photoUrl(i.photo, true),
-      teamLogo: photoUrl(i.teamLogo, true)
-    }))};
+    return {version: STATE_VERSION, packs, packSources: {...packSources},
+      items: [...collection.values()].map(i => ({
+        ...i, sourceCounts: {...i.sourceCounts},
+        photo: photoUrl(i.photo, true),
+        teamLogo: photoUrl(i.teamLogo, true)
+      }))};
   }
   // Update the card's printed season metadata without changing its
   // rarity, ownership quantity, portrait or collectible identity.
@@ -426,7 +485,7 @@
     notify();
     // Persist the normalized editions, including a collection restored from
     // a previous release, even if no new pack is opened.
-    if (state?.items?.length && state.version !== 7) void save();
+    if (state?.items?.length && state.version !== STATE_VERSION) void save();
   }).catch(error => {
     console.warn('Card collection restore failed.', error);
     collectionLoaded = true;
@@ -434,10 +493,10 @@
     notify();
   });
   async function clearCollection() {
-    if (!collectionLoaded) return false;
+    if (!collectionLoaded || mergingCollection) return false;
     // Serialize the reset behind any in-flight pack saves so an older write
     // can never resurrect cards after the user clears them.
-    const empty = {version: 7, packs: 0, items: []};
+    const empty = {version: STATE_VERSION, packs: 0, packSources: {}, items: []};
     saveQueue = saveQueue.catch(() => {}).then(() => writeState(empty));
     const cleared = await saveQueue;
     if (!cleared) {
@@ -447,6 +506,7 @@
     }
     collection.clear();
     packs = 0;
+    packSources = {};
     savedOK = true;
     notify();
     return true;
@@ -508,7 +568,7 @@
     return draw[Math.floor(Math.random() * draw.length)];
   }
   function getPack() {
-    if (!collectionLoaded || !pool.length) return [];
+    if (!collectionLoaded || mergingCollection || !pool.length) return [];
     const taken = new Set(), takenTeamIds = new Set(), picks = [];
     let hasRefractor = false;
     const rareCandidate = pool.find(p =>
@@ -551,11 +611,12 @@
     return picks;
   }
   function collectPack(picks) {
-    if (!collectionLoaded || !Array.isArray(picks) || picks.length !== 5) return false;
+    if (!collectionLoaded || mergingCollection || !Array.isArray(picks) || picks.length !== 5) return false;
     for (const card of picks) {
       const owned = collection.get(card.id);
       if (owned) {
-        owned.count++;
+        owned.sourceCounts[thisSourceId] = (owned.sourceCounts[thisSourceId] || 0) + 1;
+        owned.count = sumSourceCounts(owned.sourceCounts);
         if (card.type === 'team-season') {
           updateTeamSeason(owned, card);
         } else {
@@ -563,9 +624,10 @@
           if (!owned.peakVerified || (number(card.peak) ?? -1) >= (number(owned.peak) ?? -1))
             updateCardFromPlayer(owned, card);
         }
-      } else collection.set(card.id, {...card});
+      } else collection.set(card.id, {...card, sourceCounts: {[thisSourceId]: 1}});
     }
-    packs++;
+    packSources[thisSourceId] = (packSources[thisSourceId] || 0) + 1;
+    packs = sumSourceCounts(packSources);
     notify();
     void save();
     return true;
@@ -823,7 +885,7 @@
       return {
         hasFile: !!currentFile, loading: scanning,
         ready: collectionLoaded, poolSize: pool.length, season: activeSeason,
-        problem, savedOK, packs,
+        problem, savedOK, packs, merging: mergingCollection,
         unique: collection.size,
         count: [...collection.values()].reduce((n, card) => n + card.count, 0)
       };
