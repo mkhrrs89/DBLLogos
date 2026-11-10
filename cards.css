@@ -2973,16 +2973,7 @@
 .dbl-cards-card[data-rarity="team-season"] .dbl-cards-back-metric {
   background: rgba(116,73,29,.08);
 }
-/* Warm paper-and-gold reveal flecks, unique to the historical inserts. */
-.dbl-cards-reveal-fx[data-effect="team-season"] {
-  --fx-ink: #fff1bb;
-  --fx-glow: rgba(229,175,93,.73);
-  --fx-haze: rgba(164,99,40,.33);
-}
-.dbl-cards-reveal-fx[data-effect="team-season"]::before {
-  background: radial-gradient(ellipse at 50% 47%,rgba(255,246,204,.85),
-    rgba(220,163,76,.48) 30%,transparent 67%);
-}
+/* Historical Team Season inserts deliberately use only the standard card flip. */
 
 
 /* Enlarged historical crest: devote nearly the full card width to the
