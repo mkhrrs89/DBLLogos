@@ -642,8 +642,7 @@
     'black-label': {duration: 2100, sparks: 16, spread: .84, glyph: '✦'},
     'mythic-aether': {duration: 2850, sparks: 21, spread: 1.04, glyph: '✧'},
     'mythic-eclipse': {duration: 2850, sparks: 21, spread: 1.04, glyph: '✦'},
-    'mythic-aurora': {duration: 2850, sparks: 22, spread: 1.04, glyph: '✧'},
-    'team-season': {duration: 1450, sparks: 9, spread: .58, glyph: '◆'}
+    'mythic-aurora': {duration: 2850, sparks: 22, spread: 1.04, glyph: '✧'}
   });
 
   function playCardRevealEffect(button, card) {
@@ -734,7 +733,7 @@
     pack.appendChild(make('span', 'dbl-cards-pack-shape', '◇'));
     pack.appendChild(make('span', 'dbl-cards-pack-series',
       'SERIES ' + api.currentSeries + ' · THE COLLECTOR SERIES'));
-    pack.appendChild(make('span', 'dbl-cards-pack-guarantee', '5 CARDS · RARE+ GUARANTEED'));
+    pack.appendChild(make('span', 'dbl-cards-pack-guarantee', '5 CARDS · RANDOM PULLS'));
     pack.appendChild(make('span', 'dbl-cards-pack-tear'));
     return pack;
   }
