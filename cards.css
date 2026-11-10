@@ -3220,3 +3220,36 @@
     max-width: 202px;
   }
 }
+
+
+/* Confine only the momentary reveal sweep to the rounded card silhouette
+   for Chrome, Refractor and Black Label. Do not clip the parent FX layer:
+   halos, flashes, rings and sparks intentionally extend past the edges.
+   Other reveal treatments keep their existing unrestricted sweeps. */
+.dbl-cards-reveal-fx[data-effect="crome"]::after,
+.dbl-cards-reveal-fx[data-effect="refractor"]::after,
+.dbl-cards-reveal-fx[data-effect="black-label"]::after {
+  content: none;
+}
+.dbl-cards-reveal-sweep-window {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: block;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.dbl-cards-reveal-sweep-window::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -86%;
+  width: 54%;
+  transform: rotate(18deg);
+  background: linear-gradient(90deg, transparent, var(--fx-glow) 37%,
+    rgba(255,255,255,.94) 50%, transparent 68%);
+  animation: dbl-cards-fx-sweep var(--fx-duration) ease-out var(--fx-delay) both;
+  pointer-events: none;
+}
