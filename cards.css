@@ -3093,3 +3093,72 @@
   text-align: center;
   overflow-wrap: anywhere;
 }
+
+
+/* Manual cross-device collection backup transfer. Existing Clear Collection
+   action stays separate to prevent destructive taps on small screens. */
+.dbl-cards-transfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+  max-width: 100%;
+}
+.dbl-cards-transfer-button {
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  padding: 9px 12px;
+  background: rgba(128,128,128,.045);
+  color: var(--text);
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .18s, background-color .18s;
+}
+.dbl-cards-transfer-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(128,128,128,.095);
+}
+.dbl-cards-transfer-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.dbl-cards-transfer-button:disabled {
+  opacity: .48;
+  cursor: default;
+}
+.dbl-cards-merge-feedback {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: .79rem;
+  line-height: 1.45;
+}
+.dbl-cards-merge-feedback:empty { display: none; }
+.dbl-cards-merge-feedback.is-error { color: #cf6d63; }
+.dbl-cards-transfer-explainer {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: .74rem;
+  line-height: 1.5;
+}
+@media (max-width: 620px) {
+  .dbl-cards-binder-actions {
+    width: 100%;
+    align-items: stretch;
+    gap: 9px;
+  }
+  .dbl-cards-transfer-actions {
+    justify-content: stretch;
+    width: 100%;
+  }
+  .dbl-cards-transfer-button {
+    flex: 1 1 135px;
+    min-height: 42px;
+    white-space: normal;
+  }
+  .dbl-cards-binder-actions .dbl-cards-clear-button {
+    align-self: flex-end;
+  }
+}
