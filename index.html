@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
     <link rel="stylesheet" href="./home-season-preview.css?v=20261106-season-preview" />
-    <link rel="stylesheet" href="./cards.css?v=20261110-team-logo-no-gradient" />
+    <link rel="stylesheet" href="./cards.css?v=20261110-topps-test-issue" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -277,7 +277,7 @@
                 <button id="cardsRevealAllBtn" class="dbl-cards-action-button" type="button">Reveal all cards</button>
                 <button id="cardsNextPackBtn" class="dbl-cards-action-button" type="button">Next pack</button>
               </div>
-              <p class="dbl-cards-save-status">Player-card pull weights: Base 85% · Chrome 10% · Refractor 4% · Black Label 1%. Team Season inserts have about a 3% chance per eligible card slot. Each pack still guarantees one Refractor-or-better player card when a qualifying player exists. Actual overall pull rates may differ.</p>
+              <p class="dbl-cards-save-status">Player-card pull weights: Base 85% · Chrome 10% · Refractor 4% · Black Label 1%. Team Season inserts have a 3% chance and 1968 Topps cards have a 15% chance per eligible slot (including uniform placeholders). Each pack still guarantees one Refractor-or-better player card when a qualifying player exists. Actual overall pull rates may differ.</p>
             </section>
           </div>
 
@@ -315,6 +315,8 @@
                   <option value="refractor">Refractor</option>
                   <option value="black-label">Black Label</option>
                   <option value="team-season">Team Season insert</option>
+                   <option value="topps-1968">1968 Topps player</option>
+                   <option value="topps-1968-uniform">1968 Topps uniform</option>
                 </select>
               </label>
               <label class="dbl-cards-field" for="cardsTeamFilter">
@@ -338,7 +340,7 @@
               <p class="dbl-cards-empty">Your collection is empty. Open a pack to start collecting.</p>
             </div>
             <button id="cardsShowMoreBtn" class="dbl-cards-more" type="button" hidden>Show more cards</button>
-            <p class="dbl-cards-footnote">Four standard player-card finishes: tan Base, silver Chrome, rainbow Refractor, and black holographic Black Label, plus historical Team Season inserts. Every sealed card looks identical until revealed. Minimum peak OVR for standard cards: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. Previously collected cards update when you load a league export with their history. This is a free fictional card collection with no money or trading value. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it.</p>
+            <p class="dbl-cards-footnote">Four standard player-card finishes: tan Base, silver Chrome, rainbow Refractor, and black holographic Black Label, plus historical Team Season inserts and plain-paper 1968 Topps test player/rookie/uniform cards. Every sealed card looks identical until revealed. Minimum peak OVR for standard cards: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. Previously collected cards update when you load a league export with their history. This is a free fictional card collection with no money or trading value. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it.</p>
           </section>
 
           <section id="cardsAllCollectionsView" class="dbl-cards-all-collections" role="tabpanel" aria-labelledby="cardsAllCollectionsTab" hidden>
@@ -352,14 +354,14 @@
           <section id="cardsChecklistView" class="dbl-cards-checklist" role="tabpanel" aria-labelledby="cardsChecklistTab" hidden>
             <header class="dbl-cards-checklist-heading">
               <h3>Card Checklist</h3>
-              <p class="dbl-cards-series-context">Series 0 · Original FLAGSHIP set</p>
-              <p>Every obtainable player edition and historical team-season insert in your uploaded league archive. Cards check off automatically when collected.</p>
+              <p id="cardsChecklistSeriesContext" class="dbl-cards-series-context">Series 0 · Original FLAGSHIP set</p>
+              <p id="cardsChecklistDescription">Every obtainable player edition and historical team-season insert in your uploaded league archive. Cards check off automatically when collected.</p>
             </header>
             <div id="cardsChecklistStats" class="dbl-cards-checklist-stats" aria-label="Collection completion by rarity"></div>
             <section class="dbl-cards-franchise-section" aria-labelledby="cardsChecklistFranchiseHeading">
               <header class="dbl-cards-franchise-heading">
                 <h4 id="cardsChecklistFranchiseHeading">Franchise Completion</h4>
-                <p>Completion by franchise, including peak-season player editions and historical Team Season inserts. Name changes stay grouped; duplicates count once.</p>
+                <p id="cardsChecklistFranchiseDescription">Completion by franchise, including peak-season player editions and historical Team Season inserts. Name changes stay grouped; duplicates count once.</p>
               </header>
               <div id="cardsChecklistFranchises" class="dbl-cards-franchise-results" aria-live="polite"></div>
             </section>
@@ -377,6 +379,8 @@
                   <option value="refractor">Refractor</option>
                   <option value="black-label">Black Label</option>
                   <option value="team-season">Team Season insert</option>
+                   <option value="topps-1968">1968 Topps player</option>
+                   <option value="topps-1968-uniform">1968 Topps uniform</option>
                 </select>
               </label>
               <label class="dbl-cards-field" for="cardsChecklistOwnership">
@@ -399,7 +403,7 @@
             <p id="cardsChecklistCaption" class="dbl-cards-collection-caption" aria-live="polite"></p>
             <div id="cardsChecklistList" class="dbl-cards-checklist-list" role="list"></div>
             <button id="cardsChecklistMore" class="dbl-cards-more dbl-cards-checklist-more" type="button" hidden>Show more editions</button>
-            <p class="dbl-cards-checklist-note">One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR, plus one Team Season insert for each recorded team-season in the uploaded league export. A check means that edition is in your saved collection; duplicates count only once toward completion. The checklist updates with your latest uploaded league file. Cards already owned but absent from that file stay in My Collection.</p>
+            <p id="cardsChecklistNote" class="dbl-cards-checklist-note">One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR, plus one Team Season insert for each recorded team-season in the uploaded league export. A check means that edition is in your saved collection; duplicates count only once toward completion. The checklist updates with your latest uploaded league file. Cards already owned but absent from that file stay in My Collection.</p>
           </section>
         </section>
 
@@ -1039,8 +1043,8 @@
     <script src="./home-season-preview.js?v=20261106-home-team-badges"></script>
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
-    <script src="./cards-engine.js?v=20261110-collection-merge"></script>
-    <script src="./cards-ui.js?v=20261110-clipped-reveal-sweep"></script>
+    <script src="./cards-engine.js?v=20261110-topps-test-issue"></script>
+    <script src="./cards-ui.js?v=20261110-topps-test-issue"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
