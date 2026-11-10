@@ -699,6 +699,9 @@
       if (!revealed) {
         revealed = true;
         const newBack = backOf(card, false);
+        // Newly revealed alternate-set backs need their own card-stock class;
+        // all sealed cards still start with the identical mystery reverse.
+        reverse.className = newBack.className;
         reverse.replaceChildren(...Array.from(newBack.childNodes));
         button.classList.remove('is-sealed');
         button.dataset.rarity = card.rarity;
