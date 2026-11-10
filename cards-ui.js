@@ -6,6 +6,7 @@
   const status = document.getElementById('cardsStatus');
   const saveStatus = document.getElementById('cardsSaveStatus');
   const packStage = document.getElementById('cardsPackStage');
+  const packsOpenedTotal = document.getElementById('cardsPacksOpenedTotal');
   const openBtn = document.getElementById('cardsOpenPackBtn');
   const actions = document.getElementById('cardsPackActions');
   const revealBtn = document.getElementById('cardsRevealAllBtn');
@@ -35,7 +36,7 @@
   const checklistCaption = document.getElementById('cardsChecklistCaption');
   const checklistList = document.getElementById('cardsChecklistList');
   const checklistMore = document.getElementById('cardsChecklistMore');
-  if (!api || !panel || !status || !saveStatus || !packStage || !openBtn ||
+  if (!api || !panel || !status || !saveStatus || !packStage || !packsOpenedTotal || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
       !galleryCount || !search || !rarityFilter || !teamFilter || !order || !loadMore ||
       !clearBtn || !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
@@ -126,6 +127,8 @@
   }
   function showCounters() {
     const s = api.status;
+    // Reuse the same saved lifetime total displayed in My Collection.
+    packsOpenedTotal.textContent = s.ready ? format(s.packs) : '—';
     counter.replaceChildren();
     // Only offer binder filters for hidden editions after the collector
     // actually owns one. Normal collection sorting and search still work.
