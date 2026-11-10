@@ -310,7 +310,8 @@
           teamLogo: photoUrl(row.teamLogo, true),
           franchiseName: str(row.franchiseName) || str(row.teamName) || 'Unknown team',
           won: number(row.won), lost: number(row.lost),
-          tied: number(row.tied), playoffRoundsWon: number(row.playoffRoundsWon)
+          tied: number(row.tied), playoffRoundsWon: number(row.playoffRoundsWon),
+          finish: str(row.finish), finishKind: str(row.finishKind)
         };
         const old = collection.get(id);
         if (old) old.count += qty;
@@ -380,7 +381,8 @@
   function updateTeamSeason(target, season) {
     let modified = false;
     for (const key of ['name', 'team', 'teamName', 'teamLogo',
-      'franchiseName', 'won', 'lost', 'tied', 'playoffRoundsWon']) {
+      'franchiseName', 'won', 'lost', 'tied', 'playoffRoundsWon',
+      'finish', 'finishKind']) {
       // Preserve saved metadata if a newly uploaded league export does
       // not have the corresponding historical value.
       if (season[key] !== null && season[key] !== '' &&
@@ -568,6 +570,81 @@
     void save();
     return true;
   }
+  // Calculate each historical insert's finish only from the team-season
+  // results in the export. A team's playoffRoundsWon is -1 when it missed
+  // the postseason, 0 after a first-round loss, and increases each round won.
+  function assignTeamSeasonFinishes(seasons, latestYear, phase) {
+    const byYear = new Map();
+    for (const card of seasons) {
+      if (!byYear.has(card.era)) byYear.set(card.era, []);
+      byYear.get(card.era).push(card);
+    }
+    for (const [year, group] of byYear) {
+      // Current-season records are not final until playoffs have ended
+      // (phase >= draft lottery). Earlier seasons are historical.
+      const complete = year < latestYear || (year === latestYear &&
+        phase !== null && phase >= 3);
+      const recorded = group.filter(c =>
+        Number.isFinite(c.won) && Number.isFinite(c.lost) &&
+        c.won + c.lost + (Number.isFinite(c.tied) ? c.tied : 0) > 0);
+      const winRate = c => {
+        const tied = Number.isFinite(c.tied) ? c.tied : 0;
+        return (c.won + .5 * tied) / (c.won + c.lost + tied);
+      };
+      const rates = recorded.map(winRate);
+      const minRate = rates.length >= 2 ? Math.min(...rates) : null;
+      const maxRate = rates.length >= 2 ? Math.max(...rates) : null;
+      const near = (a, b) => b !== null && Math.abs(a - b) < 1e-10;
+      const worst = recorded.filter(c => near(winRate(c), minRate));
+      const best = recorded.filter(c => near(winRate(c), maxRate));
+
+      const playoff = group.filter(c => Number.isInteger(c.playoffRoundsWon) &&
+        c.playoffRoundsWon >= 0);
+      const mostRounds = playoff.length
+        ? Math.max(...playoff.map(c => c.playoffRoundsWon)) : null;
+      const leaders = playoff.filter(c => c.playoffRoundsWon === mostRounds);
+      const runners = mostRounds !== null && mostRounds > 0
+        ? playoff.filter(c => c.playoffRoundsWon === mostRounds - 1) : [];
+      // Do not infer a title from a maximum alone. A completed season must
+      // have exactly one playoff winner and one runner-up in the penultimate
+      // round, with multiple teams recorded in the archive.
+      const knownFinalists = complete && group.length >= 2 &&
+        mostRounds !== null && mostRounds > 0 &&
+        leaders.length === 1 && runners.length === 1;
+      const champion = knownFinalists ? leaders[0] : null;
+      const runner = knownFinalists ? runners[0] : null;
+
+      for (const card of group) {
+        let label, kind;
+        const played = recorded.includes(card);
+        if (!complete) {
+          label = 'SEASON IN PROGRESS'; kind = 'pending';
+        } else if (card === champion) {
+          label = 'LEAGUE CHAMPIONS'; kind = 'champion';
+        } else if (card === runner) {
+          label = 'FINALS RUNNER-UP'; kind = 'finalist';
+        } else if (played && worst.includes(card)) {
+          label = (worst.length > 1 ? 'TIED FOR LEAGUE WORST' : 'LEAGUE WORST') +
+            (card.playoffRoundsWon === -1 ? ' · MISSED PLAYOFFS' : '');
+          kind = 'worst';
+        } else if (played && best.includes(card)) {
+          label = best.length > 1 ? 'TIED BEST RECORD' : 'LEAGUE BEST RECORD';
+          kind = 'best';
+        } else if (card.playoffRoundsWon === -1) {
+          label = 'MISSED PLAYOFFS'; kind = 'missed';
+        } else if (Number.isInteger(card.playoffRoundsWon) &&
+            card.playoffRoundsWon >= 0) {
+          label = 'PLAYOFFS · ROUND ' + (card.playoffRoundsWon + 1) + ' EXIT';
+          kind = 'playoffs';
+        } else {
+          label = 'SEASON FINISH UNAVAILABLE'; kind = 'unknown';
+        }
+        card.finish = label;
+        card.finishKind = kind;
+      }
+    }
+  }
+
   async function scan(file, version) {
     scanning = true;
     problem = '';
@@ -628,6 +705,7 @@
           });
         }
       }
+      assignTeamSeasonFinishes(teamSeasons, season, integer(attrs.phase));
       teamSeasons.sort((a, b) => a.era - b.era ||
         a.teamName.localeCompare(b.teamName) || a.tid - b.tid);
       if (!current()) return;
@@ -698,7 +776,8 @@
       return teamSeasonPool.map(card => ({
         id: card.id, tid: card.tid, era: card.era, name: card.name,
         teamName: card.teamName, team: card.team,
-        franchiseName: card.franchiseName, rarity: TEAM_INSERT.id
+        franchiseName: card.franchiseName, rarity: TEAM_INSERT.id,
+        finish: card.finish
       }));
     },
     ready, subscribe(callback) {
