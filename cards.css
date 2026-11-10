@@ -3201,3 +3201,22 @@
   overflow-wrap: anywhere;
   text-wrap: balance;
 }
+
+
+/* Keep the historical team masthead below its inset rounded frame:
+   percentage top padding scales with card width on both phone and desktop. */
+.dbl-cards-team-season-front {
+  padding-top: 9%;
+}
+
+/* Restore the original compact desktop Pack Room layout only. The mobile
+   rules (up to 800px) keep the recently enlarged, swipeable cards. */
+@media (min-width: 801px) {
+  .dbl-cards-pull-grid {
+    gap: clamp(7px, 1.3vw, 16px);
+  }
+  .dbl-cards-pull-grid > .dbl-cards-pull-entry {
+    flex: 0 0 clamp(139px, 16vw, 202px);
+    max-width: 202px;
+  }
+}
