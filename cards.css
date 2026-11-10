@@ -3670,3 +3670,27 @@
 .dbl-cards-back.dbl-topps-back > .dbl-topps-back-footer {
   font-size: clamp(10px, 6.6cqw, 20px);
 }
+
+
+/* Series 0: remove the very thin RECTANGULAR stroke around the outside of
+   revealed player and Team Season cards. Keep the actual rounded inset
+   panels (::before), portrait framing, print textures and glow/shadows.
+   Mystery/sealed cards and the separate 1968 Topps collection are untouched. */
+.dbl-cards-card:not(.is-sealed):is(
+  [data-rarity="common"],
+  [data-rarity="crome"],
+  [data-rarity="refractor"],
+  [data-rarity="black-label"],
+  [data-rarity="team-season"],
+  [data-rarity^="mythic-"]
+) .dbl-cards-front,
+.dbl-cards-card:not(.is-sealed):is(
+  [data-rarity="common"],
+  [data-rarity="crome"],
+  [data-rarity="refractor"],
+  [data-rarity="black-label"],
+  [data-rarity="team-season"],
+  [data-rarity^="mythic-"]
+) .dbl-cards-back {
+  border: 0;
+}
