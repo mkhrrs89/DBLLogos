@@ -2823,3 +2823,163 @@
   transition-duration: .44s;
   transition-timing-function: cubic-bezier(.2,.78,.26,1);
 }
+
+
+/* Series 0 historical Team Season insert: independent of player rarity.
+   The ordinary sealed reverse stays identical for every unopened card. */
+.dbl-cards-card[data-rarity="team-season"] {
+  --card-metal: #94642e;
+  --card-edge: #ac814e;
+  --card-text: #35251a;
+  --card-muted: #6a4a32;
+  --card-rule: rgba(101,69,37,.55);
+  --card-aura: rgba(218,174,100,.4);
+}
+.dbl-cards-card[data-rarity="team-season"] .dbl-cards-front,
+.dbl-cards-card[data-rarity="team-season"] .dbl-cards-back {
+  background: linear-gradient(155deg,#f6ecd5 0%,#e9d2a6 48%,#c5a276 100%);
+  color: #392617;
+  border: 3px double #a77b47;
+  box-shadow: 0 8px 18px rgba(28,14,9,.32),inset 0 0 0 3px rgba(250,236,203,.45);
+}
+.dbl-cards-team-season-front {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  gap: 1.5%;
+  padding: 7% 7% 9%;
+  text-align: center;
+  overflow: hidden;
+  background: linear-gradient(155deg,#f6ecd5 0%,#e9d2a6 48%,#c5a276 100%);
+}
+.dbl-cards-team-season-front::before {
+  content: "";
+  position: absolute;
+  inset: 4%;
+  background: none;
+  border: 1px solid rgba(100,63,32,.45);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 2px rgba(255,248,223,.35);
+  pointer-events: none;
+  z-index: 0;
+}
+.dbl-cards-team-season-masthead {
+  position: relative;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  font-family: Georgia,"Times New Roman",serif;
+  font-size: clamp(8px,4.5cqw,15px);
+  font-weight: 800;
+  letter-spacing: .065em;
+  border-bottom: 1px solid rgba(119,71,29,.48);
+  padding: 0 0 3%;
+  white-space: nowrap;
+}
+.dbl-cards-team-season-year {
+  position: relative;
+  z-index: 3;
+  display: block;
+  font-family: Georgia,"Times New Roman",serif;
+  font-size: clamp(32px,24cqw,80px);
+  font-weight: 900;
+  line-height: .96;
+  letter-spacing: -.055em;
+  color: #583719;
+  text-shadow: 0 1px 0 rgba(255,255,255,.53);
+}
+.dbl-cards-team-season-emblem {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  width: 75%;
+  min-height: 0;
+  padding: 3%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse,rgba(255,255,246,.7),rgba(188,138,71,.09) 73%,transparent);
+}
+.dbl-cards-team-season-emblem > .dbl-cards-team-crest {
+  position: relative;
+  inset: auto;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border: 0;
+  max-height: 100%;
+  font-size: clamp(30px,23cqw,68px);
+}
+.dbl-cards-team-season-emblem .dbl-cards-team-logo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+.dbl-cards-team-season-emblem .dbl-cards-team-initials {
+  font-family: Georgia,"Times New Roman",serif;
+  font-size: clamp(25px,23cqw,66px);
+  font-weight: 900;
+  color: #855628;
+}
+.dbl-cards-team-season-name {
+  position: relative;
+  z-index: 3;
+  display: block;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  font-family: Georgia,"Times New Roman",serif;
+  font-size: clamp(15px,9.2cqw,31px);
+  font-weight: 900;
+  line-height: 1.01;
+  color: #3c2919;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.dbl-cards-team-season-record {
+  position: relative;
+  z-index: 3;
+  display: block;
+  width: 92%;
+  padding: 2.4% 0;
+  border-top: 1px solid rgba(94,63,35,.43);
+  border-bottom: 1px solid rgba(94,63,35,.43);
+  font-family: "Trebuchet MS",Arial,sans-serif;
+  font-size: clamp(10px,6.8cqw,23px);
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: #674525;
+}
+.dbl-cards-team-season-foot {
+  position: relative;
+  z-index: 3;
+  display: block;
+  font-family: "Trebuchet MS",Arial,sans-serif;
+  font-size: clamp(7px,3.8cqw,12px);
+  font-weight: 850;
+  letter-spacing: .06em;
+}
+.dbl-cards-card[data-rarity="team-season"] .dbl-cards-back {
+  --flagship-panel: rgba(250,232,195,.33);
+}
+.dbl-cards-card[data-rarity="team-season"] .dbl-cards-back-metric {
+  background: rgba(116,73,29,.08);
+}
+/* Warm paper-and-gold reveal flecks, unique to the historical inserts. */
+.dbl-cards-reveal-fx[data-effect="team-season"] {
+  --fx-ink: #fff1bb;
+  --fx-glow: rgba(229,175,93,.73);
+  --fx-haze: rgba(164,99,40,.33);
+}
+.dbl-cards-reveal-fx[data-effect="team-season"]::before {
+  background: radial-gradient(ellipse at 50% 47%,rgba(255,246,204,.85),
+    rgba(220,163,76,.48) 30%,transparent 67%);
+}
