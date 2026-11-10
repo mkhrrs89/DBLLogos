@@ -297,6 +297,10 @@
     emblem.appendChild(teamCrest(card));
     front.appendChild(emblem);
     front.appendChild(make('span', 'dbl-cards-team-season-name', card.teamName));
+    const finish = make('span', 'dbl-cards-team-season-finish',
+      card.finish || 'SEASON FINISH UNAVAILABLE');
+    finish.dataset.finish = card.finishKind || 'unknown';
+    front.appendChild(finish);
     const known = Number.isFinite(card.won) && Number.isFinite(card.lost);
     const record = known ? format(card.won) + ' – ' + format(card.lost) +
       (Number.isFinite(card.tied) && card.tied > 0 ? ' – ' + format(card.tied) : '') :
@@ -314,6 +318,10 @@
     back.appendChild(heading);
     back.appendChild(make('strong', 'dbl-cards-back-name', String(card.era) + ' ' + card.teamName));
     back.appendChild(make('span', 'dbl-cards-back-team', card.team));
+    const finish = make('span', 'dbl-cards-team-season-back-finish',
+      card.finish || 'SEASON FINISH UNAVAILABLE');
+    finish.dataset.finish = card.finishKind || 'unknown';
+    back.appendChild(finish);
     const metrics = make('span', 'dbl-cards-back-metrics');
     const games = Number.isFinite(card.won) && Number.isFinite(card.lost)
       ? card.won + card.lost + (Number.isFinite(card.tied) ? card.tied : 0) : null;
