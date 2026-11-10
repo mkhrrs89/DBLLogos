@@ -389,7 +389,7 @@
       stats.appendChild(make('strong', 'dbl-topps-back-stats-title', 'TEAM UNIFORM'));
       stats.appendChild(make('span', 'dbl-topps-uniform-note',
         '1968 ' + (card.uniform || 'home').toUpperCase() +
-        ' · UNIFORM IMAGE TO BE ADDED'));
+        ' · HISTORIC UNIFORM EDITION'));
     } else {
       stats.appendChild(make('strong', 'dbl-topps-back-stats-title', '1968 SEASON'));
       for (const [value, label] of [
