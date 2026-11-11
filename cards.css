@@ -3805,7 +3805,7 @@
 
 /* Card backs: separate keyboard-accessible favorites controls. */
 .dbl-cards-card[role="group"]:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-.dbl-cards-back > .dbl-cards-favorite-action {
+.dbl-cards-back > .dbl-cards-favorite-action.dbl-cards-favorite-action {
   position: absolute;
   z-index: 10;
   top: 2.7%;
