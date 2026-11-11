@@ -135,10 +135,35 @@
       ? 'scaleX(' + Math.min(1, innerWidth / natural).toFixed(5) + ')'
       : '';
   }
+  // The 1968 Topps uniform title uses the same upright display font as
+  // player names. Compress only the GLYPHS, not the printed card or photo.
+  // Keep a one-line, centered wordmark even for very long franchise names.
+  function fitUniformName(name) {
+    const glyphs = name.querySelector('.dbl-topps-uniform-name-glyphs');
+    if (!glyphs) return;
+    const available = name.clientWidth;
+    if (available <= 0) return;
+    // Layout widths avoid distortion from pack-flip and entrance transforms.
+    const natural = Math.max(glyphs.scrollWidth || 0, glyphs.offsetWidth || 0);
+    if (natural <= 0) return;
+    const innerWidth = Math.max(1, available - 6);
+    glyphs.style.transformOrigin = 'center center';
+    glyphs.style.transform = natural > innerWidth
+      ? 'scaleX(' + Math.min(1, innerWidth / natural).toFixed(5) + ')'
+      : '';
+  }
+  function uniformName(text, cls) {
+    const name = make('strong', cls + ' dbl-topps-uniform-fit-name');
+    name.appendChild(make('span', 'dbl-topps-uniform-name-glyphs', text));
+    return name;
+  }
   function fitVisibleNames() {
     for (const root of [gallery, packStage]) {
       for (const name of root.querySelectorAll?.('.dbl-cards-name') || []) {
         fitName(name);
+      }
+      for (const name of root.querySelectorAll?.('.dbl-topps-uniform-fit-name') || []) {
+        fitUniformName(name);
       }
     }
   }
@@ -466,17 +491,22 @@
     jersey.appendChild(make('span', 'dbl-topps-placeholder-number', '00'));
     artwork.appendChild(jersey);
     front.appendChild(artwork);
-    front.appendChild(make('strong', 'dbl-topps-uniform-name', card.teamName));
+    front.appendChild(uniformName(card.teamName,
+      'dbl-topps-uniform-name'));
     return front;
   }
   function toppsBack(card) {
     const back = make('span', 'dbl-cards-face dbl-cards-back dbl-topps-back');
     const uniform = isToppsUniform(card);
-    // Only player names mirror the groovy front lettering; uniform/team
-    // titles on the reverse retain their original printed style.
-    back.appendChild(make('strong', uniform ? 'dbl-topps-back-name' :
-      'dbl-topps-back-name dbl-topps-back-player-name',
-      uniform ? card.teamName : card.name));
+    // The uniform team name uses the same upright groovy print as the player
+    // name; long names are fit horizontally on the front and reverse.
+    if (uniform) {
+      back.appendChild(uniformName(card.teamName,
+        'dbl-topps-back-name dbl-topps-back-uniform-name'));
+    } else {
+      back.appendChild(make('strong',
+        'dbl-topps-back-name dbl-topps-back-player-name', card.name));
+    }
     back.appendChild(make('span', 'dbl-topps-back-identity',
       uniform ? ((card.uniform || 'home').toUpperCase() + ' UNIFORM') :
         (card.pos || '—') + ' | ' + (card.teamName || card.team) +
