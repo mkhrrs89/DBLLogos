@@ -3694,3 +3694,15 @@
 ) .dbl-cards-back {
   border: 0;
 }
+
+
+/* 1968 Topps player names: Kavoon has upright, hand-lettered 1960s curves.
+   Shrikhand and Candice have naturally leaning glyphs even when font-style
+   is normal; remove them from THIS player-name stack to eliminate the lean.
+   Keep exact front/back text sizing and all other card fonts unchanged. */
+.dbl-cards-card .dbl-topps-player-front .dbl-topps-player-name,
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-player-name {
+  font-family: "Kavoon", "Cooper Black", Georgia, serif;
+  font-style: normal;
+  font-synthesis: none;
+}
