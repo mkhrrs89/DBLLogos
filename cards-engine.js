@@ -153,7 +153,7 @@
       return {
         id: 'topps:1968:player:' + pid,
         type: 'topps-player', rarity: TOPPS_PLAYER.id, series: TOPPS_SERIES,
-        count, sourceCounts: sourceLedger, pid, era: TOPPS_YEAR, tid,
+        count, sourceCounts: sourceLedger, favorite: row.favorite === true, pid, era: TOPPS_YEAR, tid,
         name: str(row.name) || 'Unknown player',
         firstName: str(row.firstName), lastName: str(row.lastName),
         jersey: /^\d{1,3}$/.test(String(row.jersey || '')) ? String(row.jersey) : '',
@@ -170,7 +170,7 @@
     return {
       id: 'topps:1968:uniform:' + tid + ':' + uniform,
       type: 'topps-uniform', rarity: TOPPS_UNIFORM.id, series: TOPPS_SERIES,
-      count, sourceCounts: sourceLedger, tid, era: TOPPS_YEAR,
+      count, sourceCounts: sourceLedger, favorite: row.favorite === true, tid, era: TOPPS_YEAR,
       uniform, name: teamName + ' · ' + uniform.toUpperCase(),
       team, teamName, franchiseName: str(row.franchiseName) || teamName,
       teamLogo: photoUrl(row.teamLogo, true), uniformImage: photoUrl(row.uniformImage, true)
@@ -459,6 +459,7 @@
         if (old) {
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
           old.count = sumSourceCounts(old.sourceCounts);
+          old.favorite = old.favorite === true || item.favorite === true;
         } else collection.set(item.id, item);
         continue;
       }
@@ -469,7 +470,7 @@
         const id = 'team:' + tid + ':' + year;
         const item = {
           id, type: 'team-season', rarity: TEAM_INSERT.id, series: CARD_SERIES,
-          count: qty, tid, era: year,
+          count: qty, favorite: row.favorite === true, tid, era: year,
           name: str(row.name) || str(row.teamName) || 'Unknown team',
           teamName: str(row.teamName) || str(row.name) || 'Unknown team',
           team: str(row.team) || 'DBL',
@@ -484,6 +485,7 @@
         if (old) {
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
           old.count = sumSourceCounts(old.sourceCounts);
+          old.favorite = old.favorite === true || item.favorite === true;
         } else collection.set(id, item);
         continue;
       }
@@ -496,6 +498,7 @@
       const id = pid + ':' + rarity;
       const item = {
         id, pid, rarity, series: CARD_SERIES, count: qty,
+        favorite: row.favorite === true,
         name: str(row.name) || 'Unknown player',
         firstName: str(row.firstName), lastName: str(row.lastName),
         jersey: /^\d{1,3}$/.test(String(row.jersey || '')) ? String(row.jersey) : '',
@@ -519,6 +522,7 @@
       if (existing) {
         existing.sourceCounts = unionSourceCounts(existing.sourceCounts, item.sourceCounts);
         existing.count = sumSourceCounts(existing.sourceCounts);
+        existing.favorite = existing.favorite === true || item.favorite === true;
         if (!existing.photo && item.photo) existing.photo = item.photo;
       } else collection.set(id, item);
     }
@@ -574,7 +578,7 @@
         const id = 'team:' + tid + ':' + era;
         item = {
           id, type: 'team-season', rarity: TEAM_INSERT.id, series: CARD_SERIES,
-          count: qty, sourceCounts: origins, tid, era,
+          count: qty, sourceCounts: origins, favorite: row.favorite === true, tid, era,
           name: str(row.name) || str(row.teamName) || 'Unknown team',
           teamName: str(row.teamName) || str(row.name) || 'Unknown team',
           team: str(row.team) || 'DBL', teamLogo: photoUrl(row.teamLogo, true),
@@ -592,6 +596,7 @@
         const id = pid + ':' + rarity;
         item = {
           id, pid, rarity, series: CARD_SERIES, count: qty, sourceCounts: origins,
+          favorite: row.favorite === true,
           name: str(row.name) || 'Unknown player',
           firstName: str(row.firstName), lastName: str(row.lastName),
           jersey: /^\d{1,3}$/.test(String(row.jersey || ''))
@@ -630,6 +635,12 @@
         addedCards += imported.count;
         addedEditions++;
         continue;
+      }
+      // Importing a favorite must never erase a locally saved favorite.
+      // Old backups (without favorites) remain fully compatible.
+      if (imported.favorite === true && current.favorite !== true) {
+        current.favorite = true;
+        refreshed = true;
       }
       const joined = unionSourceCounts(current.sourceCounts, imported.sourceCounts);
       const mergedCount = sumSourceCounts(joined);
@@ -771,6 +782,21 @@
     });
     return saveQueue;
   }
+  function isFavorite(id) {
+    return collection.get(id)?.favorite === true;
+  }
+  function setFavorite(id, favorite) {
+    if (!collectionLoaded || mergingCollection) return false;
+    const item = collection.get(id);
+    if (!item) return false;
+    const desired = favorite === true;
+    if (item.favorite === desired) return true;
+    item.favorite = desired;
+    notify();
+    // Use the same serialized, persistent save path as collected packs.
+    void save();
+    return true;
+  }
   const ready = readState().then(state => {
     parseState(state);
     collectionLoaded = true;
@@ -866,9 +892,22 @@
     const draw = unused.length ? unused : source;
     return draw[Math.floor(Math.random() * draw.length)];
   }
-  function getPack() {
+  function getPack(packType = 'mixed') {
     if (!collectionLoaded || mergingCollection || !pool.length) return [];
+    if (packType !== 'mixed' && packType !== 'topps-1968') return [];
     const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set(), picks = [];
+    if (packType === 'topps-1968') {
+      if (!toppsById.size) return [];
+      for (let i = 0; i < 5; i++) {
+        // Draw exclusively from the existing 1968 Topps player/uniform
+        // catalog. Prefer unique editions within a pack when possible.
+        const insert = chooseToppsInsert(takenToppsIds);
+        if (!insert) return [];
+        takenToppsIds.add(insert.id);
+        picks.push({...insert, count: 1});
+      }
+      return picks;
+    }
     for (let i = 0; i < 5; i++) {
       const mythicalTier = sampleMythical();
       // Both inserts share a single roll: Team Season at 3% and 1968
@@ -1218,7 +1257,7 @@
       listeners.add(callback);
       return () => listeners.delete(callback);
     },
-    ensurePool, getPack, collectPack, clearCollection,
+    ensurePool, getPack, collectPack, clearCollection, isFavorite, setFavorite,
     isRookie(card) {
       if (card?.rookie === true) return true;
       // Older saved cards lack a rookie flag. Use the current export if it
@@ -1252,7 +1291,8 @@
     get status() {
       return {
         hasFile: !!currentFile, loading: scanning,
-        ready: collectionLoaded, poolSize: pool.length, season: activeSeason,
+        ready: collectionLoaded, poolSize: pool.length,
+        toppsPoolSize: toppsById.size, season: activeSeason,
         problem, savedOK, packs, merging: mergingCollection,
         unique: collection.size,
         count: [...collection.values()].reduce((n, card) => n + card.count, 0)

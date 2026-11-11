@@ -17,6 +17,9 @@
   const search = document.getElementById('cardsSearch');
   const rarityFilter = document.getElementById('cardsRarityFilter');
   const teamFilter = document.getElementById('cardsTeamFilter');
+  const favoritesFilter = document.getElementById('cardsFavoritesFilter');
+  const mixedPackType = document.getElementById('cardsMixedPackType');
+  const toppsPackType = document.getElementById('cardsToppsPackType');
   const order = document.getElementById('cardsSort');
   const loadMore = document.getElementById('cardsShowMoreBtn');
   const clearBtn = document.getElementById('cardsClearCollectionBtn');
@@ -46,7 +49,8 @@
   const checklistMore = document.getElementById('cardsChecklistMore');
   if (!api || !panel || !status || !saveStatus || !packStage || !packsOpenedTotal || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
-      !galleryCount || !search || !rarityFilter || !teamFilter || !order || !loadMore ||
+      !galleryCount || !search || !rarityFilter || !teamFilter ||
+      !favoritesFilter || !mixedPackType || !toppsPackType || !order || !loadMore ||
       !clearBtn || !exportBtn || !mergeBtn || !mergeFile || !mergeFeedback ||
       !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
       !checklistStats || !checklistFranchises || !checklistSearch || !checklistRarity ||
@@ -111,6 +115,7 @@
   let transferBusy = false;
   let packToken = 0;
   let packCards = [];
+  let packType = 'mixed';
   let limit = 36;
   let lastFileState = '';
   let nameFitScheduled = false;
@@ -243,9 +248,18 @@
       else status.textContent =
         'Open the Cards tab to load players from the uploaded league file.';
     }
+    const canOpenSelected = packType === 'topps-1968'
+      ? s.toppsPoolSize > 0 : s.poolSize > 0;
     openBtn.disabled = busy || clearing || transferBusy || s.merging ||
-      !s.ready || !s.poolSize || s.loading;
-    openBtn.textContent = busy ? 'Opening pack…' : 'Open five-card pack';
+      !s.ready || !canOpenSelected || s.loading;
+    openBtn.textContent = busy ? 'Opening pack…' :
+      packType === 'topps-1968' ? 'Open 1968 Topps pack' : 'Open five-card pack';
+    mixedPackType.classList.toggle('is-selected', packType === 'mixed');
+    toppsPackType.classList.toggle('is-selected', packType === 'topps-1968');
+    mixedPackType.setAttribute('aria-pressed', String(packType === 'mixed'));
+    toppsPackType.setAttribute('aria-pressed', String(packType === 'topps-1968'));
+    mixedPackType.disabled = busy;
+    toppsPackType.disabled = busy;
   }
   // GitHub-hosted archival portraits for players without an export photo.
   // These are display-only: never store an era placeholder in saved cards.
@@ -574,6 +588,41 @@
       'dbl-topps-uniform-name'));
     return front;
   }
+  // A real button on the revealed reverse; the surrounding card is a
+  // focusable group instead of a button, so nested controls remain valid.
+  function favoriteAction(card) {
+    const button = make('button', 'dbl-cards-favorite-action');
+    button.type = 'button';
+    button.dataset.cardId = card.id;
+    const sync = () => {
+      const selected = api.isFavorite(card.id);
+      button.classList.toggle('is-favorite', selected);
+      button.textContent = selected ? '♥' : '♡';
+      button.setAttribute('aria-pressed', String(selected));
+      button.setAttribute('aria-label',
+        (selected ? 'Remove ' : 'Add ') + card.name +
+        (selected ? ' from favorites' : ' to favorites'));
+      button.title = selected ? 'Remove from favorites' : 'Add to favorites';
+    };
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      if (api.setFavorite(card.id, !api.isFavorite(card.id))) {
+        for (const other of document.querySelectorAll('.dbl-cards-favorite-action')) {
+          if (other.dataset.cardId !== card.id || other === button) continue;
+          const selected = api.isFavorite(card.id);
+          other.classList.toggle('is-favorite', selected);
+          other.textContent = selected ? '♥' : '♡';
+          other.setAttribute('aria-pressed', String(selected));
+          other.setAttribute('aria-label', (selected ? 'Remove ' : 'Add ') +
+            card.name + (selected ? ' from favorites' : ' to favorites'));
+          other.title = selected ? 'Remove from favorites' : 'Add to favorites';
+        }
+        sync();
+      }
+    });
+    sync();
+    return button;
+  }
   function toppsBack(card) {
     const back = make('span', 'dbl-cards-face dbl-cards-back dbl-topps-back');
     const uniform = isToppsUniform(card);
@@ -615,6 +664,7 @@
     }
     back.appendChild(stats);
     back.appendChild(make('span', 'dbl-topps-back-footer', '1968 TOPPS'));
+    back.appendChild(favoriteAction(card));
     return back;
   }
 
@@ -674,6 +724,7 @@
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
     if (isChampionTeam(card))
       back.appendChild(make('span', 'dbl-cards-foil'));
+    back.appendChild(favoriteAction(card));
     return back;
   }
 
@@ -794,6 +845,7 @@
     // Keep the revealed back's foil finish, but reserve the vertical
     // rarity side-rail for the front of the card only.
     back.appendChild(make('span', 'dbl-cards-foil'));
+    back.appendChild(favoriteAction(card));
     return back;
   }
   function showAllCollections() {
@@ -899,8 +951,10 @@
   }
 
   function cardElement(card, sealed = false, onFirst = null) {
-    const button = make('button', 'dbl-cards-card' + (sealed ? ' is-sealed' : ''));
-    button.type = 'button';
+    const button = make('div', 'dbl-cards-card' + (sealed ? ' is-sealed' : ''));
+    button.setAttribute('role', 'group');
+    button.tabIndex = 0;
+    button.dataset.cardId = card.id;
     // Mystery cards have no rarity-dependent styling until flipped over.
     // Revealed cards and cards already owned use their proper rarity color.
     if (!sealed) {
@@ -917,7 +971,7 @@
     inner.appendChild(reverse);
     button.appendChild(inner);
     let revealed = !sealed;
-    button.addEventListener('click', () => {
+    const flipCard = () => {
       if (!revealed) {
         revealed = true;
         const newBack = backOf(card, false);
@@ -942,17 +996,27 @@
         if (!button.classList.contains('is-turned'))
           playCardRevealEffect(button, card);
       }
+    };
+    button.addEventListener('click', flipCard);
+    button.addEventListener('keydown', event => {
+      if (event.target !== button || (event.key !== 'Enter' && event.key !== ' ')) return;
+      event.preventDefault();
+      flipCard();
     });
     return button;
   }
   function newPackArt(tearing = false) {
+    const topps = packType === 'topps-1968';
     const pack = make('div', 'dbl-cards-pack' + (tearing ? ' is-ripping' : ''));
-    pack.appendChild(make('span', 'dbl-cards-pack-crest', 'DBL / 1916'));
-    pack.appendChild(make('strong', 'dbl-cards-pack-name', 'LEGACY'));
-    pack.appendChild(make('span', 'dbl-cards-pack-shape', '◇'));
+    pack.dataset.packType = packType;
+    pack.appendChild(make('span', 'dbl-cards-pack-crest', topps ? 'DBL / 1968' : 'DBL / 1916'));
+    pack.appendChild(make('strong', 'dbl-cards-pack-name', topps ? 'TOPPS' : 'LEGACY'));
+    pack.appendChild(make('span', 'dbl-cards-pack-shape', topps ? '68' : '◇'));
     pack.appendChild(make('span', 'dbl-cards-pack-series',
-      'SERIES ' + api.currentSeries + ' · THE COLLECTOR SERIES'));
-    pack.appendChild(make('span', 'dbl-cards-pack-guarantee', '5 CARDS · RANDOM PULLS'));
+      topps ? '1968 · TEST ISSUE' :
+        'SERIES ' + api.currentSeries + ' · THE COLLECTOR SERIES'));
+    pack.appendChild(make('span', 'dbl-cards-pack-guarantee',
+      topps ? '5 CARDS · 1968 TOPPS ONLY' : '5 CARDS · RANDOM PULLS'));
     pack.appendChild(make('span', 'dbl-cards-pack-tear'));
     return pack;
   }
@@ -1005,7 +1069,7 @@
   }
   function openPack() {
     if (busy || clearing) return;
-    const pulled = api.getPack();
+    const pulled = api.getPack(packType);
     if (pulled.length !== 5) return;
     // Count copies of each player/rarity edition BEFORE collecting this pack.
     // The just-opened cards must not inflate the 'already owned' labels.
@@ -1050,7 +1114,9 @@
     const q = search.value.trim().toLocaleLowerCase();
     const tier = rarityFilter.value;
     const selectedTeam = teamFilter.value;
+    const favoritesOnly = favoritesFilter.value === 'favorites';
     const result = api.items.filter(item => {
+      if (favoritesOnly && !api.isFavorite(item.id)) return false;
       if (tier !== 'all' && tier !== item.rarity) return false;
       if (selectedTeam !== 'all' && teamNameForCard(item) !== selectedTeam) return false;
       return !q || item.name.toLocaleLowerCase().includes(q) ||
@@ -1074,6 +1140,9 @@
   }
   function showGallery() {
     syncTeamFilter();
+    // Preserve turned-over cards when saving a favorite re-renders the binder.
+    const turned = new Set(Array.from(gallery.querySelectorAll(
+      '.dbl-cards-card.is-turned'), card => card.dataset.cardId));
     const filtered = filteredCards();
     galleryCount.textContent = formattedCount(filtered.length) + ' card edition' +
       (filtered.length === 1 ? '' : 's') + ' shown';
@@ -1086,7 +1155,9 @@
       const fragment = document.createDocumentFragment();
       for (const card of filtered.slice(0, limit)) {
         const cell = make('div', 'dbl-cards-binder-entry');
-        cell.appendChild(cardElement(card));
+        const element = cardElement(card);
+        if (turned.has(card.id)) element.classList.add('is-turned');
+        cell.appendChild(element);
         cell.appendChild(make('span', 'dbl-cards-owned', 'OWNED ×' + card.count));
         fragment.appendChild(cell);
       }
@@ -1524,10 +1595,17 @@
     checklistLimit += 80;
     showChecklist();
   });
+  function choosePackType(type) {
+    if (busy || type === packType) return;
+    packType = type;
+    readyStage();
+  }
+  mixedPackType.addEventListener('click', () => choosePackType('mixed'));
+  toppsPackType.addEventListener('click', () => choosePackType('topps-1968'));
   openBtn.addEventListener('click', openPack);
   revealBtn.addEventListener('click', revealAll);
   againBtn.addEventListener('click', readyStage);
-  for (const control of [rarityFilter, teamFilter, order, search]) {
+  for (const control of [rarityFilter, teamFilter, favoritesFilter, order, search]) {
     control.addEventListener(control === search ? 'input' : 'change', () => {
       limit = 36;
       showGallery();
@@ -1647,6 +1725,7 @@
         search.value = '';
         rarityFilter.value = 'all';
         teamFilter.value = 'all';
+        favoritesFilter.value = 'all';
         order.value = 'rarity';
         transferMessage('');
         repaint();
