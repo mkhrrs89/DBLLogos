@@ -3785,3 +3785,24 @@
   animation: dbl-card-foil 4.8s ease-in-out infinite;
 }
 /* The shared reduced-motion rule suppresses this animation automatically. */
+
+
+/* The desktop silhouette outline above uses fractional-pixel shadows.
+   On mobile WebKit those can get rounded down and virtually disappear.
+   Use visible, pixel-aligned offsets at phone/tablet widths. The filter
+   still follows transparent logo pixels, not a rectangular image frame.
+   Desktop styling (801px+) stays exactly as it was. */
+@media (max-width: 800px) {
+  .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
+    -webkit-filter:
+      drop-shadow(1px 0 0 #16110b)
+      drop-shadow(-1px 0 0 #16110b)
+      drop-shadow(0 1px 0 #16110b)
+      drop-shadow(0 -1px 0 #16110b);
+    filter:
+      drop-shadow(1px 0 0 #16110b)
+      drop-shadow(-1px 0 0 #16110b)
+      drop-shadow(0 1px 0 #16110b)
+      drop-shadow(0 -1px 0 #16110b);
+  }
+}
