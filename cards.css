@@ -3708,11 +3708,10 @@
 }
 
 
-/* Series 0 Team Season: a fine black ALPHA outline around the actual
-   transparent logo silhouette, never a rectangular border or dark box.
-   This targets only the large logo image on the Team Season card front.
-   Logos with baked-in opaque backgrounds retain their source edges. */
-.dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
+/* Series 0 Team Season: only LIGHT transparent logos get a thin black
+   silhouette after pixel sampling in cards-ui.js. Dark logos have no filter.
+   This does not draw a rectangular border around the image. */
+.dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo.is-light-logo {
   filter:
     drop-shadow(.65px 0 0 #16110b)
     drop-shadow(-.65px 0 0 #16110b)
@@ -3787,13 +3786,10 @@
 /* The shared reduced-motion rule suppresses this animation automatically. */
 
 
-/* The desktop silhouette outline above uses fractional-pixel shadows.
-   On mobile WebKit those can get rounded down and virtually disappear.
-   Use visible, pixel-aligned offsets at phone/tablet widths. The filter
-   still follows transparent logo pixels, not a rectangular image frame.
-   Desktop styling (801px+) stays exactly as it was. */
+/* On mobile, only light logos receive the stronger pixel-aligned outline
+   that remains visible in WebKit. Dark logos retain their natural edges. */
 @media (max-width: 800px) {
-  .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
+  .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo.is-light-logo {
     -webkit-filter:
       drop-shadow(1px 0 0 #16110b)
       drop-shadow(-1px 0 0 #16110b)
