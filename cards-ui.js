@@ -235,13 +235,18 @@
   }
   function showStatus() {
     const s = api.status;
-    const fileKey = [s.hasFile, s.poolSize, s.season, s.loading, s.problem].join('|');
+    const fileKey = [s.hasFile, s.poolSize, s.toppsPoolSize, s.season,
+      s.loading, s.problem, packType].join('|');
     if (fileKey !== lastFileState) {
       lastFileState = fileKey;
       if (s.problem) status.textContent = s.problem;
       else if (!s.hasFile) status.textContent =
         'Upload a league file to open packs. Your existing collection is available below.';
       else if (s.loading) status.textContent = 'Building cards from your league player archive…';
+      else if (packType === 'topps-1968' && !s.toppsPoolSize) status.textContent =
+        'No 1968 Topps cards are available. Upload a league export that includes the 1968 season.';
+      else if (packType === 'topps-1968') status.textContent =
+        format(s.toppsPoolSize) + ' 1968 Topps editions available. Open a five-card Topps-only pack.';
       else if (s.poolSize) status.textContent =
         format(s.poolSize) + ' players available from the ' + s.season +
         ' export. Open packs and collect DBL legends from every era.';
@@ -594,6 +599,9 @@
     const button = make('button', 'dbl-cards-favorite-action');
     button.type = 'button';
     button.dataset.cardId = card.id;
+    // The reverse is hidden when the card faces forward. Do not leave
+    // invisible favorite buttons in the keyboard Tab sequence.
+    button.tabIndex = -1;
     const sync = () => {
       const selected = api.isFavorite(card.id);
       button.classList.toggle('is-favorite', selected);
@@ -989,6 +997,8 @@
         if (onFirst) onFirst();
       } else {
         button.classList.toggle('is-turned');
+        const favorite = button.querySelector('.dbl-cards-favorite-action');
+        if (favorite) favorite.tabIndex = button.classList.contains('is-turned') ? 0 : -1;
         button.setAttribute('aria-label', button.classList.contains('is-turned')
           ? 'View front of ' + cardLabel : 'View statistics for ' + cardLabel);
         // Repeat the flourish when turning from the statistics side to the
@@ -1156,7 +1166,13 @@
       for (const card of filtered.slice(0, limit)) {
         const cell = make('div', 'dbl-cards-binder-entry');
         const element = cardElement(card);
-        if (turned.has(card.id)) element.classList.add('is-turned');
+        if (turned.has(card.id)) {
+          element.classList.add('is-turned');
+          element.setAttribute('aria-label', 'View front of ' +
+            (isTeamSeason(card) ? String(card.era) + ' ' + card.name : card.name));
+          const favorite = element.querySelector('.dbl-cards-favorite-action');
+          if (favorite) favorite.tabIndex = 0;
+        }
         cell.appendChild(element);
         cell.appendChild(make('span', 'dbl-cards-owned', 'OWNED ×' + card.count));
         fragment.appendChild(cell);

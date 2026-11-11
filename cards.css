@@ -3837,7 +3837,7 @@
 }
 /* Topps backs are deliberately denser: set the heart beside the crest,
    above the statistics rectangle instead of over the player's name. */
-.dbl-topps-back > .dbl-cards-favorite-action {
+.dbl-cards-back.dbl-topps-back > .dbl-cards-favorite-action {
   top: 33%;
   right: 4%;
   width: clamp(24px, 16cqw, 36px);
