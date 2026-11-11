@@ -3748,3 +3748,40 @@
   white-space: nowrap;
   transform-origin: center center;
 }
+
+
+/* Confirmed DBL championship Team Season cards borrow the REFRACTOR foil
+   treatment while keeping their 1960s archival layout, logo outline,
+   rounded inset artwork, year and title status. These selectors require
+   the UI's verified champion-only flag, never an ordinary team-season. */
+.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] {
+  --card-aura: rgba(165,210,247,.36);
+  --card-rule: rgba(91,112,140,.46);
+  --flagship-panel: rgba(244,248,255,.14);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-team-season-front,
+.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-back {
+  background:
+    linear-gradient(125deg,rgba(255,255,255,.52) 0%,transparent 29%,
+      rgba(255,255,255,.20) 48%,transparent 70%,rgba(255,255,255,.30)),
+    conic-gradient(from 38deg at 49% 45%,
+      #f6e8c7, #a7dfeb, #c9c1f5, #f5bbdf, #fae9bd, #a7e8d3,
+      #abc8ec, #f6e8c7);
+  color: #342923;
+  box-shadow: 0 8px 18px rgba(28,14,9,.32),
+    inset 0 0 0 3px rgba(255,255,255,.34);
+}
+/* Thin archival inner frame remains legible against the rainbow finish. */
+.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-team-season-front::before {
+  border-color: rgba(70,74,111,.54);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.42);
+}
+/* Same moving spectral foil sweep used by Refractor player editions.
+   Both sides shimmer; the actual flash/spark FX plays only on card flips. */
+.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-foil {
+  background: linear-gradient(110deg,transparent 20%,rgba(128,255,235,.20) 34%,
+    rgba(255,255,255,.70) 44%,rgba(255,149,224,.30) 51%,
+    rgba(163,188,255,.18) 57%,transparent 69%);
+  animation: dbl-card-foil 4.8s ease-in-out infinite;
+}
+/* The shared reduced-motion rule suppresses this animation automatically. */
