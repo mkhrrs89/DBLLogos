@@ -310,7 +310,79 @@
     }
     return artArea;
   }
-  function teamCrest(card) {
+  // Decide which *historical Team Season* logos need dark silhouette ink.
+  // Sample only visible pixels, skipping transparent logo padding. Cache by
+  // image source so repeated seasons and duplicate pulls stay inexpensive.
+  const teamLogoToneCache = new Map();
+  function measureTeamLogoTone(image) {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 48;
+      canvas.height = 48;
+      const ctx = canvas.getContext('2d', {willReadFrequently: true});
+      if (!ctx) return null;
+      ctx.drawImage(image, 0, 0, 48, 48);
+      const data = ctx.getImageData(0, 0, 48, 48).data;
+      let visible = 0, totalLight = 0, lightArea = 0, tanArea = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const alpha = data[i + 3] / 255;
+        if (alpha < .08) continue;
+        const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
+        const light = .2126 * r + .7152 * g + .0722 * b;
+        visible += alpha;
+        totalLight += alpha * light;
+        if (light >= .73) lightArea += alpha;
+        // Catch muted cream/gold/tan marks that disappear on the tan stock.
+        if (light >= .48 && light < .83 && r >= g && g >= b * .93 &&
+            r - g <= .28 && g - b <= .29) tanArea += alpha;
+      }
+      if (visible < 1) return false;
+      const average = totalLight / visible;
+      return average >= .68 || lightArea / visible >= .47 ||
+        (average >= .51 && (lightArea / visible >= .28 ||
+          tanArea / visible >= .48));
+    } catch {
+      // Cross-origin images without permission cannot be sampled.
+      return null;
+    }
+  }
+  function detectTeamLogoTone(image, source) {
+    const apply = result => {
+      // A result of null means unreadable, not that the logo is dark.
+      image.classList.toggle('is-light-logo', result === true);
+    };
+    if (teamLogoToneCache.has(source)) {
+      const saved = teamLogoToneCache.get(source);
+      if (saved && typeof saved.then === 'function') void saved.then(apply);
+      else apply(saved);
+      return;
+    }
+    const immediate = measureTeamLogoTone(image);
+    if (immediate !== null) {
+      teamLogoToneCache.set(source, immediate);
+      apply(immediate);
+      return;
+    }
+    // Try an isolated CORS-enabled image for externally hosted logos.
+    // Never alter the already-working displayed image or block its loading.
+    if (!/^https?:\/\//i.test(source) || typeof window.Image !== 'function') {
+      teamLogoToneCache.set(source, null);
+      return;
+    }
+    const pending = new Promise(resolve => {
+      const probe = new window.Image();
+      probe.crossOrigin = 'anonymous';
+      probe.onload = () => resolve(measureTeamLogoTone(probe));
+      probe.onerror = () => resolve(null);
+      probe.src = source;
+    });
+    teamLogoToneCache.set(source, pending);
+    void pending.then(result => {
+      teamLogoToneCache.set(source, result);
+      apply(result);
+    });
+  }
+  function teamCrest(card, inspectColor = false) {
     const crest = make('span', 'dbl-cards-team-crest');
     const placeholder = make('span', 'dbl-cards-team-initials', card.team || 'DBL');
     crest.appendChild(placeholder);
@@ -325,6 +397,7 @@
       img.referrerPolicy = 'no-referrer';
       img.addEventListener('load', () => {
         placeholder.hidden = true;
+        if (inspectColor) detectTeamLogoTone(img, logo);
       });
       img.addEventListener('error', () => {
         img.remove();
@@ -332,7 +405,10 @@
       });
       crest.appendChild(img);
       img.src = logo;
-      if (img.complete && img.naturalWidth > 0) placeholder.hidden = true;
+      if (img.complete && img.naturalWidth > 0) {
+        placeholder.hidden = true;
+        if (inspectColor) detectTeamLogoTone(img, logo);
+      }
     }
     return crest;
   }
@@ -547,7 +623,7 @@
     front.appendChild(make('span', 'dbl-cards-team-season-masthead', 'HISTORIC TEAMS OF THE DBL'));
     front.appendChild(make('strong', 'dbl-cards-team-season-year', card.era ?? '—'));
     const emblem = make('span', 'dbl-cards-team-season-emblem');
-    emblem.appendChild(teamCrest(card));
+    emblem.appendChild(teamCrest(card, true));
     front.appendChild(emblem);
     front.appendChild(make('span', 'dbl-cards-team-season-name', card.teamName));
     const known = Number.isFinite(card.won) && Number.isFinite(card.lost);
