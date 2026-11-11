@@ -81,8 +81,47 @@
     },
     {
       title: 'Player’s Wife Accuses Him of Domestic Violence', category: 'Police & Society', plan: 'veteran',
-      text: 'The wife of a prominent veteran files a police complaint alleging that her husband assaulted her during an argument at their home. The accusation produces intense newspaper scrutiny, with management criticized for attempting to characterize the matter as a private family dispute.',
-      caution: 'The league export cannot verify marital status or personal conduct. This is an invented scenario, not an established accusation.'
+      text: 'The wife of a prominent veteran files a police complaint alleging that her husband assaulted her during an argument at their home. The accusation produces intense newspaper scrutiny, with management criticized for attempting to characterize the matter as a private family dispute.'
+    },
+    {
+      title: 'Hotel Room Destroyed During Road Trip', category: 'Clubhouse', plan: 'team3',
+      text: 'Following a night of heavy drinking, three teammates reportedly destroy furniture, smash mirrors, and throw a television through a hotel window. Management initially agrees to pay for the damages, but the incident becomes public when a hotel employee contacts the newspapers.'
+    },
+    {
+      title: 'Player Implicated in Illegal Abortion Scandal', category: 'Police & Society', plan: 'star',
+      text: "A prominent player's unmarried girlfriend is hospitalized following an illegal abortion, prompting a police investigation into the physician responsible. Rumors that the player helped arrange the procedure threaten his reputation and could expose him to criminal prosecution."
+    },
+    {
+      title: 'Veteran Publicly Humiliates Young Teammate', category: 'Clubhouse', plan: 'veteranRookieTeam',
+      text: 'During a heated practice, an established star launches into a profanity-laced tirade against a rookie, questioning his intelligence and manhood in front of reporters. The youngster subsequently refuses to speak with his teammate, while other players privately accuse the veteran of habitual bullying.'
+    },
+    {
+      title: 'Team Bus Driver Accused of Drunkenness', category: 'Travel & Safety', plan: 'team3',
+      text: "A club's chartered bus narrowly avoids a serious accident when its driver reportedly falls asleep at the wheel after drinking. Several frightened players demand that the team abandon bus travel for future road engagements, while management faces questions about its transportation arrangements."
+    },
+    {
+      title: 'Player Secretly Supporting Two Families', category: 'Personal Lives', plan: 'veteran',
+      text: 'A newspaper investigation reveals that a married DBL veteran has allegedly maintained a second household in another city, complete with a longtime mistress and several children. The revelation sparks a bitter domestic dispute and threatens lucrative local endorsement agreements.'
+    },
+    {
+      title: 'Players Caught in Police Raid on Gambling Club', category: 'Police & Society', plan: 'league3',
+      text: 'Several DBL players are detained when authorities raid an illegal gambling establishment operating behind a legitimate social club. Although some insist they were merely socializing, investigators discover substantial gambling debts owed by one of the athletes.'
+    },
+    {
+      title: 'Team Owner Makes Inflammatory Political Remarks', category: 'Civil Rights', plan: 'team3',
+      text: "During a newspaper interview, an outspoken club owner condemns civil-rights demonstrators and publicly supports harsh police crackdowns. Several players threaten to demand trades, while local activists organize demonstrations outside the team's arena."
+    },
+    {
+      title: 'Player Disappears Without Explanation', category: 'Personal Lives', plan: 'star',
+      text: 'A popular starter fails to report for practice and cannot be reached for several days, prompting fears of an accident or foul play. He eventually resurfaces in another city, where reporters discover he has been staying with a woman while struggling with a personal crisis.'
+    },
+    {
+      title: 'Secret Recording Exposes Dressing Room Feud', category: 'Press & Reputation', plan: 'team3',
+      text: 'A local radio journalist obtains an audio recording of a heated private confrontation between a coach and several players, including accusations of favoritism, dishonesty, and threats of dismissal. Management launches an investigation into who made the recording, while the incident raises questions about privacy and journalistic ethics.'
+    },
+    {
+      title: 'Fatal Automobile Accident Involving DBL Player', category: 'Police & Society', plan: 'veteran',
+      text: "A veteran player is involved in a late-night collision that kills a motorist in another vehicle. Although authorities initially decline to assign blame, conflicting witness accounts and allegations of excessive speed prompt a criminal investigation, threatening the player's career and potentially resulting in a manslaughter charge."
     }
   ].map((entry, index) => Object.freeze({ ...entry, id: index + 1, year: 1968 }));
 
@@ -124,6 +163,9 @@
       (former ? team.former : team.players).length >= count &&
       (!veterans || team.players.some(isVeteran)));
   }
+  const veteranRookieTeams = roster => roster.teams.filter(team =>
+    team.players.some(veteran => isVeteran(veteran) &&
+      team.players.some(rookie => rookie.pid !== veteran.pid && rookie.experience === 0)));
 
   // Only teams participating in 1968 appear. For older league exports, use
   // 1968 season stats; for an in-progress 1968 export, include live roster
@@ -232,6 +274,7 @@
       case 'teammates2': return teamCandidates(roster,2).length > 0;
       case 'team3': return teamCandidates(roster,3).length > 0;
       case 'team3veteran': return teamCandidates(roster,3,true).length > 0;
+      case 'veteranRookieTeam': return veteranRookieTeams(roster).length > 0;
       case 'former2': return teamCandidates(roster,2,false,true).length > 0;
       case 'different2': return teams.filter(t=>t.players.length>0).length >= 2;
       case 'league3': return people.length >= 3;
@@ -331,6 +374,53 @@
         break;
       }
       case 18: add(rankPick(roster.players,'veteranStar',rng),'Veteran named in complaint'); break;
+      case 19: {
+        const team=pick(teamCandidates(roster,3),rng);
+        const p=chooseUnique(team.players,['any','any','any'],rng);
+        ['Player accused of hotel damage','Second teammate involved','Third teammate involved']
+          .forEach((label,i)=>add(p[i],label,team));
+        break;
+      }
+      case 20: add(rankPick(roster.players,'star',rng),'Player implicated in investigation'); break;
+      case 21: {
+        const team=pick(veteranRookieTeams(roster),rng);
+        const rookie=pick(team.players.filter(p=>p.experience===0 &&
+          team.players.some(v=>v.pid!==p.pid&&isVeteran(v))),rng);
+        const veteran=rankPick(team.players.filter(p=>p.pid!==rookie.pid),'veteranStar',rng);
+        add(veteran,'Veteran confronting rookie',team);
+        add(rookie,'Rookie subjected to tirade',team);
+        break;
+      }
+      case 22: {
+        const team=pick(teamCandidates(roster,3),rng);
+        const p=chooseUnique(team.players,['any','any','any'],rng);
+        ['Player demanding travel changes','Second player aboard bus','Third player aboard bus']
+          .forEach((label,i)=>add(p[i],label,team));
+        break;
+      }
+      case 23: add(rankPick(roster.players,'veteranStar',rng),'Veteran named in newspaper report'); break;
+      case 24: {
+        const p=chooseUnique(roster.players,['any','any','any'],rng);
+        ['Player with alleged gambling debts','Second player detained','Third player detained']
+          .forEach((label,i)=>add(p[i],label));
+        break;
+      }
+      case 25: {
+        const team=pick(teamCandidates(roster,3),rng);
+        const p=chooseUnique(team.players,['any','any','any'],rng);
+        ['Player threatening trade demand','Second player protesting remarks','Another player affected']
+          .forEach((label,i)=>add(p[i],label,team));
+        break;
+      }
+      case 26: add(rankPick(roster.players,'star',rng),'Missing player'); break;
+      case 27: {
+        const team=pick(teamCandidates(roster,3),rng);
+        const p=chooseUnique(team.players,['any','any','any'],rng);
+        ['Player in recorded argument','Second player involved','Third player involved']
+          .forEach((label,i)=>add(p[i],label,team));
+        break;
+      }
+      case 28: add(rankPick(roster.players,'veteranStar',rng),'Veteran involved in collision'); break;
       default: return null;
     }
     // Owners, coaches, physicians, spouses and reporters are not invented:
