@@ -3281,7 +3281,7 @@
    1968 Topps cards; only the independent ROOKIE lettering differs. */
 .dbl-topps-rookie-rail {
   position: absolute; top: 7.5%; right: 6.2%; height: 32%; color: #171717;
-  font: 400 clamp(10px,6.5cqw,20px)/1 Arial,Helvetica,sans-serif;
+  font: 400 clamp(8px,4.8cqw,15px)/1 Arial,Helvetica,sans-serif;
   writing-mode: vertical-rl; text-orientation: upright; letter-spacing: .13em;
 }
 .dbl-topps-player-name, .dbl-topps-uniform-name, .dbl-topps-back-name {
