@@ -93,7 +93,7 @@
   const namePart = value => typeof value === 'string' ? value.trim() : '';
   const fullName = (region, name) => [namePart(region), namePart(name)].filter(Boolean).join(' ');
   const pick = (array, rng) => array[Math.min(array.length - 1,
-    Math.floor(Math.max(0, Math.min(.99999999, rng())) * array.length))] || null;
+    Math.floor(Math.max(0, Math.min(.99999999, rng())) * array.length))] ?? null;
   const distinct = values => [...new Set(values)];
   const isVeteran = p => p.experience >= 4 || (p.age !== null && p.age >= 29);
   const isYoung = p => (p.age !== null ? p.age <= 27 : p.experience <= 2) &&
