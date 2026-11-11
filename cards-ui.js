@@ -91,6 +91,9 @@
   const activeCompletionTiers = () => activeChecklistSeries === 1
     ? toppsCompletionTiers : completionTiers;
   const isTeamSeason = card => card?.type === 'team-season';
+  // Refractor treatment is an honor for verified champion team-seasons,
+  // not a new rarity/pull category and never a clue on sealed backs.
+  const isChampionTeam = card => isTeamSeason(card) && card.finishKind === 'champion';
   const isToppsPlayer = card => card?.type === 'topps-player';
   const isToppsUniform = card => card?.type === 'topps-uniform';
   const make = (tag, cls, value) => {
@@ -558,6 +561,8 @@
       card.finish || 'SEASON FINISH UNAVAILABLE');
     finish.dataset.finish = card.finishKind || 'unknown';
     front.appendChild(finish);
+    if (isChampionTeam(card))
+      front.appendChild(make('span', 'dbl-cards-foil'));
     return front;
   }
 
@@ -591,6 +596,8 @@
     back.appendChild(make('span', 'dbl-cards-back-foot',
       'SERIES ' + (card.series ?? api.currentSeries) + ' · HISTORIC TEAM · ' + card.era));
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
+    if (isChampionTeam(card))
+      back.appendChild(make('span', 'dbl-cards-foil'));
     return back;
   }
 
@@ -775,20 +782,23 @@
   });
 
   function playCardRevealEffect(button, card) {
-    const config = REVEAL_EFFECTS[card.rarity];
+    // Champion team-season cards borrow the Refractor flourish; ordinary
+    // team seasons still have just the normal flip.
+    const effect = isChampionTeam(card) ? 'refractor' : card.rarity;
+    const config = REVEAL_EFFECTS[effect];
     // Base cards have no extra effect. Respect OS reduced-motion preferences.
     if (!config || reduced()) return;
     button.querySelector('.dbl-cards-reveal-fx')?.remove();
     const fx = make('span', 'dbl-cards-reveal-fx');
     fx.setAttribute('aria-hidden', 'true');
-    fx.dataset.effect = card.rarity;
+    fx.dataset.effect = effect;
     fx.style.setProperty('--fx-duration', config.duration + 'ms');
     fx.style.setProperty('--fx-delay', '170ms');
     // Confine ONLY the one-time glint to the card surface for these three
     // grades. The flash, halo, ring, symbol and particles can still burst
     // beyond the card edge because the main FX layer remains unclipped.
-    if (card.rarity === 'crome' || card.rarity === 'refractor' ||
-        card.rarity === 'black-label') {
+    if (effect === 'crome' || effect === 'refractor' ||
+        effect === 'black-label') {
       fx.appendChild(make('span', 'dbl-cards-reveal-sweep-window'));
     }
     fx.appendChild(make('span', 'dbl-cards-reveal-halo'));
@@ -817,7 +827,10 @@
     button.type = 'button';
     // Mystery cards have no rarity-dependent styling until flipped over.
     // Revealed cards and cards already owned use their proper rarity color.
-    if (!sealed) button.dataset.rarity = card.rarity;
+    if (!sealed) {
+      button.dataset.rarity = card.rarity;
+      if (isChampionTeam(card)) button.dataset.teamChampion = 'true';
+    }
     const cardLabel = isTeamSeason(card)
       ? String(card.era) + ' ' + card.name : card.name;
     button.setAttribute('aria-label', sealed ? 'Reveal mystery DBL card' :
@@ -838,6 +851,7 @@
         reverse.replaceChildren(...Array.from(newBack.childNodes));
         button.classList.remove('is-sealed');
         button.dataset.rarity = card.rarity;
+        if (isChampionTeam(card)) button.dataset.teamChampion = 'true';
         playCardRevealEffect(button, card);
         scheduleNameFit();
         button.setAttribute('aria-label', 'View statistics for ' + cardLabel +
