@@ -893,7 +893,7 @@
     return draw[Math.floor(Math.random() * draw.length)];
   }
   function getPack(packType = 'mixed') {
-    if (!collectionLoaded || mergingCollection || !pool.length) return [];
+    if (!collectionLoaded || mergingCollection || (packType === 'mixed' && !pool.length)) return [];
     if (packType !== 'mixed' && packType !== 'topps-1968') return [];
     const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set(), picks = [];
     if (packType === 'topps-1968') {
