@@ -3706,3 +3706,45 @@
   font-style: normal;
   font-synthesis: none;
 }
+
+
+/* Series 0 Team Season: a fine black ALPHA outline around the actual
+   transparent logo silhouette, never a rectangular border or dark box.
+   This targets only the large logo image on the Team Season card front.
+   Logos with baked-in opaque backgrounds retain their source edges. */
+.dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
+  filter:
+    drop-shadow(.65px 0 0 #16110b)
+    drop-shadow(-.65px 0 0 #16110b)
+    drop-shadow(0 .65px 0 #16110b)
+    drop-shadow(0 -.65px 0 #16110b);
+}
+
+/* Upright 1968 Topps player font for 1968 UNIFORM team names on both faces.
+   The inner line is measured and compressed horizontally by cards-ui.js
+   when needed; center it without changing any photo or card dimensions. */
+.dbl-cards-card .dbl-topps-uniform-front > .dbl-topps-uniform-name,
+.dbl-cards-back.dbl-topps-back > .dbl-topps-back-uniform-name {
+  font-family: "Kavoon", "Cooper Black", Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: -.025em;
+  font-size: clamp(13px, 10.25cqw, 32px);
+  line-height: 1.12;
+  white-space: nowrap;
+  text-wrap: nowrap;
+  overflow-wrap: normal;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+.dbl-topps-uniform-fit-name > .dbl-topps-uniform-name-glyphs {
+  display: block;
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  transform-origin: center center;
+}
