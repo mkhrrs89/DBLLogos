@@ -23,6 +23,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kavoon&family=Lobster&family=Shrikhand&display=swap" />
     <link rel="stylesheet" href="./cards.css?v=20261111-conditional-team-outline" />
+    <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -137,6 +138,7 @@
         <nav class="tab-bar panel" aria-label="Main views">
           <button id="homeTabBtn" class="tab-btn active" type="button" aria-selected="true">Home</button>
           <button id="cardsTabBtn" class="tab-btn" type="button" aria-selected="false">Cards</button>
+          <button id="storiesTabBtn" class="tab-btn" type="button" aria-selected="false" data-panel-id="storiesPanel">Stories</button>
           <details class="tab-group">
             <summary class="tab-group-toggle">Franchise &amp; Design</summary>
             <div class="tab-group-menu" data-tab-group="design">
@@ -409,6 +411,48 @@
             <button id="cardsChecklistMore" class="dbl-cards-more dbl-cards-checklist-more" type="button" hidden>Show more editions</button>
             <p id="cardsChecklistNote" class="dbl-cards-checklist-note">One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR, plus one Team Season insert for each recorded team-season in the uploaded league export. A check means that edition is in your saved collection; duplicates count only once toward completion. The checklist updates with your latest uploaded league file. Cards already owned but absent from that file stay in My Collection.</p>
           </section>
+        </section>
+
+        <section id="storiesPanel" class="panel story-gen-panel" aria-label="DBL story generator" hidden>
+          <header class="story-gen-heading">
+            <div>
+              <p class="story-gen-overline">The Delta Basketball League · Newsroom Desk</p>
+              <h2 class="story-gen-title">Story Generator</h2>
+              <p class="story-gen-intro">Roll a period-appropriate, fictional league headline and cast it with real names from your uploaded DBL season. This is a creative writing tool, not a report of actual events.</p>
+            </div>
+          </header>
+          <nav id="storiesYearTabs" class="story-gen-year-tabs" role="tablist" aria-label="Story year">
+            <button class="story-gen-year-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="storiesYearView">1968</button>
+          </nav>
+          <div id="storiesYearView" class="story-gen-year-view" role="tabpanel" aria-label="1968 story prompts">
+            <div class="story-gen-controls">
+              <div>
+                <p class="story-gen-controls-caption">DBL Story Lottery · 1968 Edition</p>
+                <p id="storiesStatus" class="story-gen-status" role="status" aria-live="polite">Upload a league file to assign participants.</p>
+              </div>
+              <button id="storiesRollButton" class="story-gen-roll" type="button" disabled>Roll a Story</button>
+            </div>
+            <article id="storiesResult" class="story-gen-result" aria-live="polite" aria-label="Story roll result" hidden>
+              <p id="storiesResultNumber" class="story-gen-result-number"></p>
+              <h3 id="storiesResultTitle" class="story-gen-result-title"></h3>
+              <p id="storiesResultText" class="story-gen-result-text"></p>
+              <div class="story-gen-result-body">
+                <section id="storiesParticipants" aria-label="Players involved"></section>
+                <section id="storiesTeams" aria-label="Clubs involved"></section>
+              </div>
+              <div id="storiesNotes"></div>
+              <div class="story-gen-result-actions">
+                <p class="story-gen-disclaimer">Fictional 1968 DBL scenario. Names are randomly assigned, not real-world allegations.</p>
+                <button id="storiesCopyButton" class="story-gen-copy" type="button">Copy story</button>
+              </div>
+            </article>
+            <div class="story-gen-library-head">
+              <h3 class="story-gen-library-title">Available Stories</h3>
+              <span id="storiesAvailableCount" class="story-gen-library-count">18 available stories</span>
+            </div>
+            <p class="story-gen-library-note">Browse all prompts below. Tap a headline to read the premise; the Roll button draws randomly from stories that can be cast using the loaded 1968 players and teams.</p>
+            <div id="storiesAvailableList" class="story-gen-available-list" aria-label="1968 numbered story list"></div>
+          </div>
         </section>
 
         <section id="leagueControlsPanel" class="panel controls-panel" hidden>
@@ -1049,6 +1093,8 @@
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./cards-engine.js?v=20261110-rarity-adjustment"></script>
     <script src="./cards-ui.js?v=20261111-conditional-team-outline"></script>
+    <script src="./story-generator-engine.js?v=20261111-1968-newsroom"></script>
+    <script src="./story-generator-ui.js?v=20261111-1968-newsroom"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
