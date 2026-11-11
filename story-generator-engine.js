@@ -87,7 +87,8 @@
   ].map((entry, index) => Object.freeze({ ...entry, id: index + 1, year: 1968 }));
 
   const CATALOGS = Object.freeze({1968: Object.freeze(STORIES_1968)});
-  const integer = value => Number.isInteger(Number(value)) ? Number(value) : null;
+  const integer = value => value === null || value === undefined || value === '' ? null :
+    Number.isInteger(Number(value)) ? Number(value) : null;
   const number = value => Number.isFinite(Number(value)) ? Number(value) : null;
   const namePart = value => typeof value === 'string' ? value.trim() : '';
   const fullName = (region, name) => [namePart(region), namePart(name)].filter(Boolean).join(' ');
@@ -190,7 +191,8 @@
         ? year - careerStarted : draftYear !== null && draftYear <= year
           ? year - draftYear : 0;
       if (tid === null) {
-        if (priorTeams.size && !player.died && !(integer(player.diedYear) <= year)) {
+        if (priorTeams.size && !player.died &&
+            (integer(player.diedYear) === null || integer(player.diedYear) > year)) {
           for (const oldTid of priorTeams) {
             if (!formerIndex.has(oldTid)) formerIndex.set(oldTid, []);
             formerIndex.get(oldTid).push({pid, name, experience, age});
