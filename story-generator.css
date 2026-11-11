@@ -1,0 +1,308 @@
+/* 1968 DBL Story Generator — a period-styled fictional newsroom.
+   Scoped to the Stories panel; other app views and cards stay unchanged. */
+.story-gen-panel {
+  padding: clamp(14px, 2.6vw, 30px);
+  overflow: hidden;
+}
+.story-gen-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 18px;
+}
+.story-gen-overline {
+  margin: 0 0 8px;
+  font: 800 .69rem/1.3 Georgia, "Times New Roman", serif;
+  color: #d9a778;
+  letter-spacing: .19em;
+  text-transform: uppercase;
+}
+.story-gen-title {
+  font: 900 clamp(1.65rem, 4vw, 3.2rem)/1.05 Georgia, "Times New Roman", serif;
+  letter-spacing: -.037em;
+  color: #f9eddd;
+}
+.story-gen-intro {
+  margin: 9px 0 0;
+  font-size: .85rem;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 65ch;
+}
+.story-gen-year-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+.story-gen-year-tab {
+  min-width: 84px;
+  min-height: 42px;
+  background: #352015;
+  border: 1px solid #795137;
+  border-radius: 7px 7px 0 0;
+  color: #e3bf9c;
+  cursor: pointer;
+  font: 800 .87rem Georgia, "Times New Roman", serif;
+  letter-spacing: .08em;
+}
+.story-gen-year-tab.is-active {
+  color: #281711;
+  background: #e4c295;
+  border-color: #e4c295;
+}
+.story-gen-year-tab:focus-visible,
+.story-gen-roll:focus-visible,
+.story-gen-copy:focus-visible,
+.story-gen-entry-head:focus-visible {
+  outline: 3px solid #e5b55e;
+  outline-offset: 3px;
+}
+.story-gen-year-view { min-width: 0; }
+.story-gen-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 17px;
+  margin: 0 0 19px;
+  border: 1px solid rgba(226,171,110,.35);
+  border-radius: 10px;
+  background: linear-gradient(135deg,#3b2315,#24150f);
+}
+.story-gen-controls-caption {
+  margin: 0 0 4px;
+  font: 800 .71rem Georgia,"Times New Roman",serif;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #d4a16c;
+}
+.story-gen-status {
+  margin: 0;
+  color: #dfc8b6;
+  font-size: .82rem;
+  line-height: 1.4;
+}
+.story-gen-status[data-busy="true"] { color: #ffcf84; }
+.story-gen-roll {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 11px 24px;
+  color: #291811;
+  background: linear-gradient(180deg,#f3d69a,#d69b59);
+  border: 1px solid #f8dfab;
+  border-radius: 7px;
+  cursor: pointer;
+  font: 900 .91rem Georgia,"Times New Roman",serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  box-shadow: 0 3px 0 #7d482a;
+}
+.story-gen-roll:hover:not(:disabled) { filter: brightness(1.07); }
+.story-gen-roll:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #7d482a; }
+.story-gen-roll:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.story-gen-result {
+  margin: 0 0 22px;
+  border-radius: 5px;
+  border: 4px double #7b583a;
+  background:
+    repeating-linear-gradient(0deg,rgba(63,43,27,.023) 0 1px,transparent 1px 4px),
+    linear-gradient(135deg,#f7ebd0,#e6d1a8 80%,#e4c899);
+  color: #35271b;
+  padding: clamp(16px, 3vw, 29px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.24);
+}
+.story-gen-result[hidden] { display: none; }
+.story-gen-result-number {
+  margin: 0 0 9px;
+  font: 900 .69rem/1.3 Arial, sans-serif;
+  color: #70462c;
+  text-transform: uppercase;
+  letter-spacing: .17em;
+}
+.story-gen-result-title {
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 3px double #7b583a;
+  font: 900 clamp(1.28rem, 3vw, 2rem)/1.16 Georgia,"Times New Roman",serif;
+  letter-spacing: -.025em;
+  color: #2c2017;
+}
+.story-gen-result-text {
+  max-width: 78ch;
+  color: #402b20;
+  font: 1rem/1.67 Georgia,"Times New Roman",serif;
+  margin: 16px 0 19px;
+}
+.story-gen-result-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, .85fr);
+  gap: 18px;
+  border-top: 1px solid rgba(97,67,43,.35);
+  padding-top: 14px;
+}
+.story-gen-group-title {
+  margin: 0 0 10px;
+  color: #755034;
+  font: 900 .72rem/1.3 Arial,sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .11em;
+}
+.story-gen-cast-list { display: grid; gap: 7px; }
+.story-gen-cast-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.4);
+  border-left: 3px solid #986b40;
+  gap: 2px;
+}
+.story-gen-cast-role {
+  font: 700 .69rem/1.3 Arial,sans-serif;
+  color: #775139;
+  text-transform: uppercase;
+  letter-spacing: .055em;
+}
+.story-gen-cast-name {
+  color: #281d16;
+  font: 900 1.04rem/1.25 Georgia,"Times New Roman",serif;
+}
+.story-gen-cast-team {
+  color: #6b503b;
+  font: .77rem/1.25 Arial,sans-serif;
+}
+.story-gen-team-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.story-gen-team-pill {
+  display: inline-block;
+  padding: 7px 9px;
+  background: rgba(106,65,34,.1);
+  border: 1px solid rgba(106,65,34,.28);
+  font: 700 .78rem/1.3 Georgia,"Times New Roman",serif;
+}
+.story-gen-verification {
+  padding: 9px 11px;
+  border-left: 3px solid #a06a3c;
+  margin: 11px 0 0;
+  background: rgba(162,105,54,.10);
+  color: #664226;
+  font: .8rem/1.45 Arial,sans-serif;
+}
+.story-gen-result-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.story-gen-copy {
+  cursor: pointer;
+  padding: 9px 14px;
+  background: #422b1d;
+  color: #f9e6c8;
+  border: 1px solid #422b1d;
+  border-radius: 5px;
+  font-weight: 700;
+  font-size: .82rem;
+}
+.story-gen-disclaimer {
+  margin: 0;
+  max-width: 60ch;
+  font: italic .73rem/1.35 Georgia,"Times New Roman",serif;
+  color: #775539;
+}
+.story-gen-library-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 16px 0 11px;
+}
+.story-gen-library-title {
+  font: 900 1.28rem/1.15 Georgia,"Times New Roman",serif;
+  color: #f3ddc3;
+}
+.story-gen-library-count {
+  font: 700 .75rem/1.3 Arial,sans-serif;
+  text-transform: uppercase;
+  color: #d0a47e;
+  letter-spacing: .08em;
+}
+.story-gen-library-note {
+  color: var(--muted);
+  font: .81rem/1.45 Arial,sans-serif;
+  margin: 0 0 12px;
+}
+.story-gen-available-list {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  align-items: start;
+  gap: 8px;
+}
+.story-gen-entry {
+  min-width: 0;
+  background: rgba(244,216,181,.06);
+  border: 1px solid rgba(240,215,184,.16);
+  border-radius: 6px;
+}
+.story-gen-entry[open] {
+  border-color: rgba(238,194,137,.52);
+  background: rgba(244,216,181,.09);
+}
+.story-gen-entry-head {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 29px minmax(0,1fr);
+  column-gap: 10px;
+  row-gap: 3px;
+  min-height: 57px;
+  padding: 10px 12px;
+  list-style: none;
+  cursor: pointer;
+}
+.story-gen-entry-head::-webkit-details-marker { display: none; }
+.story-gen-entry-head::marker { content: ""; }
+.story-gen-entry-number {
+  grid-row: 1 / span 2;
+  align-self: center;
+  font: 900 .86rem/1 Georgia,"Times New Roman",serif;
+  color: #d9a46f;
+}
+.story-gen-entry-title {
+  min-width: 0;
+  font: 800 .86rem/1.26 Georgia,"Times New Roman",serif;
+  color: #f1dfc9;
+}
+.story-gen-entry-category {
+  font: 700 .61rem/1.3 Arial,sans-serif;
+  letter-spacing: .08em;
+  color: #c09878;
+  text-transform: uppercase;
+}
+.story-gen-entry-description {
+  margin: 0;
+  padding: 3px 15px 15px 51px;
+  font: .83rem/1.56 Georgia,"Times New Roman",serif;
+  color: #dfcab3;
+}
+@media (max-width: 740px) {
+  .story-gen-panel { padding: 14px; }
+  .story-gen-heading { display: block; }
+  .story-gen-controls { align-items: stretch; padding: 13px; }
+  .story-gen-roll { width: 100%; }
+  .story-gen-available-list { grid-template-columns: 1fr; }
+  .story-gen-result-body { grid-template-columns: 1fr; }
+  .story-gen-result { padding: 15px; border-width: 3px; }
+  .story-gen-result-text { font-size: .93rem; }
+  .story-gen-entry-head { min-height: 57px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .story-gen-roll:active:not(:disabled) { transform: none; }
+  .story-gen-result { scroll-behavior: auto; }
+}
