@@ -343,12 +343,15 @@
     [1968, 1968, '1968.jpg']
   ];
   function genericPhotoFor(card) {
-    const year = Number(card?.era); // The card's peak OVR season.
+    const year = Number(card?.era); // Stock year, or the card's peak OVR season.
     if (!Number.isInteger(year)) return '';
     const range = ERA_CARD_PORTRAITS.find(([first, last]) =>
       year >= first && year <= last);
     return range ? './assets/' + range[2] : '';
   }
+  // One shared, verified stock-year map for standard cards AND Background
+  // Test. Display-only, never stored as a player photograph or backup image.
+  window.DBLCardEraStockPortrait = genericPhotoFor;
 
   function art(card) {
     const artArea = make('span', 'dbl-cards-art');
@@ -792,7 +795,15 @@
     const isVideoUrl = url => /\.(?:mp4|mov|m4v)(?:[?#]|$)/i.test(url) ||
       /^data:video\//i.test(url);
     const videoOnly = rawSources.length > 0 && rawSources.every(isVideoUrl);
-    const sources = [...new Set(rawSources.filter(url => !isVideoUrl(url)))];
+    // Use the SAME year-to-assets map already used by the normal cards.
+    // The stock photograph is LAST: only used when original links cannot
+    // load or cannot be processed (including CORS/proxy failures).
+    const stockPath = genericPhotoFor(card);
+    // DOM image.src resolves relative paths to absolute URLs. Normalize the
+    // stock source too, so fallback retries and stock labels compare equal.
+    const stockPhoto = stockPath ? new URL(stockPath, document.baseURI).href : '';
+    const sources = [...new Set([...rawSources.filter(url => !isVideoUrl(url)),
+      stockPhoto].filter(Boolean))];
     const missing = make('span', 'dbl-bgtest-pack-empty',
       videoOnly ? 'VIDEO NEEDS FRAME PROCESSING' : 'PHOTO UNAVAILABLE');
     missing.hidden = sources.length > 0;
@@ -806,8 +817,13 @@
     image.referrerPolicy = 'no-referrer';
     image.hidden = sources.length === 0;
     image._bgtestSources = sources;
+    image._bgtestStockSrc = stockPhoto;
     image._bgtestFailedLoad = new Set();
     image._bgtestTriedMasks = new Set();
+    const stockLabel = make('span', 'dbl-bgtest-pack-stock-label',
+      (card.era || '') + ' STOCK PHOTO');
+    stockLabel.hidden = true;
+    frame.appendChild(stockLabel);
     const status = make('button', 'dbl-bgtest-pack-mask-status',
       sources.length ? 'ORIGINAL PHOTO' :
         videoOnly ? 'MOV/MP4 NOT YET SUPPORTED' : 'NO PHOTO');
@@ -824,6 +840,10 @@
     image.addEventListener('load', () => {
       missing.hidden = true;
       image.hidden = false;
+      // A generated cutout uses a blob URL, so inspect its original source.
+      const originalSource = image.dataset.bgMaskOriginal ||
+        image.currentSrc || image.src;
+      stockLabel.hidden = !stockPhoto || originalSource !== stockPhoto;
     });
     image.addEventListener('error', () => {
       if (image.dataset.bgMaskCutout && image.src === image.dataset.bgMaskCutout) {
@@ -837,6 +857,7 @@
         !image._bgtestFailedLoad.has(url));
       if (alternative) image.src = alternative;
       else {
+        stockLabel.hidden = true;
         image.hidden = true;
         missing.hidden = false;
         status.textContent = 'PHOTO UNAVAILABLE';
@@ -901,6 +922,10 @@
           image.dataset.bgMaskVisible = 'cutout';
           label.dataset.action = 'compare';
           label.textContent = 'SHOW ORIGINAL';
+          // Preserve the stock-image identification even after cutout.
+          const badge = button.querySelector('.dbl-bgtest-pack-stock-label');
+          if (badge) badge.hidden = !image._bgtestStockSrc ||
+            image.dataset.bgMaskOriginal !== image._bgtestStockSrc;
           if (why) why.hidden = true;
           if (reason) reason.hidden = true;
           if (local) local.hidden = true;
@@ -911,9 +936,10 @@
             !image._bgtestTriedMasks.has(url) &&
             !image._bgtestFailedLoad?.has(url));
           if (alternative) {
-            // Some image hosts allow display but deny canvas pixel reads.
-            // Automatically try the second source before showing retry.
-            label.textContent = 'TRYING ALTERNATE PHOTO…';
+            // After original and small photo, also try the matching
+            // local-year stock photo; it is same-origin and processable.
+            label.textContent = alternative === image._bgtestStockSrc
+              ? 'TRYING YEAR STOCK PHOTO…' : 'TRYING ALTERNATE PHOTO…';
             image.src = alternative;
             activateBackgroundPhoto(button, card, true);
           } else {
@@ -1257,6 +1283,9 @@
         const url = window.DBLBackgroundTest.createLocalPhoto(file);
         image._bgtestLocalUrl = url;
         image._bgtestSources = [url];
+        image._bgtestStockSrc = '';
+        const badge = inner.querySelector('.dbl-bgtest-pack-stock-label');
+        if (badge) badge.hidden = true;
         image._bgtestFailedLoad = new Set();
         image._bgtestTriedMasks = new Set();
         if (why) why.hidden = true;

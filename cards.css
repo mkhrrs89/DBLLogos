@@ -4416,3 +4416,28 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+
+/* Existing period stock portraits are clearly labeled in Background Test.
+   Labels are display-only and never written into card/photo storage. */
+.dbl-bgtest-pack-frame .dbl-bgtest-pack-stock-label,
+.dbl-bgtest-photo .dbl-bgtest-stock-tag {
+  position:absolute;
+  bottom:2%;
+  left:3%;
+  right:auto;
+  max-width:94%;
+  padding:3px 5px;
+  z-index:5;
+  border-radius:2px;
+  background:rgba(247,245,238,.94);
+  color:#28434b;
+  border:1px solid rgba(40,67,75,.45);
+  font:800 clamp(8px,4cqw,11px)/1.12 Arial,Helvetica,sans-serif;
+  letter-spacing:.05em;
+  text-align:left;
+  pointer-events:none;
+}
+.dbl-bgtest-photo .dbl-bgtest-stock-tag { font-size:10px; }
+.dbl-bgtest-pack-stock-label[hidden],
+.dbl-bgtest-stock-tag[hidden] { display:none !important; }

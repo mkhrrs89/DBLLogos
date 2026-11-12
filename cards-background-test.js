@@ -59,6 +59,8 @@
   const safePhoto = value => typeof value === 'string' &&
     ((/^https?:\/\/\S+$/i.test(value) && value.length < 2000) ||
       (/^blob:/i.test(value) && value.length < 3000) ||
+      // Same-origin stock images use the existing, shared year map.
+      (/^\.\/assets\/\d{4}(?:-\d{4})?\.jpg$/i.test(value)) ||
       (/^data:image\/(?:jpeg|jpg|png|webp|gif);base64,/i.test(value) &&
         value.length < 2000000))
     ? value : '';
@@ -108,9 +110,19 @@
         String(player.name || 'Unnamed player');
       const primary = safePhoto(player.imgURL);
       const photoFallback = safePhoto(player.imgURLSmall);
-      const photo = primary || photoFallback;
+      // Exact same asset-year lookup as the other two card collections.
+      // This uses the active league year, not the player's career peak.
+      const stockPath = safePhoto(
+        window.DBLCardEraStockPortrait?.({era: year}) || '');
+      const stockPhoto = stockPath
+        ? new URL(stockPath, document.baseURI).href : '';
+      // Normalize the stock path to the URL that img.src reports, otherwise
+      // a missing stock file could be retried infinitely in the browser.
+      const photoSources = [...new Set(
+        [primary, photoFallback, stockPhoto].filter(Boolean))];
+      const photo = photoSources[0] || '';
       found.set(pid, {pid, tid, ovr, name, photo, photoFallback,
-        position: String(player.pos || '').trim()});
+        stockPhoto, photoSources, position: String(player.pos || '').trim()});
     }
     return [...found.values()].sort((a,b) => b.ovr - a.ovr ||
       a.name.localeCompare(b.name) || a.pid - b.pid);
@@ -212,14 +224,27 @@
     original.loading = 'lazy';
     original.decoding = 'async';
     original.referrerPolicy = 'no-referrer';
+    const stockTag = make('span', 'dbl-bgtest-stock-tag', 'YEAR STOCK PHOTO');
+    stockTag.hidden = true;
+    const failedLoads = new Set();
+    original.addEventListener('load', () => {
+      original.hidden = false;
+      stockTag.hidden = !player.stockPhoto || original.src !== player.stockPhoto;
+    });
     original.addEventListener('error', () => {
-      const fallback = player.photoFallback;
-      if (fallback && fallback !== original.src && !original.dataset.triedFallback) {
-        original.dataset.triedFallback = 'true';
+      failedLoads.add(original.src);
+      const fallback = player.photoSources?.find(source =>
+        !failedLoads.has(source));
+      if (fallback) {
         player.photo = fallback;
         original.src = fallback;
       } else {
         original.hidden = true;
+        stockTag.hidden = true;
+        const note = entry.querySelector('.dbl-bgtest-item-status');
+        if (note) note.textContent = 'The photo links failed, including the year stock image.';
+        const local = entry.querySelector('.dbl-bgtest-local-photo');
+        if (local) local.hidden = false;
       }
     });
     if (player.photo) original.src = player.photo;
@@ -230,6 +255,7 @@
     frame.appendChild(make('span', 'dbl-bgtest-photo-backdrop'));
     frame.appendChild(original);
     frame.appendChild(cutout);
+    frame.appendChild(stockTag);
     face.appendChild(heading);
     face.appendChild(frame);
     face.appendChild(make('strong', 'dbl-bgtest-player-name', player.name));
@@ -253,7 +279,8 @@
     localInput.accept = 'image/png,image/jpeg,image/webp';
     localInput.hidden = true;
     const compare = {original, cutout, note, toggle, retry, local, frame, entry,
-      player, token:generation, mode:'cutout', ready:false};
+      player, stockTag, failedLoads, triedPhotos:new Set(), token:generation,
+      mode:'cutout', ready:false};
     entry._bgTestView = compare;
     toggle.addEventListener('click', () => {
       if (!compare.ready) return;
@@ -262,7 +289,7 @@
     });
     retry.addEventListener('click', () => {
       retry.hidden = true;
-      compare.triedFallback = false;
+      compare.triedPhotos.clear();
       queueProcess(compare, true);
     });
     local.addEventListener('click', () => localInput.click());
@@ -278,8 +305,11 @@
       compare.localUrl = createLocalPhoto(file);
       player.photo = compare.localUrl;
       player.photoFallback = '';
+      player.photoSources = [compare.localUrl];
+      compare.triedPhotos.clear();
+      compare.failedLoads.clear();
+      compare.stockTag.hidden = true;
       original.hidden = false;
-      original.dataset.triedFallback = '';
       original.src = compare.localUrl;
       compare.ready = false;
       compare.mode = 'cutout';
@@ -324,7 +354,12 @@
     c.ready = true;
     c.toggle.disabled = false;
     c.retry.hidden = true;
-    c.note.textContent = 'Background hidden · Original photo unchanged';
+    const usedStock = !!c.player.stockPhoto &&
+      c.player.photo === c.player.stockPhoto;
+    c.stockTag.hidden = !usedStock;
+    c.note.textContent = usedStock
+      ? 'Year stock photo · Background hidden · Original files unchanged'
+      : 'Background hidden · Original photo unchanged';
     showMode(c);
   }
 
@@ -595,23 +630,33 @@
         const c = pending.shift();
         pendingIds.delete(c.player.pid);
         if (c.token !== generation || !c.entry.isConnected) continue;
-        const cached = cache.get(c.player.photo);
+        const attemptedSource = c.player.photo;
+        const cached = cache.get(attemptedSource);
         if (cached) { setProcessed(c, cached); continue; }
         try {
-          c.note.textContent = 'Loading AI and detecting player…';
-          const url = await cutoutFor(c.player.photo);
+          c.note.textContent = attemptedSource === c.player.stockPhoto
+            ? 'Removing background from year stock photo…'
+            : 'Loading AI and detecting player…';
+          const url = await cutoutFor(attemptedSource);
           if (!active || c.token !== generation || !c.entry.isConnected) continue;
           setProcessed(c, url);
           trimCache();
         } catch (error) {
           if (c.token === generation && c.entry.isConnected) {
-            const fallback = c.player.photoFallback;
-            if (fallback && fallback !== c.player.photo && !c.triedFallback) {
-              c.triedFallback = true;
+            c.triedPhotos.add(attemptedSource);
+            // Try each original/alternate source first, then the matching
+            // local-year stock portrait when a source cannot be processed.
+            const fallback = c.player.photoSources?.find(source =>
+              !c.triedPhotos.has(source) && !c.failedLoads.has(source));
+            if (fallback) {
               c.player.photo = fallback;
               c.original.hidden = false;
               c.original.src = fallback;
-              c.note.textContent = 'Trying alternate player photograph…';
+              c.stockTag.hidden = !c.player.stockPhoto ||
+                fallback !== c.player.stockPhoto;
+              c.note.textContent = fallback === c.player.stockPhoto
+                ? 'Trying matching year stock photo…'
+                : 'Trying alternate player photograph…';
               queueProcess(c, true);
             } else {
               c.note.textContent = errorText(error) +
