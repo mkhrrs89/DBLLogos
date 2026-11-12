@@ -16,11 +16,13 @@
   // slot; all five slots now follow the published odds without guarantees.
   const TOPPS_YEAR = 1968, TOPPS_SERIES = 1, TOPPS_INSERT_RATE = .15;
   const TOPPS_UNIFORM_SHARE = .20;
+  const BACKGROUND_TEST_SERIES = 2;
   const TEAM_INSERT = Object.freeze({
     id: 'team-season', label: 'Team Season', insert: true
   });
   const TOPPS_PLAYER = Object.freeze({id: 'topps-1968', label: '1968 Topps', insert: true});
   const TOPPS_UNIFORM = Object.freeze({id: 'topps-1968-uniform', label: 'Topps Uniform', insert: true});
+  const BACKGROUND_TEST = Object.freeze({id: 'background-test', label: 'Background Test', insert: true});
   const RARITIES = [
     { id: 'common', label: 'Base', chance: 87.5, pool: 1 },
     { id: 'crome', label: 'Chrome', chance: 10, pool: .72 },
@@ -110,7 +112,7 @@
     return merged;
   }
   const tierIndex = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
-  const tierMap = Object.fromEntries([...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM].map(r => [r.id, r]));
+  const tierMap = Object.fromEntries([...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM, BACKGROUND_TEST].map(r => [r.id, r]));
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
   const integer = x => Number.isInteger(number(x)) ? number(x) : null;
   const str = x => typeof x === 'string' ? x.trim() : '';
@@ -120,6 +122,7 @@
   let pool = [], poolByPid = new Map(), teamLogos = new Map(), activeSeason = null;
   let teamSeasonPool = [], teamSeasonById = new Map();
   let toppsPlayerPool = [], toppsUniformPool = [], toppsById = new Map();
+  let backgroundTestPool = [], backgroundTestByPid = new Map();
   // Derived from the uploaded file, never stored in the collection.
   let marketProfiles = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
@@ -180,6 +183,65 @@
       uniform, name: teamName + ' · ' + uniform.toUpperCase(),
       team, teamName, franchiseName: str(row.franchiseName) || teamName,
       teamLogo: photoUrl(row.teamLogo, true), uniformImage: photoUrl(row.uniformImage, true)
+    };
+  }
+  // Stable one-card-per-player IDs; a later season does not erase copies.
+  // The cutout is deliberately NOT saved: only original public photo URLs.
+  function normalizeBackgroundTest(row, count, origins) {
+    const pid = integer(row?.pid), era = integer(row?.era);
+    if (row?.type !== 'background-test' ||
+        row?.rarity !== BACKGROUND_TEST.id ||
+        pid === null || pid < 0 || era === null ||
+        !Number.isInteger(count) || count < 1 || count > 1000000) return null;
+    return {
+      id: 'bgtest:player:' + pid, type: 'background-test',
+      rarity: BACKGROUND_TEST.id, series: BACKGROUND_TEST_SERIES,
+      count, sourceCounts: origins, favorite: row.favorite === true,
+      pid, era, tid: integer(row.tid),
+      name: str(row.name) || 'Unknown player',
+      team: str(row.team) || 'DBL',
+      teamName: str(row.teamName) || 'Current team unavailable',
+      currentOvr: number(row.currentOvr),
+      photo: photoUrl(row.photo, true)
+    };
+  }
+  function updateBackgroundTest(target, fresh) {
+    let changed = false;
+    for (const key of ['era','tid','name','team','teamName','currentOvr']) {
+      if (fresh[key] !== undefined && fresh[key] !== null &&
+          target[key] !== fresh[key]) {
+        target[key] = fresh[key];
+        changed = true;
+      }
+    }
+    if (!target.photo && fresh.photo) {target.photo = fresh.photo;changed = true;}
+    return changed;
+  }
+  function currentPlayerOvr(player, year) {
+    let latestYear = -Infinity, rating = null;
+    for (const row of Array.isArray(player?.ratings) ? player.ratings : []) {
+      const ratedYear = integer(row?.season), ovr = number(row?.ovr);
+      if (ratedYear === null || ratedYear > year || ovr === null) continue;
+      if (ratedYear >= latestYear) {latestYear = ratedYear; rating = ovr;}
+    }
+    return rating;
+  }
+  function backgroundPlayerCard(player, year, teams) {
+    const pid = integer(player?.pid), tid = integer(player?.tid);
+    if (pid === null || pid < 0 || tid === null || tid < -1) return null;
+    const currentOvr = currentPlayerOvr(player, year);
+    if (currentOvr === null || currentOvr < 50) return null;
+    const team = tid >= 0 ? teamAt(teams, tid, year) : null;
+    return {
+      id:'bgtest:player:' + pid, type:'background-test',
+      rarity:BACKGROUND_TEST.id, series:BACKGROUND_TEST_SERIES, count:1,
+      pid, tid, era:year, currentOvr,
+      name:nameOf(player), team:team?.abbrev || 'FA',
+      teamName:team?.name || 'Free Agent',
+      // Runtime can use an embedded image from the league export.
+      // Only a small public URL can ever be written into card storage.
+      image:photoUrl(player.imgURL),
+      photo:photoUrl(player.imgURL, true)
     };
   }
   function updateTopps(target, fresh) {
@@ -459,6 +521,18 @@
     collection = new Map();
     for (const row of Array.isArray(value?.items) ? value.items : []) {
       const qty = integer(row?.count);
+      if (row?.type === 'background-test') {
+        const item = normalizeBackgroundTest(row, qty, sourceCounts(row.sourceCounts, qty));
+        if (!item) continue;
+        const old = collection.get(item.id);
+        if (old) {
+          old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
+          old.count = sumSourceCounts(old.sourceCounts);
+          old.favorite ||= item.favorite;
+          updateBackgroundTest(old, item);
+        } else collection.set(item.id, item);
+        continue;
+      }
       if (row?.type === 'topps-player' || row?.type === 'topps-uniform') {
         const item = normalizedTopps(row, qty, sourceCounts(row.sourceCounts, qty));
         if (!item) continue;
@@ -575,7 +649,10 @@
         throw Error('The backup contains an invalid card quantity.');
       const origins = sourceCounts(row.sourceCounts, qty, true);
       let item;
-      if (row.type === 'topps-player' || row.type === 'topps-uniform') {
+      if (row.type === 'background-test') {
+        item = normalizeBackgroundTest(row, qty, origins);
+        if (!item) throw Error('The backup contains an invalid Background Test card.');
+      } else if (row.type === 'topps-player' || row.type === 'topps-uniform') {
         item = normalizedTopps(row, qty, origins);
         if (!item) throw Error('The backup contains an invalid 1968 Topps card.');
       } else if (row.type === 'team-season') {
@@ -657,7 +734,9 @@
       addedCards += mergedCount - current.count;
       current.sourceCounts = joined;
       current.count = mergedCount;
-      if (imported.type === 'topps-player' || imported.type === 'topps-uniform') {
+      if (imported.type === 'background-test') {
+        if (updateBackgroundTest(current, imported)) refreshed = true;
+      } else if (imported.type === 'topps-player' || imported.type === 'topps-uniform') {
         if (updateTopps(current, imported)) refreshed = true;
       } else if (imported.type === 'team-season') {
         if (updateTeamSeason(current, imported)) refreshed = true;
@@ -764,6 +843,11 @@
     if (!collectionLoaded || mergingCollection || !poolFile || !collection.size) return;
     let modified = false;
     for (const item of collection.values()) {
+      if (item.type === 'background-test') {
+        const live = backgroundTestByPid.get(item.pid);
+        if (live && updateBackgroundTest(item, live)) modified = true;
+        continue;
+      }
       if (item.type === 'topps-player' || item.type === 'topps-uniform') {
         const live = toppsById.get(item.id);
         if (live && updateTopps(item, live)) modified = true;
@@ -906,8 +990,23 @@
   }
   function getPack(packType = 'mixed') {
     if (!collectionLoaded || mergingCollection || (packType === 'mixed' && !pool.length)) return [];
-    if (packType !== 'mixed' && packType !== 'topps-1968') return [];
+    if (packType !== 'mixed' && packType !== 'topps-1968' &&
+        packType !== 'background-test') return [];
     const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set(), picks = [];
+    if (packType === 'background-test') {
+      if (!backgroundTestPool.length) return [];
+      // Only one identical plain edition per qualifying current player.
+      // Avoid duplicates inside a pack when 5+ eligible players exist.
+      const available = [...backgroundTestPool];
+      for (let i = 0; i < 5; i++) {
+        const source = available.length ? available : backgroundTestPool;
+        const index = Math.floor(Math.random() * source.length);
+        const selected = source[index];
+        if (available.length) available.splice(index, 1);
+        picks.push({...selected, count: 1});
+      }
+      return picks;
+    }
     if (packType === 'topps-1968') {
       if (!toppsById.size) return [];
       for (let i = 0; i < 5; i++) {
@@ -974,7 +1073,9 @@
       if (owned) {
         owned.sourceCounts[thisSourceId] = (owned.sourceCounts[thisSourceId] || 0) + 1;
         owned.count = sumSourceCounts(owned.sourceCounts);
-        if (card.type === 'topps-player' || card.type === 'topps-uniform') {
+        if (card.type === 'background-test') {
+          updateBackgroundTest(owned, card);
+        } else if (card.type === 'topps-player' || card.type === 'topps-uniform') {
           updateTopps(owned, card);
         } else if (card.type === 'team-season') {
           updateTeamSeason(owned, card);
@@ -1142,9 +1243,15 @@
       if (!current()) return;
       const players = [], seen = new Set();
       const toppsPlayers = [], seenTopps = new Set();
+      const nextBackgroundPlayers = [], seenBackground = new Set();
       const nextMarketProfiles = new Map();
       await reader.forEachTopLevelArrayItem(file, 'players', player => {
         if (!current()) return;
+        const background = backgroundPlayerCard(player, season, teams);
+        if (background && !seenBackground.has(background.pid)) {
+          seenBackground.add(background.pid);
+          nextBackgroundPlayers.push(background);
+        }
         const topps = topperPlayer(player, season, teams);
         if (topps && !seenTopps.has(topps.pid)) {
           seenTopps.add(topps.pid);
@@ -1193,6 +1300,8 @@
       pool = players;
       poolByPid = new Map(players.map(p => [p.pid, p]));
       marketProfiles = nextMarketProfiles;
+      backgroundTestPool = nextBackgroundPlayers;
+      backgroundTestByPid = new Map(nextBackgroundPlayers.map(p => [p.pid, p]));
       teamSeasonPool = teamSeasons;
       teamSeasonById = new Map(teamSeasons.map(team => [team.id, team]));
       toppsPlayerPool = toppsPlayers;
@@ -1206,6 +1315,8 @@
       if (!current()) return;
       console.warn('Could not load card player pool.', error);
       pool = [];
+      backgroundTestPool = [];
+      backgroundTestByPid = new Map();
       marketProfiles = new Map();
       teamSeasonPool = [];
       teamSeasonById = new Map();
@@ -1228,6 +1339,8 @@
     poolFile = null;
     pool = [];
     poolByPid = new Map();
+    backgroundTestPool = [];
+    backgroundTestByPid = new Map();
     marketProfiles = new Map();
     teamSeasonPool = [];
     teamSeasonById = new Map();
@@ -1251,7 +1364,7 @@
   }
   const api = Object.freeze({
     currentSeries: CARD_SERIES,
-    rarities: [...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM].map(r => Object.freeze({
+    rarities: [...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM, BACKGROUND_TEST].map(r => Object.freeze({
       ...r, minOvr: MIN_OVR_BY_RARITY[r.id]
     })),
     exportCollection, previewCollectionMerge, mergeCollection,
@@ -1302,6 +1415,8 @@
         card?.era === poolByPid.get(card?.pid)?.era;
     },
     findPhoto(card) {
+      if (card?.type === 'background-test')
+        return backgroundTestByPid.get(card.pid)?.image || card.photo || '';
       if (card?.type === 'topps-player') return toppsById.get(card.id)?.image || card.photo || '';
       return poolByPid.get(card.pid)?.image || card.photo || '';
     },
@@ -1328,7 +1443,8 @@
       return {
         hasFile: !!currentFile, loading: scanning,
         ready: collectionLoaded, poolSize: pool.length,
-        toppsPoolSize: toppsById.size, season: activeSeason,
+        toppsPoolSize: toppsById.size, backgroundTestPoolSize: backgroundTestPool.length,
+        season: activeSeason,
         problem, savedOK, packs, merging: mergingCollection,
         unique: collection.size,
         count: [...collection.values()].reduce((n, card) => n + card.count, 0)
