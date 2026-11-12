@@ -73,8 +73,9 @@
     for (const player of records) {
       const pid = int(player?.pid);
       const tid = int(player?.tid);
-      // Current roster only: exclude free agents, retired and future prospects.
-      if (pid === null || pid < 0 || tid === null || tid < 0) continue;
+      // Active-season players include free agents (ZenGM tid -1), but not
+      // retired players or future draft prospects (tid below -1).
+      if (pid === null || pid < 0 || tid === null || tid < -1) continue;
       const ovr = currentRating(player, year);
       if (ovr === null || ovr < 50) continue;
       const name = [player.firstName, player.lastName]
@@ -112,7 +113,7 @@
         await reader.forEachTopLevelArrayItem(currentFile, 'players', player => {
           // Keep only compact image references and the current overall rating.
           const tid = int(player?.tid);
-          if (tid === null || tid < 0) return;
+          if (tid === null || tid < -1) return;
           if ((currentRating(player, year) ?? -1) < 50) return;
           matches.push(player);
         });
@@ -396,7 +397,7 @@
     status.textContent = season === null
       ? 'Reading league file…'
       : rows.length + ' of ' + players.length + ' players match · ' +
-        season + ' season · Current OVR 50+ · Backgrounds are hidden only on screen.';
+        season + ' season · Current OVR 50+ (including free agents) · Backgrounds are hidden only on screen.';
     more.hidden = rows.length <= visibleLimit;
     more.textContent = 'Show ' + Math.min(PAGE_SIZE, rows.length - visibleLimit) + ' more players';
     grid.replaceChildren();
@@ -404,7 +405,7 @@
       grid.appendChild(make('p', 'dbl-cards-empty',
         season === null ? 'Loading players…' : players.length
           ? 'No players match your search.'
-          : 'No current-roster players rated 50+ were found in this league file.'));
+          : 'No active players rated 50+ were found in this league file.'));
       return;
     }
     // Only process images near the viewport; never run AI over the whole
