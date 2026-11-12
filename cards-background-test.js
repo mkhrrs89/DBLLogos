@@ -226,7 +226,7 @@
     if (player.photo) {
       const cached = cache.get(player.photo);
       if (cached) {
-        setProcessed(compare, cached);
+        setProcessed(compare, cached, true);
       } else if (observer) {
         observer.observe(entry);
       }
@@ -242,8 +242,8 @@
     c.toggle.textContent = useCutout ? 'Show original' : 'Show cutout';
   }
 
-  function setProcessed(c, url) {
-    if (c.token !== generation || !c.entry.isConnected) return;
+  function setProcessed(c, url, allowDetached = false) {
+    if (c.token !== generation || (!allowDetached && !c.entry.isConnected)) return;
     c.cutout.src = url;
     c.ready = true;
     c.toggle.disabled = false;
@@ -431,8 +431,8 @@
   }
 
   function open() {
+    if (view.hidden || document.getElementById('cardsPanel')?.hidden) return;
     active = true;
-    if (view.hidden) return;
     void scan();
   }
   function close() {
@@ -442,6 +442,10 @@
   search.addEventListener('input', () => {visibleLimit = PAGE_SIZE; render();});
   sort.addEventListener('change', render);
   more.addEventListener('click', () => {visibleLimit += PAGE_SIZE; render();});
+  window.addEventListener('dbl:tab-change', event => {
+    if (event.detail?.panelId === 'cardsPanel' && !view.hidden) open();
+    else close();
+  });
   hub.subscribe(({file}) => onLeagueFile(file));
   onLeagueFile(hub.getCurrentFile?.() || null);
   window.DBLBackgroundTest = Object.freeze({open, close,
