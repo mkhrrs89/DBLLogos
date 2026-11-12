@@ -1056,14 +1056,9 @@
     }
     front.appendChild(lower);
 
+    // Black Label's premium finish is now glossy lacquer with a metallic
+    // sheen; do not inject the previous seven floating star decorations.
     front.appendChild(make('span', 'dbl-cards-foil'));
-    if (card.rarity === 'black-label') {
-      for (let index = 0; index < 7; index++) {
-        const sparkle = make('span', 'dbl-cards-sparkle', '✦');
-        sparkle.setAttribute('aria-hidden', 'true');
-        front.appendChild(sparkle);
-      }
-    }
     return front;
   }
   function backOf(card, sealed) {
@@ -1182,7 +1177,9 @@
   const REVEAL_EFFECTS = Object.freeze({
     crome: {duration: 1100, sparks: 5, spread: .43, glyph: '✦'},
     refractor: {duration: 1580, sparks: 10, spread: .62, glyph: '✧'},
-    'black-label': {duration: 2100, sparks: 16, spread: .84, glyph: '✦'},
+    // Retain the Black Label reveal's flash, halo, ring and foil sweep.
+    // Remove star-shaped particles and the star sigil per the finish redesign.
+    'black-label': {duration: 2100, sparks: 0, spread: 0, glyph: ''},
     'mythic-aether': {duration: 2850, sparks: 21, spread: 1.04, glyph: '✧'},
     'mythic-eclipse': {duration: 2850, sparks: 21, spread: 1.04, glyph: '✦'},
     'mythic-aurora': {duration: 2850, sparks: 22, spread: 1.04, glyph: '✧'}
@@ -1210,7 +1207,8 @@
     }
     fx.appendChild(make('span', 'dbl-cards-reveal-halo'));
     fx.appendChild(make('span', 'dbl-cards-reveal-ring'));
-    fx.appendChild(make('span', 'dbl-cards-reveal-sigil', config.glyph));
+    if (config.glyph)
+      fx.appendChild(make('span', 'dbl-cards-reveal-sigil', config.glyph));
 
     // Particle trajectories scale to each card; Reveal All stays lightweight.
     const width = button.getBoundingClientRect().width || 160;
