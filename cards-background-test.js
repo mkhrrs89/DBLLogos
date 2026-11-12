@@ -369,8 +369,10 @@
       const [segmenter, image] = await Promise.all([getSegmenter(), loadSource(src)]);
       const blob = await makeCutout(segmenter, image);
       const url = URL.createObjectURL(blob);
+      // The new blob is not yet attached to an image. Trimming here can
+      // revoke that very URL when 30 other cutouts are visible. Defer
+      // eviction until AFTER the caller displays the image.
       cache.set(src, url);
-      trimCache();
       return url;
     });
     inFlight.set(src, job);
@@ -391,9 +393,10 @@
     if (element.dataset.bgMaskSource === src) return Promise.resolve(true);
     if (label) label.textContent = 'REMOVING BACKGROUND…';
     return cutoutFor(src).then(url => {
-      if (!element.isConnected) return false;
+      if (!element.isConnected) { trimCache(); return false; }
       element.src = url;
       element.dataset.bgMaskSource = src;
+      trimCache();
       if (label) label.textContent = 'BACKGROUND HIDDEN';
       return true;
     }).catch(error => {
@@ -417,6 +420,7 @@
           const url = await cutoutFor(c.player.photo);
           if (!active || c.token !== generation || !c.entry.isConnected) continue;
           setProcessed(c, url);
+          trimCache();
         } catch (error) {
           if (c.token === generation && c.entry.isConnected) {
             c.note.textContent = errorText(error);
