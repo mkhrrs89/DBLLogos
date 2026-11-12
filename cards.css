@@ -3895,3 +3895,70 @@
 .dbl-cards-pack[data-pack-type="topps-1968"] .dbl-cards-pack-tear {
   border-color: rgba(30,35,42,.45);
 }
+
+/* Fictional DBL Card Market — card values are display-only. */
+.dbl-cards-back > .dbl-cards-market-value.dbl-cards-market-value {
+  position: absolute;
+  z-index: 8;
+  bottom: 11%;
+  left: 3.5%;
+  min-width: 0;
+  max-width: 48%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 3px 5px;
+  border: 1px solid var(--card-rule);
+  border-radius: 4px;
+  background: rgba(255,255,255,.85);
+  color: var(--card-text);
+  text-align: left;
+  font-family: Arial,Helvetica,sans-serif;
+  line-height: 1.1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.dbl-cards-market-caption {
+  font-size: clamp(6px,3.8cqw,9px);
+  font-weight: 800;
+  letter-spacing: .04em;
+  opacity: .72;
+}
+.dbl-cards-market-price {
+  font-size: clamp(10px,7.2cqw,17px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.dbl-cards-back.dbl-topps-back > .dbl-cards-market-value {
+  top: 30%;
+  bottom: auto;
+  left: 2%;
+  max-width: 36%;
+  padding: 3px 4px;
+  border-color: #bbb;
+  color: #202020;
+  background: rgba(255,255,255,.94);
+}
+.dbl-cards-back.dbl-topps-back .dbl-cards-market-price {
+  font-size: clamp(9px,6.5cqw,15px);
+}
+.dbl-cards-binder-market {
+  display: block;
+  text-align: center;
+  color: var(--text);
+  font: 850 .78rem/1.15 Arial,Helvetica,sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.dbl-cards-checklist-market {
+  font-size: .69rem !important;
+  font-weight: 800;
+  color: var(--text) !important;
+  font-variant-numeric: tabular-nums;
+}
+/* Small-screen card backs retain their heart and printed statistics. */
+@media (max-width: 520px) {
+  .dbl-cards-back > .dbl-cards-market-value.dbl-cards-market-value {
+    padding: 2px 3px;
+  }
+}
