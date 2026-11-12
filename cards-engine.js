@@ -240,8 +240,9 @@
       teamName:team?.name || 'Free Agent',
       // Runtime can use an embedded image from the league export.
       // Only a small public URL can ever be written into card storage.
-      image:photoUrl(player.imgURL),
-      photo:photoUrl(player.imgURL, true)
+      image:photoUrl(player.imgURL) || photoUrl(player.imgURLSmall),
+      imageFallback:photoUrl(player.imgURLSmall),
+      photo:photoUrl(player.imgURL, true) || photoUrl(player.imgURLSmall, true)
     };
   }
   function updateTopps(target, fresh) {
@@ -1005,7 +1006,7 @@
         if (available.length) available.splice(index, 1);
         // Keep the original embedded photo available through the live pool,
         // never copy a base64 image into persistent card storage/backups.
-        const {image, ...cardData} = selected;
+        const {image, imageFallback, ...cardData} = selected;
         picks.push({...cardData, count: 1});
       }
       return picks;
@@ -1416,6 +1417,10 @@
       // happens to be the rookie's original season (no retroactive guessing).
       return poolByPid.get(card?.pid)?.rookie === true &&
         card?.era === poolByPid.get(card?.pid)?.era;
+    },
+    findBackgroundPhotoFallback(card) {
+      if (card?.type !== 'background-test') return '';
+      return backgroundTestByPid.get(card.pid)?.imageFallback || '';
     },
     findPhoto(card) {
       if (card?.type === 'background-test')

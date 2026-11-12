@@ -769,22 +769,55 @@
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-bgtest-pack-front');
     front.appendChild(make('span', 'dbl-bgtest-pack-header', 'DBL · BACKGROUND TEST'));
     const frame = make('span', 'dbl-bgtest-pack-frame');
-    const portrait = api.findPhoto(card);
-    if (portrait) {
+    // Try the league image first and the export's alternate small portrait
+    // second. Missing image URLs must never leave broken-image icons behind.
+    const photos = [...new Set([api.findPhoto(card),
+      api.findBackgroundPhotoFallback?.(card)].filter(Boolean))];
+    const missing = make('span', 'dbl-bgtest-pack-empty', 'PHOTO UNAVAILABLE');
+    missing.hidden = photos.length > 0;
+    frame.appendChild(missing);
+    if (photos.length) {
       const image = make('img', 'dbl-bgtest-pack-image');
       image.alt = '';
       image.loading = 'lazy';
       image.decoding = 'async';
       image.referrerPolicy = 'no-referrer';
-      image.src = portrait;
+      let nextPhoto = 0;
+      image.addEventListener('load', () => { missing.hidden = true; });
+      image.addEventListener('error', () => {
+        // If a generated PNG somehow fails, keep the known original.
+        if (image.dataset.bgMaskCutout && image.src === image.dataset.bgMaskCutout) {
+          image.src = image.dataset.bgMaskOriginal || photos[nextPhoto];
+          return;
+        }
+        nextPhoto++;
+        if (nextPhoto < photos.length) {
+          image.src = photos[nextPhoto];
+        } else {
+          image.hidden = true;
+          missing.hidden = false;
+          const label = front.querySelector('.dbl-bgtest-pack-mask-status');
+          if (label) {
+            label.textContent = 'PHOTO UNAVAILABLE';
+            label.disabled = true;
+            label.title = 'The original image link failed. No source files were changed.';
+          }
+        }
+      });
+      image.src = photos[nextPhoto];
       frame.appendChild(image);
-    } else frame.appendChild(make('span', 'dbl-bgtest-pack-empty', 'NO PHOTO'));
+    }
     front.appendChild(frame);
     front.appendChild(make('strong', 'dbl-bgtest-pack-name', card.name));
     front.appendChild(make('span', 'dbl-bgtest-pack-rating', 'CURRENT OVR ' +
       (card.currentOvr ?? '—')));
-    front.appendChild(make('span', 'dbl-bgtest-pack-mask-status',
-      portrait ? 'ORIGINAL PHOTO' : 'NO PHOTO'));
+    // Small button used for an explicit retry if a CDN or host blocks
+    // masking, and for comparing original vs cutout after success.
+    const action = make('button', 'dbl-bgtest-pack-mask-status',
+      photos.length ? 'ORIGINAL PHOTO' : 'NO PHOTO');
+    action.type = 'button';
+    action.disabled = true;
+    front.appendChild(action);
     return front;
   }
   function backgroundTestBack(card, back) {
@@ -802,15 +835,44 @@
     back.appendChild(favoriteAction(card));
     return back;
   }
-  function activateBackgroundPhoto(button, card) {
+  function activateBackgroundPhoto(button, card, retry = false) {
     if (!isBackgroundTest(card)) return;
     const image = button.querySelector('.dbl-bgtest-pack-image');
-    if (!image || image.dataset.bgMaskStarted) return;
-    const source = api.findPhoto(card);
-    if (!source || !window.DBLBackgroundTest?.maskPhoto) return;
-    image.dataset.bgMaskStarted = 'true';
     const label = button.querySelector('.dbl-bgtest-pack-mask-status');
-    void window.DBLBackgroundTest.maskPhoto(image, source, label);
+    if (!image || !label || image.hidden || !window.DBLBackgroundTest?.maskPhoto ||
+        (image.dataset.bgMaskStarted === 'true' && !retry)) return;
+    const begin = () => {
+      if (!image.isConnected || image.hidden || !(image.naturalWidth > 0)) return;
+      // The fallback portrait, if used, is the actual loaded source.
+      const source = image.dataset.bgMaskOriginal || image.currentSrc || image.src;
+      if (!source || source.startsWith('blob:')) return;
+      image.dataset.bgMaskStarted = 'true';
+      label.disabled = true;
+      label.textContent = 'REMOVING BACKGROUND…';
+      void window.DBLBackgroundTest.maskPhoto(image, source, label).then(success => {
+        if (!label.isConnected) return;
+        label.disabled = false;
+        if (success) {
+          image.dataset.bgMaskVisible = 'cutout';
+          label.dataset.action = 'compare';
+          label.textContent = 'SHOW ORIGINAL';
+        } else {
+          image.dataset.bgMaskStarted = '';
+          label.dataset.action = 'retry';
+          label.textContent = 'RETRY CUTOUT';
+        }
+      });
+    };
+    // Do not start AI until the actual portrait is decoded. This also
+    // handles an initial broken URL that switches to imgURLSmall.
+    if (image.complete && image.naturalWidth > 0) begin();
+    else if (!image.dataset.bgMaskAwaiting) {
+      image.dataset.bgMaskAwaiting = 'true';
+      image.addEventListener('load', () => {
+        image.dataset.bgMaskAwaiting = '';
+        begin();
+      }, {once: true});
+    }
   }
   // A shared viewport observer prevents unseen binder cards from starting AI.
   const backgroundPhotoObserver = typeof window.IntersectionObserver === 'function'
@@ -1081,6 +1143,25 @@
       'View statistics for ' + cardLabel + ', ' + tierMap[card.rarity]?.label);
     const inner = make('span', 'dbl-cards-inner');
     inner.appendChild(frontOf(card));
+    if (isBackgroundTest(card)) {
+      const action = inner.querySelector('.dbl-bgtest-pack-mask-status');
+      action?.addEventListener('click', event => {
+        event.stopPropagation();
+        event.preventDefault();
+        const image = inner.querySelector('.dbl-bgtest-pack-image');
+        if (!image) return;
+        if (action.dataset.action === 'retry') {
+          activateBackgroundPhoto(button, card, true);
+        } else if (action.dataset.action === 'compare' &&
+            image.dataset.bgMaskOriginal && image.dataset.bgMaskCutout) {
+          const showingCutout = image.dataset.bgMaskVisible === 'cutout';
+          image.src = showingCutout
+            ? image.dataset.bgMaskOriginal : image.dataset.bgMaskCutout;
+          image.dataset.bgMaskVisible = showingCutout ? 'original' : 'cutout';
+          action.textContent = showingCutout ? 'SHOW CUTOUT' : 'SHOW ORIGINAL';
+        }
+      });
+    }
     const reverse = backOf(card, sealed);
     inner.appendChild(reverse);
     button.appendChild(inner);

@@ -4199,3 +4199,34 @@
   font:850 .72rem/1.2 Arial,Helvetica,sans-serif;
   text-align:center;font-variant-numeric:tabular-nums;
 }
+
+/* Background Test photo repair: broken links show an intentional placeholder.
+   The caption becomes a compare/retry button only after processing finishes. */
+.dbl-bgtest-pack-frame .dbl-bgtest-pack-image[hidden],
+.dbl-bgtest-pack-frame .dbl-bgtest-pack-empty[hidden] {
+  display: none !important;
+}
+.dbl-bgtest-pack-mask-status {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #31565c;
+  padding: 1px;
+  cursor: pointer;
+  z-index: 3;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.dbl-bgtest-pack-mask-status:disabled {
+  pointer-events: none; /* never intercept a sealed card's reveal click */
+  opacity: 1;
+}
+.dbl-bgtest-pack-mask-status:not(:disabled) {
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dbl-bgtest-pack-mask-status:focus-visible {
+  outline: 2px solid #31565c;
+  outline-offset: 1px;
+}

@@ -54,8 +54,10 @@
     ? value : '';
   const errorText = error => {
     const message = String(error?.message || error || '');
-    if (/taint|cross.origin|cors|securityerror|fetch.*image/i.test(message))
+    if (/taint|cross.origin|cors|securityerror/i.test(message))
       return 'This photo host does not allow browser image processing. Original kept.';
+    if (/image failed to load/i.test(message))
+      return 'The photo could not be loaded for background removal (broken link or cross-origin restriction).';
     if (/network|fetch|load|wasm|module|model/i.test(message))
       return 'Could not load the background model. Tap Retry to try again.';
     return 'Could not isolate this player. Original photograph kept.';
@@ -275,7 +277,17 @@
   async function getSegmenter() {
     if (!segmenterPromise) {
       segmenterPromise = (async () => {
-        const module = await import(TASKS_URL);
+        // Use the official versioned bundle when some browsers cannot
+        // import the CDN-generated ESM wrapper.
+        let module;
+        try {
+          module = await import(TASKS_URL);
+          if (!module.FilesetResolver || !module.ImageSegmenter)
+            throw Error('Missing MediaPipe exports.');
+        } catch (_) {
+          module = await import(
+            'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.2/vision_bundle.mjs');
+        }
         const wasm = await module.FilesetResolver.forVisionTasks(WASM_URL);
         return module.ImageSegmenter.createFromOptions(wasm, {
           baseOptions: {modelAssetPath: MODEL_URL, delegate: 'CPU'},
@@ -317,7 +329,11 @@
     const rgba = ctx.getImageData(0, 0, width, height);
     let gotMask = false;
     segmenter.segment(canvas, result => {
-      const mask = result.confidenceMasks?.[1];
+      // Selfie Segmenter returns ONE person confidence mask at index 0.
+      // The previous [1] access failed even on successful AI results.
+      // Multi-class models can provide background [0], person [1].
+      const masks = result.confidenceMasks || [];
+      const mask = masks.length === 1 ? masks[0] : masks[1] || masks[0];
       if (!mask) throw Error('No person mask was returned.');
       const probs = mask.getAsFloat32Array();
       const maskWidth = mask.width;
@@ -387,7 +403,7 @@
   function maskPhoto(element, source, label = null) {
     const src = safePhoto(source);
     if (!element || !src) {
-      if (label) label.textContent = 'ORIGINAL PHOTO';
+      if (label) label.textContent = 'NO PROCESSABLE PHOTO';
       return Promise.resolve(false);
     }
     if (element.dataset.bgMaskSource === src) return Promise.resolve(true);
@@ -396,11 +412,21 @@
       if (!element.isConnected) { trimCache(); return false; }
       element.src = url;
       element.dataset.bgMaskSource = src;
+      element.dataset.bgMaskOriginal = src;
+      element.dataset.bgMaskCutout = url;
       trimCache();
-      if (label) label.textContent = 'BACKGROUND HIDDEN';
+      if (label) {
+        label.textContent = 'BACKGROUND HIDDEN';
+        label.title = 'Only the displayed image changes; its original file stays intact.';
+      }
       return true;
     }).catch(error => {
-      if (label && label.isConnected) label.textContent = 'ORIGINAL PHOTO';
+      if (label && label.isConnected) {
+        const reason = errorText(error);
+        label.textContent = reason.includes('host') ? 'PHOTO HOST BLOCKED' :
+          reason.includes('model') ? 'AI MODEL UNAVAILABLE' : 'CUTOUT FAILED';
+        label.title = reason;
+      }
       console.warn('Background Test pack cutout unavailable.', error);
       return false;
     });
