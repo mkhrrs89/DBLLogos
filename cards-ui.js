@@ -193,6 +193,17 @@
     box.appendChild(make('span', '', heading));
     parent.appendChild(box);
   }
+  function marketMoney(value) {
+    return '$' + format(value, 2);
+  }
+  function marketTag(card) {
+    const tag = make('span', 'dbl-cards-market-value');
+    tag.appendChild(make('span', 'dbl-cards-market-caption', 'EST. VALUE'));
+    tag.appendChild(make('strong', 'dbl-cards-market-price',
+      marketMoney(api.marketValue(card))));
+    tag.title = 'Fictional DBL card market estimate; not real money';
+    return tag;
+  }
   function showCounters() {
     const s = api.status;
     // Reuse the same saved lifetime total displayed in My Collection.
@@ -215,6 +226,9 @@
     appendStat(counter, format(s.packs), 'Packs opened');
     appendStat(counter, format(s.count), 'Total cards');
     appendStat(counter, format(s.unique), 'Unique editions');
+    appendStat(counter, marketMoney(api.items.reduce((total, card) =>
+      total + api.marketValue(card) * card.count, 0)),
+      'Est. collection value');
     appendStat(counter, format(api.items.filter(c => c.series === 1)
       .reduce((n, c) => n + c.count, 0)), '1968 Topps pulls');
     appendStat(counter, format(api.items.filter(c => isTeamSeason(c))
@@ -661,6 +675,7 @@
     }
     back.appendChild(stats);
     back.appendChild(make('span', 'dbl-topps-back-footer', '1968 TOPPS'));
+    back.appendChild(marketTag(card));
     back.appendChild(favoriteAction(card));
     return back;
   }
@@ -721,6 +736,7 @@
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
     if (isChampionTeam(card))
       back.appendChild(make('span', 'dbl-cards-foil'));
+    back.appendChild(marketTag(card));
     back.appendChild(favoriteAction(card));
     return back;
   }
@@ -842,6 +858,7 @@
     // Keep the revealed back's foil finish, but reserve the vertical
     // rarity side-rail for the front of the card only.
     back.appendChild(make('span', 'dbl-cards-foil'));
+    back.appendChild(marketTag(card));
     back.appendChild(favoriteAction(card));
     return back;
   }
@@ -1132,6 +1149,9 @@
       case 'player':
         result.sort((a, b) => (b.peak ?? -1) - (a.peak ?? -1) ||
           tierIndex[b.rarity] - tierIndex[a.rarity]); break;
+      case 'value':
+        result.sort((a, b) => api.marketValue(b) - api.marketValue(a) ||
+          a.name.localeCompare(b.name)); break;
       default:
         result.sort((a, b) => tierIndex[b.rarity] - tierIndex[a.rarity] ||
           (b.peak ?? -1) - (a.peak ?? -1) || a.name.localeCompare(b.name));
@@ -1156,6 +1176,8 @@
     }
     cell.appendChild(element);
     cell.appendChild(make('span', 'dbl-cards-owned', 'OWNED ×' + card.count));
+    cell.appendChild(make('span', 'dbl-cards-binder-market',
+      'EST. ' + marketMoney(api.marketValue(card))));
     return cell;
   }
   function showGallery() {
@@ -1250,7 +1272,9 @@
         stat.possible++;
         if (isOwned) {stat.collected++; collected++;}
         all.push({
-          id: card.id, type: card.type, name: card.name,
+          id: card.id, pid: card.pid, tid: card.franchiseTid,
+          rookie: card.rookie, draftPick: card.draftPick,
+          type: card.type, name: card.name,
           team: card.teamName, era: 1968,
           franchiseKey: Number.isInteger(card.franchiseTid) && card.franchiseTid >= 0
             ? 'tid:' + card.franchiseTid : 'unknown',
@@ -1274,6 +1298,7 @@
         if (isOwned) { totals[tier.id].collected++; collected++; }
         all.push({
           id, pid: player.pid, name: player.name,
+          rookie: player.rookie, draftPick: player.draftPick,
           team: player.teamName || player.team || 'Team unavailable',
           // Use the stable ZenGM franchise TID, not changing team names
           // or abbreviations, to group each eligible edition.
@@ -1298,7 +1323,9 @@
           collected++;
         }
         all.push({
-          id: season.id, type: 'team-season',
+          id: season.id, type: 'team-season', tid: season.tid,
+          won: season.won, lost: season.lost, tied: season.tied,
+          finishKind: season.finishKind, playoffRoundsWon: season.playoffRoundsWon,
           name: season.name + ' (' + season.era + ')',
           team: season.teamName, era: season.era, peak: null,
           franchiseKey: Number.isInteger(season.tid) && season.tid >= 0
@@ -1540,6 +1567,9 @@
     if (checklistSort.value === 'rating') {
       result.sort((a, b) => b.peak - a.peak ||
         a.name.localeCompare(b.name) || tierIndex[b.rarity] - tierIndex[a.rarity]);
+    } else if (checklistSort.value === 'value') {
+      result.sort((a, b) => api.marketValue(b) - api.marketValue(a) ||
+        a.name.localeCompare(b.name));
     } else if (checklistSort.value === 'rarity') {
       result.sort((a, b) => tierIndex[b.rarity] - tierIndex[a.rarity] ||
         a.name.localeCompare(b.name));
@@ -1570,6 +1600,8 @@
       details.appendChild(make('strong', '', card.name));
       details.appendChild(make('span', '', card.team +
         (card.era === null ? '' : ' · ' + card.era)));
+      details.appendChild(make('span', 'dbl-cards-checklist-market',
+        'EST. ' + marketMoney(api.marketValue(card))));
       entry.appendChild(details);
       entry.appendChild(make('span', 'dbl-cards-checklist-ovr',
         card.type === 'team-season' ? 'TEAM' :
