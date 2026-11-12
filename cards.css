@@ -3808,10 +3808,10 @@
 .dbl-cards-back > .dbl-cards-favorite-action.dbl-cards-favorite-action {
   position: absolute;
   z-index: 10;
-  top: 2.7%;
-  right: 3.5%;
-  width: clamp(25px, 19cqw, 38px);
-  height: clamp(25px, 19cqw, 38px);
+  top: 1.8%;
+  right: 2%;
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -3819,12 +3819,15 @@
   border-radius: 50%;
   background: rgba(255,255,255,.87);
   color: #6a5c54;
-  font: 800 clamp(18px, 13cqw, 27px)/1 Arial,sans-serif;
+  font: 800 30px/1 Arial,sans-serif;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-appearance: none;
   appearance: none;
   box-shadow: 0 1px 5px rgba(0,0,0,.13);
+}
+.dbl-cards-back > .dbl-cards-favorite-action:active {
+  transform: scale(.94);
 }
 .dbl-cards-back > .dbl-cards-favorite-action.is-favorite {
   color: #b5414c;
@@ -3838,11 +3841,11 @@
 /* Topps backs are deliberately denser: set the heart beside the crest,
    above the statistics rectangle instead of over the player's name. */
 .dbl-cards-back.dbl-topps-back > .dbl-cards-favorite-action {
-  top: 33%;
-  right: 4%;
-  width: clamp(24px, 16cqw, 36px);
-  height: clamp(24px, 16cqw, 36px);
-  font-size: clamp(17px, 12cqw, 26px);
+  top: 30%;
+  right: 2%;
+  width: 46px;
+  height: 46px;
+  font-size: 29px;
 }
 .dbl-cards-pack-selector {
   display: flex;

@@ -613,20 +613,9 @@
       button.title = selected ? 'Remove from favorites' : 'Add to favorites';
     };
     button.addEventListener('click', event => {
+      // The heart is a separate action; don't also flip the parent card.
       event.stopPropagation();
-      if (api.setFavorite(card.id, !api.isFavorite(card.id))) {
-        for (const other of document.querySelectorAll('.dbl-cards-favorite-action')) {
-          if (other.dataset.cardId !== card.id || other === button) continue;
-          const selected = api.isFavorite(card.id);
-          other.classList.toggle('is-favorite', selected);
-          other.textContent = selected ? '♥' : '♡';
-          other.setAttribute('aria-pressed', String(selected));
-          other.setAttribute('aria-label', (selected ? 'Remove ' : 'Add ') +
-            card.name + (selected ? ' from favorites' : ' to favorites'));
-          other.title = selected ? 'Remove from favorites' : 'Add to favorites';
-        }
-        sync();
-      }
+      api.setFavorite(card.id, !api.isFavorite(card.id));
     });
     sync();
     return button;
@@ -963,6 +952,7 @@
     button.setAttribute('role', 'group');
     button.tabIndex = 0;
     button.dataset.cardId = card.id;
+    button.dataset.cardName = card.name;
     // Mystery cards have no rarity-dependent styling until flipped over.
     // Revealed cards and cards already owned use their proper rarity color.
     if (!sealed) {
@@ -1148,14 +1138,34 @@
     }
     return result;
   }
+  function updateGalleryCounts(total) {
+    galleryCount.textContent = formattedCount(total) + ' card edition' +
+      (total === 1 ? '' : 's') + ' shown';
+    loadMore.hidden = total <= limit;
+    loadMore.textContent = 'Show ' + Math.min(36, total - limit) + ' more';
+  }
+  function binderEntry(card, turned = false) {
+    const cell = make('div', 'dbl-cards-binder-entry');
+    const element = cardElement(card);
+    if (turned) {
+      element.classList.add('is-turned');
+      element.setAttribute('aria-label', 'View front of ' +
+        (isTeamSeason(card) ? String(card.era) + ' ' + card.name : card.name));
+      const favorite = element.querySelector('.dbl-cards-favorite-action');
+      if (favorite) favorite.tabIndex = 0;
+    }
+    cell.appendChild(element);
+    cell.appendChild(make('span', 'dbl-cards-owned', 'OWNED ×' + card.count));
+    return cell;
+  }
   function showGallery() {
     syncTeamFilter();
-    // Preserve turned-over cards when saving a favorite re-renders the binder.
+    // Full redraws are still appropriate for genuine collection changes,
+    // changing filters, or loading additional cards.
     const turned = new Set(Array.from(gallery.querySelectorAll(
       '.dbl-cards-card.is-turned'), card => card.dataset.cardId));
     const filtered = filteredCards();
-    galleryCount.textContent = formattedCount(filtered.length) + ' card edition' +
-      (filtered.length === 1 ? '' : 's') + ' shown';
+    updateGalleryCounts(filtered.length);
     gallery.replaceChildren();
     if (!filtered.length) {
       gallery.appendChild(make('p', 'dbl-cards-empty', api.status.unique
@@ -1163,24 +1173,54 @@
           'Nothing in your binder yet. Open a pack to start collecting.'));
     } else {
       const fragment = document.createDocumentFragment();
-      for (const card of filtered.slice(0, limit)) {
-        const cell = make('div', 'dbl-cards-binder-entry');
-        const element = cardElement(card);
-        if (turned.has(card.id)) {
-          element.classList.add('is-turned');
-          element.setAttribute('aria-label', 'View front of ' +
-            (isTeamSeason(card) ? String(card.era) + ' ' + card.name : card.name));
-          const favorite = element.querySelector('.dbl-cards-favorite-action');
-          if (favorite) favorite.tabIndex = 0;
-        }
-        cell.appendChild(element);
-        cell.appendChild(make('span', 'dbl-cards-owned', 'OWNED ×' + card.count));
-        fragment.appendChild(cell);
-      }
+      for (const card of filtered.slice(0, limit))
+        fragment.appendChild(binderEntry(card, turned.has(card.id)));
       gallery.appendChild(fragment);
     }
-    loadMore.hidden = filtered.length <= limit;
-    loadMore.textContent = 'Show ' + Math.min(36, filtered.length - limit) + ' more';
+    scheduleNameFit();
+  }
+  function syncFavoriteButtons(id) {
+    // Update every visible copy of the same edition, including pack pulls,
+    // without destroying any card elements or restarting photo loads.
+    const selected = api.isFavorite(id);
+    for (const button of document.querySelectorAll('.dbl-cards-favorite-action')) {
+      if (button.dataset.cardId !== id) continue;
+      button.classList.toggle('is-favorite', selected);
+      button.textContent = selected ? '♥' : '♡';
+      button.setAttribute('aria-pressed', String(selected));
+      button.setAttribute('aria-label',
+        (selected ? 'Remove ' : 'Add ') + (button.closest('.dbl-cards-card')
+          ?.dataset.cardName || 'card') +
+        (selected ? ' from favorites' : ' to favorites'));
+      button.title = selected ? 'Remove from favorites' : 'Add to favorites';
+    }
+  }
+  function patchFavoritesGallery() {
+    // The Favorites Only filter can gain/lose one entry while keeping every
+    // other card DOM node (and its flipped state and image) untouched.
+    const filtered = filteredCards();
+    updateGalleryCounts(filtered.length);
+    const wanted = filtered.slice(0, limit);
+    const existing = new Map(Array.from(gallery.querySelectorAll(
+      '.dbl-cards-binder-entry'), entry =>
+      [entry.querySelector('.dbl-cards-card')?.dataset.cardId, entry]));
+    if (!wanted.length) {
+      for (const node of existing.values()) node.remove();
+      if (!gallery.querySelector('.dbl-cards-empty'))
+        gallery.appendChild(make('p', 'dbl-cards-empty',
+          api.status.unique ? 'No cards match those filters.' :
+            'Nothing in your binder yet. Open a pack to start collecting.'));
+      return;
+    }
+    gallery.querySelector('.dbl-cards-empty')?.remove();
+    for (let i = 0; i < wanted.length; i++) {
+      const card = wanted[i];
+      const entry = existing.get(card.id) || binderEntry(card);
+      const atPosition = gallery.children[i] || null;
+      if (atPosition !== entry) gallery.insertBefore(entry, atPosition);
+      existing.delete(card.id);
+    }
+    for (const node of existing.values()) node.remove();
     scheduleNameFit();
   }
   function formattedCount(n) { return n.toLocaleString('en-US'); }
@@ -1579,7 +1619,20 @@
     // populate the new player pool, not require switching tabs twice.
     if (!panel.hidden) api.ensurePool();
   }
-  api.subscribe(repaint);
+  api.subscribe(change => {
+    if (change?.type === 'favorite' || change?.type === 'favorite-save') {
+      if (change.type === 'favorite') {
+        syncFavoriteButtons(change.id);
+        if (activeCardsSubtab === 1 && favoritesFilter.value === 'favorites')
+          patchFavoritesGallery();
+      }
+      // Updating the save indicator is cheap; never rebuild the binder,
+      // repopulate photos, or restart card flip animations for heart taps.
+      showCounters();
+      return;
+    }
+    repaint();
+  });
   if (typeof window.ResizeObserver === 'function') {
     const nameResizeObserver = new window.ResizeObserver(scheduleNameFit);
     nameResizeObserver.observe(gallery);

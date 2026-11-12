@@ -124,9 +124,11 @@
   let savedOK = true, saveQueue = Promise.resolve();
   let problem = '';
 
-  const notify = () => {
+  // Optional change information lets small preference updates skip expensive
+  // gallery redraws. Existing collection listeners still work unchanged.
+  const notify = (change = null) => {
     for (const callback of [...listeners]) {
-      try { callback(); } catch (error) { console.warn('DBL cards listener error', error); }
+      try { callback(change); } catch (error) { console.warn('DBL cards listener error', error); }
     }
   };
   function photoUrl(value, persist = false) {
@@ -774,11 +776,13 @@
     }
     if (modified) void save();
   }
-  function save() {
+  function save(changeType = null) {
     const state = snapshot();
     saveQueue = saveQueue.catch(() => {}).then(async () => {
       savedOK = await writeState(state);
-      notify();
+      // A favorite save affects the save indicator, not card art/layout.
+      // A normal collection save still updates the rest of the app.
+      notify(changeType === 'favorite' ? {type: 'favorite-save'} : null);
     });
     return saveQueue;
   }
@@ -792,9 +796,10 @@
     const desired = favorite === true;
     if (item.favorite === desired) return true;
     item.favorite = desired;
-    notify();
-    // Use the same serialized, persistent save path as collected packs.
-    void save();
+    notify({type: 'favorite', id, favorite: desired});
+    // Use the same serialized, persistent save path as collected packs,
+    // without rebuilding all visible cards after the save finishes.
+    void save('favorite');
     return true;
   }
   const ready = readState().then(state => {
