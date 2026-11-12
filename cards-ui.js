@@ -100,12 +100,14 @@
   ];
   let activeChecklistSeries = 0;
   const tierIndex = Object.fromEntries(api.rarities.map((r, i) => [r.id, i]));
-  // Inserts are rarer than Refractors but less scarce than Black Label.
-  // Do not rank them above the intentionally hidden rarest editions.
-  tierIndex['team-season'] = 2.5;
-  tierIndex['topps-1968'] = 1.5;
-  tierIndex['topps-1968-uniform'] = 2.6;
-  tierIndex['background-test'] = 1;
+  // Sorting preference (highest first): Mythical, Black Label,
+  // Refractor, Topps Uniform, Chrome, Team Season, 1968 Topps Base,
+  // Background Test, standard Base. This affects display order only;
+  // pack odds, underlying editions and hidden-rarity behavior are unchanged.
+  tierIndex['topps-1968-uniform'] = 1.5;
+  tierIndex['team-season'] = .75;
+  tierIndex['topps-1968'] = .5;
+  tierIndex['background-test'] = .25;
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Undiscovered editions must never appear in the checklist or public
   // progress totals, even for players who meet their hidden requirements.
