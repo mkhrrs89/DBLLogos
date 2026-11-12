@@ -419,6 +419,50 @@
     return statNumber(player, 'orb') + statNumber(player, 'drb');
   }
 
+  // Count across every available season, even though the UI displays the
+  // newest seasons first. Derived on render, so old cached data still works
+  // and no new storage or backup fields are needed.
+  function countMonthlyHonors(seasons) {
+    const entries = seasons.flatMap(season =>
+      (Array.isArray(season.months) ? season.months : []).map(month => ({
+        season: Number(season.season), month,
+      }))
+    ).sort((a, b) => a.season - b.season ||
+      Number(a.month.month) - Number(b.month.month));
+
+    // Prefer stable player IDs. Only merge old PID-less awards by name
+    // when that name belongs to exactly one known PID in this history.
+    const pidsByName = new Map();
+    const normalizedName = month => String(month.name || '')
+      .trim().toLocaleLowerCase();
+    for (const {month} of entries) {
+      if (month.pid === null || month.pid === undefined) continue;
+      const name = normalizedName(month);
+      if (!name) continue;
+      if (!pidsByName.has(name)) pidsByName.set(name, new Set());
+      pidsByName.get(name).add(String(month.pid));
+    }
+    const keyFor = month => {
+      const name = normalizedName(month);
+      if (month.pid !== null && month.pid !== undefined)
+        return 'pid:' + month.pid;
+      const ids = pidsByName.get(name);
+      return ids?.size === 1 ? 'pid:' + [...ids][0] : 'name:' + name;
+    };
+    const totals = new Map(), occurrences = new Map(), keys = new Map();
+    for (const {month} of entries) {
+      const key = keyFor(month);
+      keys.set(month, key);
+      const ordinal = (totals.get(key) || 0) + 1;
+      totals.set(key, ordinal);
+      occurrences.set(month, ordinal);
+    }
+    return {
+      totalFor: month => totals.get(keys.get(month)) || 1,
+      occurrenceFor: month => occurrences.get(month) || 1,
+    };
+  }
+
   function render() {
     wrap.replaceChildren();
     wrap.className = 'players-month-wrap';
@@ -435,15 +479,16 @@
 
     const seasons = document.createElement('div');
     seasons.className = 'players-month-seasons';
+    const honorCounts = countMonthlyHonors(seasonResults);
 
     for (const season of seasonResults) {
-      seasons.appendChild(buildSeasonSection(season));
+      seasons.appendChild(buildSeasonSection(season, honorCounts));
     }
 
     wrap.appendChild(seasons);
   }
 
-  function buildSeasonSection(season) {
+  function buildSeasonSection(season, honorCounts) {
     const section = document.createElement('section');
     section.className = 'players-month-season';
 
@@ -471,14 +516,14 @@
     grid.className = 'players-month-grid';
 
     for (const month of season.months) {
-      grid.appendChild(buildMonthCard(month));
+      grid.appendChild(buildMonthCard(month, honorCounts));
     }
 
     section.appendChild(grid);
     return section;
   }
 
-  function buildMonthCard(month) {
+  function buildMonthCard(month, honorCounts) {
     const card = document.createElement('article');
     card.className = 'players-month-card';
 
@@ -502,7 +547,11 @@
     identity.className = 'players-month-identity';
 
     const name = document.createElement('strong');
-    name.textContent = month.name;
+    const totalWins = honorCounts.totalFor(month);
+    const awardNumber = honorCounts.occurrenceFor(month);
+    name.textContent = month.name + ' (' + totalWins + '×)';
+    name.title = 'Player of the Month: win ' + awardNumber +
+      ' of ' + totalWins + ' in the available league history';
 
     const meta = document.createElement('span');
     const parts = [month.pos, month.teamName].filter(Boolean);
