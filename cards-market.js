@@ -2,25 +2,30 @@
   'use strict';
   if (window.DBLCardMarket) return;
 
-  // Fictional market dollars; never real appraisals, payments, or trades.
-  // Published pack odds set scarcity premiums, not the number owned.
+  // Fictional nominal dollars for the current DBL season — NOT prices for
+  // old 1968 cards as traded by collectors in the 2020s. Five-card Topps
+  // packs sold for a nickel in 1968, so ordinary singles should be worth
+  // pennies rather than dollars. No inflation adjustment, appraisals,
+  // payments, or trades. Pull odds still determine relative scarcity.
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const num = v => v === null || v === undefined || v === '' ||
     !Number.isFinite(Number(v)) ? null : Number(v);
   const yr = v => Number.isInteger(num(v)) ? num(v) : null;
   const MULT = Object.freeze({
     common: 1,
-    crome: Math.pow(87.5 / 10, .82),
-    refractor: Math.pow(87.5 / 2, .82),
-    'black-label': Math.pow(87.5 / .5, .82),
-    'mythic-aether': Math.pow(87.5 / (.1 / 3), .77),
-    'mythic-eclipse': Math.pow(87.5 / (.1 / 3), .77),
-    'mythic-aurora': Math.pow(87.5 / (.1 / 3), .77),
-    'team-season': Math.pow(87.5 / 3, .60),
-    // Topps is available in dedicated packs, so player editions are common
-    // within that set. Uniforms fill roughly one in five Topps slots.
-    'topps-1968': 1.35,
-    'topps-1968-uniform': 1.35 * Math.pow(1 / .20, .62)
+    // Scarcity is deliberately sublinear: a 0.03% pull is substantially
+    // dearer than Base, but not priced like a modern graded auction trophy.
+    crome: Math.pow(87.5 / 10, .55),
+    refractor: Math.pow(87.5 / 2, .55),
+    'black-label': Math.pow(87.5 / .5, .55),
+    'mythic-aether': Math.pow(87.5 / (.1 / 3), .53),
+    'mythic-eclipse': Math.pow(87.5 / (.1 / 3), .53),
+    'mythic-aurora': Math.pow(87.5 / (.1 / 3), .53),
+    'team-season': Math.pow(87.5 / 3, .52),
+    // Topps player editions are readily available in Topps-only packs.
+    // Uniforms account for roughly one in five Topps slots.
+    'topps-1968': 1.2,
+    'topps-1968-uniform': 1.2 * Math.pow(1 / .20, .52)
   });
 
   function profile(player, throughYear) {
@@ -75,7 +80,8 @@
     if (!multiple) return 0;
     const issueYear = yr(card.era) ?? (card.series === 1 ? 1968 : asOfYear);
     const elapsed = Math.max(0, (yr(asOfYear) ?? issueYear) - issueYear);
-    const vintage = 1 + Math.min(.65, Math.log1p(elapsed) * .13);
+    // Gentle period-era aging, never modern collectible speculation.
+    const vintage = 1 + Math.min(.35, Math.log1p(elapsed) * .08);
     if (card.type === 'team-season' || card.type === 'topps-uniform') {
       const team = seasonTeam || card;
       const won = num(team.won), lost = num(team.lost);
@@ -85,9 +91,11 @@
       const playoff = 1 + .12 * clamp(num(team.playoffRoundsWon) ?? 0, 0, 6);
       const title = team.finishKind === 'champion' ? 2.5 :
         team.finishKind === 'finalist' ? 1.55 : 1;
-      const starter = card.type === 'topps-uniform' ? 2.35 : 3.1;
+      // Team inserts generally trade for dimes and select champions for
+      // dollars in the fictional period market.
+      const starter = card.type === 'topps-uniform' ? .05 : .07;
       return Math.round(clamp(starter * multiple * strength * playoff *
-        title * vintage, .5, 250000) * 100) / 100;
+        title * vintage, .01, 250) * 100) / 100;
     }
     // Without a league file, older saved card stats provide a useful fallback.
     const peak = player?.peakOvr || num(card.peak) || num(card.ovr) || 45;
@@ -121,8 +129,10 @@
     const draftHype = card.rookie === true && elapsed === 0 &&
       draftPick !== null && draftPick >= 1 && draftPick <= 5
       ? 1 + (6 - draftPick) * .055 : 1;
-    return Math.round(clamp(3 * star * multiple * vintage *
-      rookiePremium * draftHype, .5, 250000) * 100) / 100;
+    // Start a regular card near a few cents (a nickel bought a whole pack
+    // in 1968). Better careers and scarce finishes still earn premiums.
+    return Math.round(clamp(.04 * star * multiple * vintage *
+      rookiePremium * draftHype, .01, 250) * 100) / 100;
   }
 
   window.DBLCardMarket = Object.freeze({profile, value, multipliers: MULT});
