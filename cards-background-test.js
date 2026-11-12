@@ -33,6 +33,10 @@
   const pendingIds = new Set();
   let working = false;
   let observer = null;
+  // One on-device model job at a time, shared by the gallery and pack pulls.
+  // Cache lives only in memory; original image bytes and league files stay intact.
+  const inFlight = new Map();
+  let cutoutQueue = Promise.resolve();
 
   const make = (tag, cls, text) => {
     const node = document.createElement(tag);
@@ -221,6 +225,10 @@
     controls.appendChild(toggle);
     controls.appendChild(retry);
     entry.appendChild(face);
+    const saved = window.DBLCardEngine?.items.find(card =>
+      card.type === 'background-test' && card.pid === player.pid);
+    entry.appendChild(make('span', 'dbl-bgtest-owned',
+      saved ? 'OWNED ×' + saved.count : 'NOT YET PULLED'));
     entry.appendChild(note);
     entry.appendChild(controls);
 
@@ -341,7 +349,8 @@
 
   function trimCache() {
     if (cache.size <= CACHE_LIMIT) return;
-    const inUse = new Set([...grid.querySelectorAll('img.dbl-bgtest-cutout')]
+    const inUse = new Set([...document.querySelectorAll(
+      'img.dbl-bgtest-cutout, img.dbl-bgtest-pack-image')]
       .map(img => img.src));
     for (const [source, url] of cache) {
       if (cache.size <= CACHE_LIMIT) break;
@@ -351,6 +360,48 @@
     }
   }
 
+  function cutoutFor(src) {
+    const cached = cache.get(src);
+    if (cached) return Promise.resolve(cached);
+    const pending = inFlight.get(src);
+    if (pending) return pending;
+    const job = cutoutQueue.catch(() => {}).then(async () => {
+      const [segmenter, image] = await Promise.all([getSegmenter(), loadSource(src)]);
+      const blob = await makeCutout(segmenter, image);
+      const url = URL.createObjectURL(blob);
+      cache.set(src, url);
+      trimCache();
+      return url;
+    });
+    inFlight.set(src, job);
+    cutoutQueue = job.catch(() => {});
+    void job.then(() => inFlight.delete(src), () => inFlight.delete(src));
+    return job;
+  }
+
+  // Reusable for five-card pack reveals and saved binder cards. Never writes
+  // or modifies any source image; only swaps an on-screen image URL to a
+  // separate, temporary transparent PNG blob.
+  function maskPhoto(element, source, label = null) {
+    const src = safePhoto(source);
+    if (!element || !src) {
+      if (label) label.textContent = 'ORIGINAL PHOTO';
+      return Promise.resolve(false);
+    }
+    if (element.dataset.bgMaskSource === src) return Promise.resolve(true);
+    if (label) label.textContent = 'REMOVING BACKGROUND…';
+    return cutoutFor(src).then(url => {
+      if (!element.isConnected) return false;
+      element.src = url;
+      element.dataset.bgMaskSource = src;
+      if (label) label.textContent = 'BACKGROUND HIDDEN';
+      return true;
+    }).catch(error => {
+      if (label && label.isConnected) label.textContent = 'ORIGINAL PHOTO';
+      console.warn('Background Test pack cutout unavailable.', error);
+      return false;
+    });
+  }
   async function pump() {
     if (working) return;
     working = true;
@@ -363,16 +414,9 @@
         if (cached) { setProcessed(c, cached); continue; }
         try {
           c.note.textContent = 'Loading AI and detecting player…';
-          const [segmenter, source] = await Promise.all([
-            getSegmenter(), loadSource(c.player.photo)
-          ]);
+          const url = await cutoutFor(c.player.photo);
           if (!active || c.token !== generation || !c.entry.isConnected) continue;
-          const blob = await makeCutout(segmenter, source);
-          if (!active || c.token !== generation || !c.entry.isConnected) continue;
-          const url = URL.createObjectURL(blob);
-          cache.set(c.player.photo, url);
           setProcessed(c, url);
-          trimCache();
         } catch (error) {
           if (c.token === generation && c.entry.isConnected) {
             c.note.textContent = errorText(error);
@@ -447,9 +491,22 @@
     if (event.detail?.panelId === 'cardsPanel' && !view.hidden) open();
     else close();
   });
+  window.DBLCardEngine?.subscribe(change => {
+    if (!active || change?.type === 'favorite' || change?.type === 'favorite-save') return;
+    // Keep owned markers current after a pack pull/import, while keeping
+    // photos and processed DOM intact to avoid unnecessary reprocessing.
+    const owned = new Map(window.DBLCardEngine.items
+      .filter(card => card.type === 'background-test').map(card => [card.pid, card.count]));
+    for (const node of grid.querySelectorAll('.dbl-bgtest-entry')) {
+      const pid = Number(node.dataset.pid);
+      const copies = owned.get(pid);
+      const marker = node.querySelector('.dbl-bgtest-owned');
+      if (marker) marker.textContent = copies ? 'OWNED ×' + copies : 'NOT YET PULLED';
+    }
+  });
   hub.subscribe(({file}) => onLeagueFile(file));
   onLeagueFile(hub.getCurrentFile?.() || null);
-  window.DBLBackgroundTest = Object.freeze({open, close,
+  window.DBLBackgroundTest = Object.freeze({open, close, maskPhoto,
     // Exposed for validation, not part of collection storage or pack odds.
     rosterFromRecords, currentRating});
   // cards-ui.js restores the last tab before this module finishes loading.
