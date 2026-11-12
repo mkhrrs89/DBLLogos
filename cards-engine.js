@@ -1003,7 +1003,10 @@
         const index = Math.floor(Math.random() * source.length);
         const selected = source[index];
         if (available.length) available.splice(index, 1);
-        picks.push({...selected, count: 1});
+        // Keep the original embedded photo available through the live pool,
+        // never copy a base64 image into persistent card storage/backups.
+        const {image, ...cardData} = selected;
+        picks.push({...cardData, count: 1});
       }
       return picks;
     }
