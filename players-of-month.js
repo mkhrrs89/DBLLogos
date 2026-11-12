@@ -547,11 +547,15 @@
     identity.className = 'players-month-identity';
 
     const name = document.createElement('strong');
-    const totalWins = honorCounts.totalFor(month);
     const awardNumber = honorCounts.occurrenceFor(month);
-    name.textContent = month.name + ' (' + totalWins + '×)';
-    name.title = 'Player of the Month: win ' + awardNumber +
+    const totalWins = honorCounts.totalFor(month);
+    name.textContent = month.name + ' ';
+    const winCount = document.createElement('span');
+    winCount.className = 'players-month-win-count';
+    winCount.textContent = '(x' + awardNumber + ')';
+    winCount.title = 'Player of the Month win ' + awardNumber +
       ' of ' + totalWins + ' in the available league history';
+    name.appendChild(winCount);
 
     const meta = document.createElement('span');
     const parts = [month.pos, month.teamName].filter(Boolean);

@@ -149,6 +149,23 @@
   overflow-wrap: anywhere;
 }
 
+/* Running POTM win number — distinct from the player's white name and
+   muted position/team text. Readable on the app's dark brown surfaces. */
+.players-month-identity strong .players-month-win-count {
+  display: inline-block;
+  margin-left: 3px;
+  padding: 1px 5px;
+  border: 1px solid rgba(255,207,115,.31);
+  border-radius: 5px;
+  background: rgba(255,207,115,.11);
+  color: #ffcf73;
+  font-size: .90em;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: .015em;
+  white-space: nowrap;
+}
+
 .players-month-stats {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
