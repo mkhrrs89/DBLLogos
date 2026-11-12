@@ -32,7 +32,8 @@
     ['cardsPacksTab', 'cardsPackView'],
     ['cardsCollectionTab', 'cardsCollectionView'],
     ['cardsAllCollectionsTab', 'cardsAllCollectionsView'],
-    ['cardsChecklistTab', 'cardsChecklistView']
+    ['cardsChecklistTab', 'cardsChecklistView'],
+    ['cardsBackgroundTestTab', 'cardsBackgroundTestView']
   ].map(([tab, view]) => [document.getElementById(tab), document.getElementById(view)]);
   const checklistStats = document.getElementById('cardsChecklistStats');
   const checklistFranchises = document.getElementById('cardsChecklistFranchises');
@@ -60,6 +61,7 @@
 
   const ALL_COLLECTIONS_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsAllCollectionsTab');
   const CHECKLIST_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsChecklistTab');
+  const BACKGROUND_TEST_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsBackgroundTestTab');
   // Collection entries are explicit so future sets can have their own covers.
   const CARD_COLLECTIONS = [
     {
@@ -75,6 +77,13 @@
       subtitle: '1968 test issue · Base, rookies & uniform inserts',
       establishedIrl: 'Nov 10, 2026',
       establishedInGame: '1968'
+    },
+    {
+      series: 2,
+      name: 'Background Test',
+      subtitle: 'On-device background removal · Current OVR 50+ · No packs',
+      establishedIrl: 'Nov 12, 2026',
+      establishedInGame: 'Current season'
     }
   ];
   let activeChecklistSeries = 0;
@@ -867,7 +876,8 @@
     for (const collection of CARD_COLLECTIONS) {
       const tile = make('button', 'dbl-cards-series-tile');
       tile.type = 'button';
-      tile.setAttribute('aria-label', 'Open ' + collection.name + ' checklist');
+      tile.setAttribute('aria-label', 'Open ' + collection.name +
+        (collection.series === 2 ? ' test gallery' : ' checklist'));
       // Use the exact sealed reverse used in the Pack Room, not a static
       // image or a second, separately maintained copy of the design.
       const cover = make('span', 'dbl-cards-card is-sealed dbl-cards-series-cover');
@@ -880,6 +890,14 @@
         printed.appendChild(make('strong', 'dbl-topps-preview-wordmark', 'TOPPS'));
         printed.appendChild(make('span', 'dbl-topps-preview-subtitle', 'TEST ISSUE'));
         inner.appendChild(printed);
+        cover.classList.remove('is-sealed');
+      } else if (collection.series === 2) {
+        // Third set is a pure visual experiment, not a collectible rarity.
+        const preview = make('span', 'dbl-cards-face dbl-cards-front dbl-bgtest-cover');
+        preview.appendChild(make('strong', '', 'BACKGROUND'));
+        preview.appendChild(make('span', '', 'TEST'));
+        preview.appendChild(make('small', '', 'OVR 50+ · ORIGINALS UNTOUCHED'));
+        inner.appendChild(preview);
         cover.classList.remove('is-sealed');
       } else inner.appendChild(backOf({series: collection.series}, true));
       cover.appendChild(inner);
@@ -898,6 +916,10 @@
       }
       tile.appendChild(dates);
       tile.addEventListener('click', () => {
+        if (collection.series === 2) {
+          openCardsSubtab(BACKGROUND_TEST_TAB_INDEX);
+          return;
+        }
         activeChecklistSeries = collection.series;
         // Open the complete checklist, rather than retaining a previous
         // rarity/search filter that could make this series look incomplete.
@@ -1635,7 +1657,11 @@
       tab.tabIndex = selected ? 0 : -1;
       view.hidden = !selected;
     });
+    if (index !== BACKGROUND_TEST_TAB_INDEX)
+      window.DBLBackgroundTest?.close();
     if (index === 1) { showGallery(); scheduleNameFit(); }
+    if (index === BACKGROUND_TEST_TAB_INDEX)
+      window.DBLBackgroundTest?.open();
     if (index === ALL_COLLECTIONS_TAB_INDEX) showAllCollections();
     if (index === CHECKLIST_TAB_INDEX) { checklistLimit = 80; showChecklist(); }
     if (index === 0) scheduleNameFit();
@@ -1847,6 +1873,8 @@
       api.ensurePool();
       if (activeCardsSubtab === CHECKLIST_TAB_INDEX) showChecklist();
       if (activeCardsSubtab === 1) showGallery();
+      if (activeCardsSubtab === BACKGROUND_TEST_TAB_INDEX)
+        window.DBLBackgroundTest?.open();
       scheduleNameFit();
     }
   });

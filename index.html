@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kavoon&family=Lobster&family=Shrikhand&display=swap" />
-    <link rel="stylesheet" href="./cards.css?v=20261112-topps-uniform-heading" />
+    <link rel="stylesheet" href="./cards.css?v=20261112-background-test-v1" />
     <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
@@ -263,6 +263,7 @@
             <button id="cardsCollectionTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsCollectionView" tabindex="-1">My Collection</button>
             <button id="cardsAllCollectionsTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsAllCollectionsView" tabindex="-1">All Collections</button>
             <button id="cardsChecklistTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsChecklistView" tabindex="-1">Checklist</button>
+            <button id="cardsBackgroundTestTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsBackgroundTestView" tabindex="-1">Background Test</button>
           </nav>
 
           <div id="cardsPackView" class="dbl-cards-room" role="tabpanel" aria-labelledby="cardsPacksTab">
@@ -364,7 +365,7 @@
           <section id="cardsAllCollectionsView" class="dbl-cards-all-collections" role="tabpanel" aria-labelledby="cardsAllCollectionsTab" hidden>
             <header class="dbl-cards-checklist-heading">
               <h3>All Collections</h3>
-              <p>Browse the DBL card sets. Select a cover card to open its checklist.</p>
+              <p>Browse the DBL card sets. Select a cover card to open its checklist or test gallery.</p>
             </header>
             <div id="cardsAllCollectionsGrid" class="dbl-cards-series-gallery" aria-label="Available card collections"></div>
           </section>
@@ -423,6 +424,39 @@
             <div id="cardsChecklistList" class="dbl-cards-checklist-list" role="list"></div>
             <button id="cardsChecklistMore" class="dbl-cards-more dbl-cards-checklist-more" type="button" hidden>Show more editions</button>
             <p id="cardsChecklistNote" class="dbl-cards-checklist-note">One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR, plus one Team Season insert for each recorded team-season in the uploaded league export. A check means that edition is in your saved collection; duplicates count only once toward completion. The checklist updates with your latest uploaded league file. Cards already owned but absent from that file stay in My Collection.</p>
+          </section>
+
+          <section id="cardsBackgroundTestView" class="dbl-bgtest-view" role="tabpanel"
+            aria-labelledby="cardsBackgroundTestTab" hidden>
+            <header class="dbl-cards-checklist-heading">
+              <h3>Background Test</h3>
+              <p>A third experimental card collection. One simple card for every current-roster player with
+                <strong>current OVR 50 or higher</strong>. No packs, inserts, parallels, or changes to your saved binder.</p>
+            </header>
+            <p id="cardsBackgroundTestStatus" class="dbl-bgtest-status" role="status" aria-live="polite">
+              Open a league file to preview the background-removal test.
+            </p>
+            <div class="dbl-cards-filter-row dbl-bgtest-filters">
+              <label class="dbl-cards-field dbl-cards-field-search" for="cardsBackgroundTestSearch">
+                Find a player
+                <input id="cardsBackgroundTestSearch" type="search" placeholder="Search current players…" autocomplete="off" />
+              </label>
+              <label class="dbl-cards-field" for="cardsBackgroundTestSort">
+                Sort by
+                <select id="cardsBackgroundTestSort">
+                  <option value="ovr">Current OVR (highest first)</option>
+                  <option value="name">Player name</option>
+                </select>
+              </label>
+            </div>
+            <div id="cardsBackgroundTestGrid" class="dbl-cards-collection dbl-bgtest-grid"
+              aria-label="Player photo background removal experiments"></div>
+            <button id="cardsBackgroundTestMore" class="dbl-cards-more" type="button" hidden>Show more players</button>
+            <p class="dbl-cards-footnote">AI detects the person only when a card is near your screen.
+              Photos are processed locally in your browser and remain unchanged in the league file.
+              Cutouts are temporary, not added to local storage or your card backups.
+              The model requires an internet connection for its initial download; images hosted on servers
+              that prohibit cross-origin processing will stay original. Tap “Show original” on a processed card to compare.</p>
           </section>
         </section>
 
@@ -1106,7 +1140,8 @@
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./cards-market.js?v=20261111-period-market-v2"></script>
     <script src="./cards-engine.js?v=20261111-market-v1"></script>
-    <script src="./cards-ui.js?v=20261112-topps-uniform-heading"></script>
+    <script src="./cards-ui.js?v=20261112-background-test-v1"></script>
+    <script src="./cards-background-test.js?v=20261112-background-test-v1"></script>
     <script src="./story-generator-engine.js?v=20261112-vietnam-draft-story"></script>
     <script src="./story-generator-ui.js?v=20261111-1968-newsroom"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
