@@ -126,7 +126,7 @@
   // Derived from the uploaded file, never stored in the collection.
   let marketProfiles = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
-  let packSources = {}, mergingCollection = false;
+  let packSources = {}, mergingCollection = false, deletingCards = false;
   let savedOK = true, saveQueue = Promise.resolve();
   let problem = '';
 
@@ -710,6 +710,7 @@
   }
 
   function planCollectionMerge(backup) {
+    if (deletingCards) throw Error('Wait for the selected-card deletion to finish.');
     if (!collectionLoaded) throw Error('Your collection is still restoring.');
     const incoming = validateImportBackup(backup);
     const next = new Map([...collection].map(([id, item]) =>
@@ -771,7 +772,8 @@
   }
 
   async function mergeCollection(backup) {
-    if (mergingCollection) throw Error('A collection merge is already running.');
+    if (mergingCollection || deletingCards)
+      throw Error('A collection update is already running.');
     const plan = planCollectionMerge(backup);
     if (plan.info.unchanged) return {...plan.info, saved: true};
     mergingCollection = true;
@@ -841,7 +843,7 @@
     return modified;
   }
   function refreshCollectedCards() {
-    if (!collectionLoaded || mergingCollection || !poolFile || !collection.size) return;
+    if (!collectionLoaded || mergingCollection || deletingCards || !poolFile || !collection.size) return;
     let modified = false;
     for (const item of collection.values()) {
       if (item.type === 'background-test') {
@@ -882,7 +884,7 @@
     return collection.get(id)?.favorite === true;
   }
   function setFavorite(id, favorite) {
-    if (!collectionLoaded || mergingCollection) return false;
+    if (!collectionLoaded || mergingCollection || deletingCards) return false;
     const item = collection.get(id);
     if (!item) return false;
     const desired = favorite === true;
@@ -909,7 +911,7 @@
     notify();
   });
   async function clearCollection() {
-    if (!collectionLoaded || mergingCollection) return false;
+    if (!collectionLoaded || mergingCollection || deletingCards) return false;
     // Serialize the reset behind any in-flight pack saves so an older write
     // can never resurrect cards after the user clears them.
     const empty = {version: STATE_VERSION, packs: 0, packSources: {}, items: []};
@@ -926,6 +928,45 @@
     savedOK = true;
     notify();
     return true;
+  }
+  // Delete complete selected editions (all their copies) without touching
+  // pack history or any other card. Commit to storage first, then memory:
+  // a failed write must never make the user's cards disappear.
+  async function deleteSelectedCards(ids) {
+    if (!collectionLoaded || mergingCollection || deletingCards ||
+        !Array.isArray(ids) || ids.length > 50000) return {saved:false, deletedEditions:0, deletedCards:0};
+    const unique = new Set(ids.filter(id => typeof id === 'string' && collection.has(id)));
+    if (!unique.size) return {saved:true, deletedEditions:0, deletedCards:0};
+    const removed = [...unique].map(id => collection.get(id));
+    const deletedCards = removed.reduce((n, card) => n + card.count, 0);
+    const next = new Map([...collection].filter(([id]) => !unique.has(id)));
+    const state = {
+      version:STATE_VERSION, packs, packSources:{...packSources},
+      items:[...next.values()].map(item => ({
+        ...item, sourceCounts:{...item.sourceCounts},
+        photo:photoUrl(item.photo, true),
+        teamLogo:photoUrl(item.teamLogo, true)
+      }))
+    };
+    deletingCards = true;
+    notify({type:'collection-delete-start'});
+    // Always write after previous queued saves to prevent older writes from
+    // resurrecting deleted cards. No collection mutation until write success.
+    const committed = saveQueue.catch(() => {}).then(() => writeState(state));
+    saveQueue = committed;
+    try {
+      const saved = await committed;
+      if (!saved) {
+        savedOK = false;
+        return {saved:false, deletedEditions:0, deletedCards:0};
+      }
+      collection = next;
+      savedOK = true;
+      return {saved:true, deletedEditions:unique.size, deletedCards};
+    } finally {
+      deletingCards = false;
+      notify({type:'collection-delete-end'});
+    }
   }
   function sampleTier() {
     const total = STANDARD_RARITIES.reduce((n, tier) => n + tier.chance, 0);
@@ -990,7 +1031,8 @@
     return draw[Math.floor(Math.random() * draw.length)];
   }
   function getPack(packType = 'mixed') {
-    if (!collectionLoaded || mergingCollection || (packType === 'mixed' && !pool.length)) return [];
+    if (!collectionLoaded || mergingCollection || deletingCards ||
+        (packType === 'mixed' && !pool.length)) return [];
     if (packType !== 'mixed' && packType !== 'topps-1968' &&
         packType !== 'background-test') return [];
     const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set(), picks = [];
@@ -1071,7 +1113,8 @@
     return picks;
   }
   function collectPack(picks) {
-    if (!collectionLoaded || mergingCollection || !Array.isArray(picks) || picks.length !== 5) return false;
+    if (!collectionLoaded || mergingCollection || deletingCards ||
+        !Array.isArray(picks) || picks.length !== 5) return false;
     for (const card of picks) {
       const owned = collection.get(card.id);
       if (owned) {
@@ -1409,7 +1452,7 @@
       listeners.add(callback);
       return () => listeners.delete(callback);
     },
-    ensurePool, getPack, collectPack, clearCollection, isFavorite, setFavorite,
+    ensurePool, getPack, collectPack, clearCollection, deleteSelectedCards, isFavorite, setFavorite,
     marketValue,
     isRookie(card) {
       if (card?.rookie === true) return true;
@@ -1454,6 +1497,7 @@
         toppsPoolSize: toppsById.size, backgroundTestPoolSize: backgroundTestPool.length,
         season: activeSeason,
         problem, savedOK, packs, merging: mergingCollection,
+        deletingCards,
         unique: collection.size,
         count: [...collection.values()].reduce((n, card) => n + card.count, 0)
       };

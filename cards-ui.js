@@ -14,6 +14,14 @@
   const counter = document.getElementById('cardsCollectionStats');
   const gallery = document.getElementById('cardsCollection');
   const galleryCount = document.getElementById('cardsCollectionCount');
+  const selectToggle = document.getElementById('cardsSelectToggleBtn');
+  const selectionActions = document.getElementById('cardsSelectionActions');
+  const selectionCount = document.getElementById('cardsSelectionCount');
+  const selectVisibleBtn = document.getElementById('cardsSelectVisibleBtn');
+  const deselectAllBtn = document.getElementById('cardsDeselectAllBtn');
+  const deleteSelectedBtn = document.getElementById('cardsDeleteSelectedBtn');
+  const cancelSelectionBtn = document.getElementById('cardsCancelSelectionBtn');
+  const selectionFeedback = document.getElementById('cardsSelectionFeedback');
   const search = document.getElementById('cardsSearch');
   const rarityFilter = document.getElementById('cardsRarityFilter');
   const teamFilter = document.getElementById('cardsTeamFilter');
@@ -51,7 +59,10 @@
   const checklistMore = document.getElementById('cardsChecklistMore');
   if (!api || !panel || !status || !saveStatus || !packStage || !packsOpenedTotal || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
-      !galleryCount || !search || !rarityFilter || !teamFilter ||
+      !galleryCount || !selectToggle || !selectionActions || !selectionCount ||
+      !selectVisibleBtn || !deselectAllBtn || !deleteSelectedBtn ||
+      !cancelSelectionBtn || !selectionFeedback ||
+      !search || !rarityFilter || !teamFilter ||
       !favoritesFilter || !mixedPackType || !toppsPackType || !backgroundPackType || !order || !loadMore ||
       !clearBtn || !exportBtn || !mergeBtn || !mergeFile || !mergeFeedback ||
       !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
@@ -125,6 +136,9 @@
   let busy = false;
   let clearing = false;
   let transferBusy = false;
+  let selectionMode = false;
+  let deletingSelected = false;
+  const selectedCardIds = new Set();
   let packToken = 0;
   let packCards = [];
   let packType = 'mixed';
@@ -252,10 +266,13 @@
     const hiddenPulls = api.items.filter(c => tierMap[c.rarity]?.mythical)
       .reduce((n, c) => n + c.count, 0);
     if (hiddenPulls > 0) appendStat(counter, format(hiddenPulls), 'Mythical pulls');
-    clearBtn.disabled = clearing || busy || transferBusy || s.merging ||
-      !s.ready || s.count === 0;
-    exportBtn.disabled = !s.ready || clearing || transferBusy || s.merging;
-    mergeBtn.disabled = !s.ready || busy || clearing || transferBusy || s.merging;
+    clearBtn.disabled = clearing || busy || transferBusy || deletingSelected ||
+      s.merging || s.deletingCards || !s.ready || s.count === 0;
+    exportBtn.disabled = !s.ready || clearing || transferBusy || deletingSelected ||
+      s.merging || s.deletingCards;
+    mergeBtn.disabled = !s.ready || busy || clearing || transferBusy || deletingSelected ||
+      s.merging || s.deletingCards;
+    updateSelectionControls();
     saveStatus.textContent = s.ready
       ? s.savedOK ? 'Collection saved locally in this browser.' :
         'Browser storage is unavailable. Collection may be lost after a refresh.'
@@ -289,7 +306,8 @@
     const canOpenSelected = packType === 'topps-1968'
       ? s.toppsPoolSize > 0 : packType === 'background-test'
         ? s.backgroundTestPoolSize > 0 : s.poolSize > 0;
-    openBtn.disabled = busy || clearing || transferBusy || s.merging ||
+    openBtn.disabled = busy || clearing || transferBusy || deletingSelected ||
+      s.merging || s.deletingCards ||
       !s.ready || !canOpenSelected || s.loading;
     openBtn.textContent = busy ? 'Opening pack…' :
       packType === 'topps-1968' ? 'Open 1968 Topps pack' :
@@ -769,55 +787,66 @@
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-bgtest-pack-front');
     front.appendChild(make('span', 'dbl-bgtest-pack-header', 'DBL · BACKGROUND TEST'));
     const frame = make('span', 'dbl-bgtest-pack-frame');
-    // Try the league image first and the export's alternate small portrait
-    // second. Missing image URLs must never leave broken-image icons behind.
-    const photos = [...new Set([api.findPhoto(card),
+    const sources = [...new Set([api.findPhoto(card),
       api.findBackgroundPhotoFallback?.(card)].filter(Boolean))];
     const missing = make('span', 'dbl-bgtest-pack-empty', 'PHOTO UNAVAILABLE');
-    missing.hidden = photos.length > 0;
+    missing.hidden = sources.length > 0;
     frame.appendChild(missing);
-    if (photos.length) {
-      const image = make('img', 'dbl-bgtest-pack-image');
-      image.alt = '';
-      image.loading = 'lazy';
-      image.decoding = 'async';
-      image.referrerPolicy = 'no-referrer';
-      let nextPhoto = 0;
-      image.addEventListener('load', () => { missing.hidden = true; });
-      image.addEventListener('error', () => {
-        // If a generated PNG somehow fails, keep the known original.
-        if (image.dataset.bgMaskCutout && image.src === image.dataset.bgMaskCutout) {
-          image.src = image.dataset.bgMaskOriginal || photos[nextPhoto];
-          return;
-        }
-        nextPhoto++;
-        if (nextPhoto < photos.length) {
-          image.src = photos[nextPhoto];
-        } else {
-          image.hidden = true;
-          missing.hidden = false;
-          const label = front.querySelector('.dbl-bgtest-pack-mask-status');
-          if (label) {
-            label.textContent = 'PHOTO UNAVAILABLE';
-            label.disabled = true;
-            label.title = 'The original image link failed. No source files were changed.';
-          }
-        }
-      });
-      image.src = photos[nextPhoto];
-      frame.appendChild(image);
-    }
+    // Always include an img so an image without a usable remote URL can be
+    // supplied temporarily from the user's device without changing a save.
+    const image = make('img', 'dbl-bgtest-pack-image');
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.referrerPolicy = 'no-referrer';
+    image.hidden = sources.length === 0;
+    image._bgtestSources = sources;
+    image._bgtestFailedLoad = new Set();
+    image._bgtestTriedMasks = new Set();
+    const status = make('button', 'dbl-bgtest-pack-mask-status',
+      sources.length ? 'ORIGINAL PHOTO' : 'NO PHOTO');
+    status.type = 'button';
+    status.disabled = true;
+    const local = make('button', 'dbl-bgtest-pack-local-button', 'Use local photo');
+    local.type = 'button';
+    local.hidden = sources.length > 0;
+    local.title = 'Choose a photo from this device to test masking; no files are modified or saved.';
+    const localInput = make('input', 'dbl-bgtest-pack-upload');
+    localInput.type = 'file';
+    localInput.accept = 'image/png,image/jpeg,image/webp';
+    localInput.hidden = true;
+    image.addEventListener('load', () => {
+      missing.hidden = true;
+      image.hidden = false;
+    });
+    image.addEventListener('error', () => {
+      if (image.dataset.bgMaskCutout && image.src === image.dataset.bgMaskCutout) {
+        // A revoked/undecodable temporary PNG should fall back to its
+        // original and never turn the player into a broken image.
+        image.src = image.dataset.bgMaskOriginal;
+        return;
+      }
+      image._bgtestFailedLoad.add(image.src);
+      const alternative = image._bgtestSources.find(url =>
+        !image._bgtestFailedLoad.has(url));
+      if (alternative) image.src = alternative;
+      else {
+        image.hidden = true;
+        missing.hidden = false;
+        status.textContent = 'PHOTO UNAVAILABLE';
+        status.disabled = true;
+        local.hidden = false;
+      }
+    });
+    if (sources.length) image.src = sources[0];
+    frame.appendChild(image);
     front.appendChild(frame);
     front.appendChild(make('strong', 'dbl-bgtest-pack-name', card.name));
-    front.appendChild(make('span', 'dbl-bgtest-pack-rating', 'CURRENT OVR ' +
-      (card.currentOvr ?? '—')));
-    // Small button used for an explicit retry if a CDN or host blocks
-    // masking, and for comparing original vs cutout after success.
-    const action = make('button', 'dbl-bgtest-pack-mask-status',
-      photos.length ? 'ORIGINAL PHOTO' : 'NO PHOTO');
-    action.type = 'button';
-    action.disabled = true;
-    front.appendChild(action);
+    front.appendChild(make('span', 'dbl-bgtest-pack-rating',
+      'CURRENT OVR ' + (card.currentOvr ?? '—')));
+    front.appendChild(status);
+    front.appendChild(local);
+    front.appendChild(localInput);
     return front;
   }
   function backgroundTestBack(card, back) {
@@ -839,13 +868,13 @@
     if (!isBackgroundTest(card)) return;
     const image = button.querySelector('.dbl-bgtest-pack-image');
     const label = button.querySelector('.dbl-bgtest-pack-mask-status');
+    const local = button.querySelector('.dbl-bgtest-pack-local-button');
     if (!image || !label || image.hidden || !window.DBLBackgroundTest?.maskPhoto ||
         (image.dataset.bgMaskStarted === 'true' && !retry)) return;
     const begin = () => {
       if (!image.isConnected || image.hidden || !(image.naturalWidth > 0)) return;
-      // The fallback portrait, if used, is the actual loaded source.
       const source = image.dataset.bgMaskOriginal || image.currentSrc || image.src;
-      if (!source || source.startsWith('blob:')) return;
+      if (!source || (source.startsWith('blob:') && !image._bgtestLocalUrl)) return;
       image.dataset.bgMaskStarted = 'true';
       label.disabled = true;
       label.textContent = 'REMOVING BACKGROUND…';
@@ -856,15 +885,32 @@
           image.dataset.bgMaskVisible = 'cutout';
           label.dataset.action = 'compare';
           label.textContent = 'SHOW ORIGINAL';
+          if (local) local.hidden = true;
         } else {
           image.dataset.bgMaskStarted = '';
-          label.dataset.action = 'retry';
-          label.textContent = 'RETRY CUTOUT';
+          image._bgtestTriedMasks.add(source);
+          const alternative = image._bgtestSources?.find(url =>
+            !image._bgtestTriedMasks.has(url) &&
+            !image._bgtestFailedLoad?.has(url));
+          if (alternative) {
+            // Some image hosts allow display but deny canvas pixel reads.
+            // Automatically try the second source before showing retry.
+            label.textContent = 'TRYING ALTERNATE PHOTO…';
+            image.src = alternative;
+            activateBackgroundPhoto(button, card, true);
+          } else {
+            label.dataset.action = 'retry';
+            label.textContent = 'RETRY CUTOUT';
+            label.title = image.dataset.bgMaskErrorMessage ||
+              'The background-removal operation failed.';
+            if (local) local.hidden = false;
+          }
         }
       });
     };
-    // Do not start AI until the actual portrait is decoded. This also
-    // handles an initial broken URL that switches to imgURLSmall.
+    // A loaded but CORS-blocked photo needs a second source or a temporary
+    // local file; repeated attempts against the identical URL cannot bypass
+    // browser cross-origin security.
     if (image.complete && image.naturalWidth > 0) begin();
     else if (!image.dataset.bgMaskAwaiting) {
       image.dataset.bgMaskAwaiting = 'true';
@@ -1145,12 +1191,57 @@
     inner.appendChild(frontOf(card));
     if (isBackgroundTest(card)) {
       const action = inner.querySelector('.dbl-bgtest-pack-mask-status');
+      const local = inner.querySelector('.dbl-bgtest-pack-local-button');
+      const fileInput = inner.querySelector('.dbl-bgtest-pack-upload');
+      local?.addEventListener('click', event => {
+        event.stopPropagation();
+        event.preventDefault();
+        fileInput?.click();
+      });
+      fileInput?.addEventListener('click', event => event.stopPropagation());
+      fileInput?.addEventListener('change', () => {
+        const file = fileInput.files?.[0];
+        fileInput.value = '';
+        if (!file) return;
+        const label = inner.querySelector('.dbl-bgtest-pack-mask-status');
+        const image = inner.querySelector('.dbl-bgtest-pack-image');
+        if (!image) return;
+        if (!/^image\/(png|jpeg|webp)$/i.test(file.type) ||
+            file.size > 10 * 1024 * 1024) {
+          if (label) {
+            label.disabled = true;
+            label.textContent = 'IMAGE MUST BE PNG/JPEG/WEBP UNDER 10 MB';
+          }
+          return;
+        }
+        if (!window.DBLBackgroundTest?.createLocalPhoto) return;
+        if (image._bgtestLocalUrl)
+          window.DBLBackgroundTest.releaseLocalPhoto(image._bgtestLocalUrl);
+        const url = window.DBLBackgroundTest.createLocalPhoto(file);
+        image._bgtestLocalUrl = url;
+        image._bgtestSources = [url];
+        image._bgtestFailedLoad = new Set();
+        image._bgtestTriedMasks = new Set();
+        image.dataset.bgMaskStarted = '';
+        image.dataset.bgMaskOriginal = '';
+        image.dataset.bgMaskCutout = '';
+        image.dataset.bgMaskSource = '';
+        image.hidden = false;
+        local.hidden = true;
+        if (label) {
+          label.textContent = 'LOADING LOCAL PHOTO…';
+          label.disabled = true;
+        }
+        image.src = url;
+        activateBackgroundPhoto(button, card, true);
+      });
       action?.addEventListener('click', event => {
         event.stopPropagation();
         event.preventDefault();
         const image = inner.querySelector('.dbl-bgtest-pack-image');
         if (!image) return;
         if (action.dataset.action === 'retry') {
+          image._bgtestTriedMasks = new Set();
           activateBackgroundPhoto(button, card, true);
         } else if (action.dataset.action === 'compare' &&
             image.dataset.bgMaskOriginal && image.dataset.bgMaskCutout) {
@@ -1357,6 +1448,25 @@
   }
   function binderEntry(card, turned = false) {
     const cell = make('div', 'dbl-cards-binder-entry');
+    cell.classList.toggle('is-selected', selectedCardIds.has(card.id));
+    if (selectionMode) {
+      const picker = make('label', 'dbl-cards-entry-picker');
+      const checkbox = make('input', 'dbl-cards-entry-select');
+      checkbox.type = 'checkbox';
+      checkbox.checked = selectedCardIds.has(card.id);
+      checkbox.disabled = deletingSelected || api.status.deletingCards;
+      checkbox.setAttribute('aria-label', 'Select ' + card.name + ' for deletion, all copies');
+      const text = make('span', '', 'Select');
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) selectedCardIds.add(card.id);
+        else selectedCardIds.delete(card.id);
+        cell.classList.toggle('is-selected', checkbox.checked);
+        updateSelectionControls();
+      });
+      picker.appendChild(checkbox);
+      picker.appendChild(text);
+      cell.appendChild(picker);
+    }
     const element = cardElement(card);
     if (turned) {
       element.classList.add('is-turned');
@@ -1371,6 +1481,40 @@
       isBackgroundTest(card) ? 'TEST · CURRENT OVR ' + (card.currentOvr ?? '—')
         : 'EST. ' + marketMoney(api.marketValue(card))));
     return cell;
+  }
+  function updateSelectionControls() {
+    const owned = new Map(api.items.map(c => [c.id, c]));
+    for (const id of selectedCardIds) if (!owned.has(id)) selectedCardIds.delete(id);
+    const totalCopies = [...selectedCardIds].reduce((sum, id) =>
+      sum + (owned.get(id)?.count || 0), 0);
+    const blocked = busy || clearing || transferBusy || deletingSelected ||
+      api.status.merging || api.status.deletingCards || !api.status.ready;
+    selectToggle.disabled = blocked || owned.size === 0;
+    selectToggle.setAttribute('aria-pressed', String(selectionMode));
+    selectToggle.textContent = selectionMode ? 'Selecting cards' : 'Select cards';
+    selectionActions.hidden = !selectionMode;
+    selectionCount.textContent = selectedCardIds.size + ' edition' +
+      (selectedCardIds.size === 1 ? '' : 's') + ' selected · ' +
+      totalCopies + ' card' + (totalCopies === 1 ? '' : 's');
+    deleteSelectedBtn.disabled = blocked || !selectedCardIds.size;
+    selectVisibleBtn.disabled = blocked;
+    deselectAllBtn.disabled = blocked || !selectedCardIds.size;
+    cancelSelectionBtn.disabled = deletingSelected || api.status.deletingCards;
+    const shown = filteredCards().slice(0, limit);
+    const allShownSelected = shown.length > 0 &&
+      shown.every(card => selectedCardIds.has(card.id));
+    selectVisibleBtn.disabled ||= !shown.length;
+    selectVisibleBtn.textContent = allShownSelected ? 'Deselect shown' : 'Select shown';
+  }
+  function syncSelectionChecks() {
+    for (const cell of gallery.querySelectorAll('.dbl-cards-binder-entry')) {
+      const id = cell.querySelector('.dbl-cards-card')?.dataset.cardId;
+      const checked = selectedCardIds.has(id);
+      const checkbox = cell.querySelector('.dbl-cards-entry-select');
+      if (checkbox) checkbox.checked = checked;
+      cell.classList.toggle('is-selected', checked);
+    }
+    updateSelectionControls();
   }
   function showGallery() {
     syncTeamFilter();
@@ -1391,6 +1535,7 @@
         fragment.appendChild(binderEntry(card, turned.has(card.id)));
       gallery.appendChild(fragment);
     }
+    updateSelectionControls();
     scheduleNameFit();
   }
   function syncFavoriteButtons(id) {
@@ -1424,6 +1569,7 @@
         gallery.appendChild(make('p', 'dbl-cards-empty',
           api.status.unique ? 'No cards match those filters.' :
             'Nothing in your binder yet. Open a pack to start collecting.'));
+      updateSelectionControls();
       return;
     }
     gallery.querySelector('.dbl-cards-empty')?.remove();
@@ -1435,6 +1581,7 @@
       existing.delete(card.id);
     }
     for (const node of existing.values()) node.remove();
+    updateSelectionControls();
     scheduleNameFit();
   }
   function formattedCount(n) { return n.toLocaleString('en-US'); }
@@ -1910,6 +2057,70 @@
     });
   }
   loadMore.addEventListener('click', () => { limit += 36; showGallery(); });
+  selectToggle.addEventListener('click', () => {
+    if (selectToggle.disabled) return;
+    selectionMode = !selectionMode;
+    if (!selectionMode) selectedCardIds.clear();
+    selectionFeedback.textContent = '';
+    showGallery();
+  });
+  selectVisibleBtn.addEventListener('click', () => {
+    if (!selectionMode || selectVisibleBtn.disabled) return;
+    const shown = filteredCards().slice(0, limit);
+    const all = shown.every(card => selectedCardIds.has(card.id));
+    for (const card of shown) {
+      if (all) selectedCardIds.delete(card.id);
+      else selectedCardIds.add(card.id);
+    }
+    syncSelectionChecks();
+  });
+  deselectAllBtn.addEventListener('click', () => {
+    if (deselectAllBtn.disabled) return;
+    selectedCardIds.clear();
+    syncSelectionChecks();
+  });
+  cancelSelectionBtn.addEventListener('click', () => {
+    if (deletingSelected) return;
+    selectionMode = false;
+    selectedCardIds.clear();
+    showGallery();
+  });
+  deleteSelectedBtn.addEventListener('click', async () => {
+    if (!selectionMode || deleteSelectedBtn.disabled) return;
+    const selected = api.items.filter(card => selectedCardIds.has(card.id));
+    if (!selected.length) return;
+    const copies = selected.reduce((sum, card) => sum + card.count, 0);
+    const confirmed = window.confirm(
+      'Delete ' + selected.length + ' selected card edition' +
+      (selected.length === 1 ? '' : 's') + ' (' + copies + ' total copies)?\n\n' +
+      'ALL duplicate copies of each selected edition will be removed.\n' +
+      'Other cards and your pack-opening history will remain unchanged.\n\n' +
+      'This cannot be undone here. An older backup may reintroduce deleted editions.'
+    );
+    if (!confirmed) return;
+    deletingSelected = true;
+    updateSelectionControls();
+    selectionFeedback.textContent = 'Deleting selected card editions…';
+    try {
+      const result = await api.deleteSelectedCards(selected.map(card => card.id));
+      if (result.saved) {
+        selectedCardIds.clear();
+        selectionMode = false;
+        selectionFeedback.textContent = 'Deleted ' + result.deletedEditions +
+          ' editions (' + result.deletedCards + ' total copies). ' +
+          'Other cards and pack history were kept.';
+      } else {
+        selectionFeedback.textContent =
+          'Deletion was not saved. Your selected cards were kept. Please try again.';
+      }
+    } catch (error) {
+      console.warn('Could not delete selected card editions.', error);
+      selectionFeedback.textContent = 'Deletion failed. Your cards were kept.';
+    } finally {
+      deletingSelected = false;
+      repaint();
+    }
+  });
   // Browser-local collection backups (not the full ZenGM league file).
   // All copy/pack totals are source-aware so repeated and two-way imports
   // do not count the same previously transferred pulls twice.
@@ -2007,7 +2218,8 @@
     }
   });
   clearBtn.addEventListener('click', async () => {
-    if (clearing || busy || transferBusy || api.status.merging ||
+    if (clearing || busy || transferBusy || deletingSelected ||
+        api.status.deletingCards || api.status.merging ||
         !api.status.ready || !api.status.count) return;
     const okay = window.confirm(
       'Permanently clear all collected cards, duplicates, and pack counts on this device? This cannot be undone.'
@@ -2018,6 +2230,9 @@
     try {
       const cleared = await api.clearCollection();
       if (cleared) {
+        selectedCardIds.clear();
+        selectionMode = false;
+        selectionFeedback.textContent = '';
         readyStage();
         limit = 36;
         search.value = '';

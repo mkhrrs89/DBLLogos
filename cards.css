@@ -4230,3 +4230,140 @@
   outline: 2px solid #31565c;
   outline-offset: 1px;
 }
+
+
+/* Background Test: plain neutral stock with no green radial artwork or oval.
+   Transparency now means the head/shoulders sit on flat cream paper. */
+.dbl-bgtest-photo,
+.dbl-bgtest-photo-backdrop,
+.dbl-bgtest-pack-frame {
+  background: #f5f3ee !important;
+}
+.dbl-bgtest-photo-backdrop::after,
+.dbl-bgtest-pack-frame::before { display: none !important; }
+.dbl-bgtest-pack-local-button {
+  position: absolute;
+  z-index: 5;
+  top: 47%;
+  left: 12%;
+  right: 12%;
+  padding: 9px 5px;
+  border: 1px solid #31565c;
+  border-radius: 5px;
+  background: rgba(255,255,255,.96);
+  color: #31565c;
+  font: 850 clamp(9px,5.6cqw,15px)/1.2 Arial,Helvetica,sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.dbl-bgtest-pack-local-button[hidden],
+.dbl-bgtest-pack-upload[hidden],
+.dbl-bgtest-local-input[hidden],
+.dbl-bgtest-local-photo[hidden] { display: none !important; }
+.dbl-bgtest-pack-mask-status {
+  min-height: 21px;
+  padding: 3px 2px;
+  touch-action: manipulation;
+}
+.dbl-bgtest-pack-local-button:focus-visible {
+  outline: 3px solid #31565c;
+  outline-offset: 3px;
+}
+
+/* My Collection: explicit multi-select without changing card flip/heart UI. */
+.dbl-cards-selection-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 8px;
+}
+.dbl-cards-selection-actions {
+  display: flex;
+  flex: 1 1 280px;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+.dbl-cards-selection-actions[hidden] { display: none !important; }
+.dbl-cards-selection-button {
+  min-height: 39px;
+  padding: 8px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: 750 .78rem/1.2 Arial,Helvetica,sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.dbl-cards-selection-button[aria-pressed="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.dbl-cards-selection-button:hover:not(:disabled) {
+  background: rgba(var(--accent-rgb),.12);
+}
+.dbl-cards-selection-button:disabled { opacity: .5; cursor: default; }
+.dbl-cards-selection-button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.dbl-cards-selection-delete {
+  background: #8b2731;
+  border-color: #8b2731;
+  color: #fff;
+}
+.dbl-cards-selection-delete:hover:not(:disabled) { background: #a33340; }
+.dbl-cards-selection-count {
+  font: 800 .76rem/1.25 Arial,Helvetica,sans-serif;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  padding: 0 5px;
+}
+.dbl-cards-selection-feedback {
+  margin: 0 0 10px;
+  font: 650 .74rem/1.35 Arial,Helvetica,sans-serif;
+  color: var(--muted);
+}
+.dbl-cards-selection-feedback:empty { display: none; }
+.dbl-cards-binder-entry { position: relative; }
+.dbl-cards-binder-entry.is-selected > .dbl-cards-card {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.dbl-cards-entry-picker {
+  position: absolute;
+  z-index: 16;
+  top: 7px;
+  right: 7px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 0;
+  padding: 3px 5px;
+  border: 1px solid #5a656a;
+  border-radius: 7px;
+  background: rgba(255,255,255,.97);
+  color: #1d333b;
+  cursor: pointer;
+  font: 800 9px/1.1 Arial,Helvetica,sans-serif;
+  touch-action: manipulation;
+  box-shadow: 0 2px 7px rgba(0,0,0,.18);
+}
+.dbl-cards-entry-picker input {
+  width: 23px;
+  height: 23px;
+  accent-color: #285f8e;
+  cursor: pointer;
+  margin: 0;
+}
+@media (max-width: 520px) {
+  .dbl-cards-selection-toolbar { gap: 7px; }
+  .dbl-cards-selection-actions { flex-basis: 100%; }
+  .dbl-cards-selection-button { min-height: 42px; padding: 9px; }
+  .dbl-cards-entry-picker { top: 4px; right: 4px; }
+}

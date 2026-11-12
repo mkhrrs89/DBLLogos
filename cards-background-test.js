@@ -33,6 +33,9 @@
   const pendingIds = new Set();
   let working = false;
   let observer = null;
+  // User-selected local photos are temporary, never written to the league
+  // file, card storage, or collection backups.
+  const localPhotoUrls = new Set();
   // One on-device model job at a time, shared by the gallery and pack pulls.
   // Cache lives only in memory; original image bytes and league files stay intact.
   const inFlight = new Map();
@@ -49,6 +52,7 @@
   const int = value => Number.isInteger(num(value)) ? num(value) : null;
   const safePhoto = value => typeof value === 'string' &&
     ((/^https?:\/\/\S+$/i.test(value) && value.length < 2000) ||
+      (/^blob:/i.test(value) && value.length < 3000) ||
       (/^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(value) &&
         value.length < 2000000))
     ? value : '';
@@ -87,8 +91,10 @@
       const name = [player.firstName, player.lastName]
         .filter(x => typeof x === 'string' && x.trim()).join(' ').trim() ||
         String(player.name || 'Unnamed player');
-      const photo = safePhoto(player.imgURL);
-      found.set(pid, {pid, tid, ovr, name, photo,
+      const primary = safePhoto(player.imgURL);
+      const photoFallback = safePhoto(player.imgURLSmall);
+      const photo = primary || photoFallback;
+      found.set(pid, {pid, tid, ovr, name, photo, photoFallback,
         position: String(player.pos || '').trim()});
     }
     return [...found.values()].sort((a,b) => b.ovr - a.ovr ||
@@ -155,6 +161,8 @@
     grid.replaceChildren();
     for (const item of cache.values()) URL.revokeObjectURL(item);
     cache.clear();
+    for (const url of localPhotoUrls) URL.revokeObjectURL(url);
+    localPhotoUrls.clear();
     visibleLimit = PAGE_SIZE;
   }
   function onLeagueFile(file) {
@@ -189,6 +197,16 @@
     original.loading = 'lazy';
     original.decoding = 'async';
     original.referrerPolicy = 'no-referrer';
+    original.addEventListener('error', () => {
+      const fallback = player.photoFallback;
+      if (fallback && fallback !== original.src && !original.dataset.triedFallback) {
+        original.dataset.triedFallback = 'true';
+        player.photo = fallback;
+        original.src = fallback;
+      } else {
+        original.hidden = true;
+      }
+    });
     if (player.photo) original.src = player.photo;
     else original.hidden = true;
     const cutout = make('img', 'dbl-bgtest-cutout');
@@ -212,7 +230,14 @@
     const retry = make('button', 'dbl-bgtest-retry', 'Retry');
     retry.type = 'button';
     retry.hidden = true;
-    const compare = {original, cutout, note, toggle, retry, frame, entry,
+    const local = make('button', 'dbl-bgtest-local-photo', 'Use local photo');
+    local.type = 'button';
+    local.hidden = !!player.photo;
+    const localInput = make('input', 'dbl-bgtest-local-input');
+    localInput.type = 'file';
+    localInput.accept = 'image/png,image/jpeg,image/webp';
+    localInput.hidden = true;
+    const compare = {original, cutout, note, toggle, retry, local, frame, entry,
       player, token:generation, mode:'cutout', ready:false};
     entry._bgTestView = compare;
     toggle.addEventListener('click', () => {
@@ -222,10 +247,35 @@
     });
     retry.addEventListener('click', () => {
       retry.hidden = true;
+      compare.triedFallback = false;
+      queueProcess(compare, true);
+    });
+    local.addEventListener('click', () => localInput.click());
+    localInput.addEventListener('change', () => {
+      const file = localInput.files?.[0];
+      localInput.value = '';
+      if (!file) return;
+      if (!/^image\/(png|jpeg|webp)$/i.test(file.type) || file.size > 10 * 1024 * 1024) {
+        note.textContent = 'Choose a PNG, JPEG or WebP image under 10 MB.';
+        return;
+      }
+      if (compare.localUrl) releaseLocalPhoto(compare.localUrl);
+      compare.localUrl = createLocalPhoto(file);
+      player.photo = compare.localUrl;
+      player.photoFallback = '';
+      original.hidden = false;
+      original.dataset.triedFallback = '';
+      original.src = compare.localUrl;
+      compare.ready = false;
+      compare.mode = 'cutout';
+      local.hidden = true;
+      retry.hidden = true;
       queueProcess(compare, true);
     });
     controls.appendChild(toggle);
     controls.appendChild(retry);
+    controls.appendChild(local);
+    controls.appendChild(localInput);
     entry.appendChild(face);
     const saved = window.DBLCardEngine?.items.find(card =>
       card.type === 'background-test' && card.pid === player.pid);
@@ -376,6 +426,14 @@
     }
   }
 
+  function createLocalPhoto(blob) {
+    const url = URL.createObjectURL(blob);
+    localPhotoUrls.add(url);
+    return url;
+  }
+  function releaseLocalPhoto(url) {
+    if (localPhotoUrls.delete(url)) URL.revokeObjectURL(url);
+  }
   function cutoutFor(src) {
     const cached = cache.get(src);
     if (cached) return Promise.resolve(cached);
@@ -407,11 +465,15 @@
       return Promise.resolve(false);
     }
     if (element.dataset.bgMaskSource === src) return Promise.resolve(true);
+    delete element.dataset.bgMaskError;
+    delete element.dataset.bgMaskErrorMessage;
     if (label) label.textContent = 'REMOVING BACKGROUND…';
     return cutoutFor(src).then(url => {
       if (!element.isConnected) { trimCache(); return false; }
       element.src = url;
       element.dataset.bgMaskSource = src;
+      delete element.dataset.bgMaskError;
+      delete element.dataset.bgMaskErrorMessage;
       element.dataset.bgMaskOriginal = src;
       element.dataset.bgMaskCutout = url;
       trimCache();
@@ -421,10 +483,18 @@
       }
       return true;
     }).catch(error => {
+      const reason = errorText(error);
+      // Callers can choose an alternative source or show the local-photo
+      // option rather than endlessly retrying a CORS-blocked host.
+      element.dataset.bgMaskError =
+        /taint|cross.origin|cors|securityerror|image failed to load/i.test(String(error?.message || error))
+          ? 'photo-access' : /model|wasm|network|fetch|module/i.test(String(error?.message || error))
+            ? 'model' : 'processing';
+      element.dataset.bgMaskErrorMessage = reason;
       if (label && label.isConnected) {
-        const reason = errorText(error);
-        label.textContent = reason.includes('host') ? 'PHOTO HOST BLOCKED' :
-          reason.includes('model') ? 'AI MODEL UNAVAILABLE' : 'CUTOUT FAILED';
+        label.textContent = element.dataset.bgMaskError === 'photo-access'
+          ? 'PHOTO HOST BLOCKED' : element.dataset.bgMaskError === 'model'
+            ? 'AI MODEL UNAVAILABLE' : 'CUTOUT FAILED';
         label.title = reason;
       }
       console.warn('Background Test pack cutout unavailable.', error);
@@ -449,8 +519,20 @@
           trimCache();
         } catch (error) {
           if (c.token === generation && c.entry.isConnected) {
-            c.note.textContent = errorText(error);
-            c.retry.hidden = false;
+            const fallback = c.player.photoFallback;
+            if (fallback && fallback !== c.player.photo && !c.triedFallback) {
+              c.triedFallback = true;
+              c.player.photo = fallback;
+              c.original.hidden = false;
+              c.original.src = fallback;
+              c.note.textContent = 'Trying alternate player photograph…';
+              queueProcess(c, true);
+            } else {
+              c.note.textContent = errorText(error) +
+                ' You can choose a local photograph to try again.';
+              c.retry.hidden = false;
+              c.local.hidden = false;
+            }
             console.warn('Background Test could not isolate ' + c.player.name, error);
           }
         }
@@ -536,7 +618,7 @@
   });
   hub.subscribe(({file}) => onLeagueFile(file));
   onLeagueFile(hub.getCurrentFile?.() || null);
-  window.DBLBackgroundTest = Object.freeze({open, close, maskPhoto,
+  window.DBLBackgroundTest = Object.freeze({open, close, maskPhoto, createLocalPhoto, releaseLocalPhoto,
     // Exposed for validation, not part of collection storage or pack odds.
     rosterFromRecords, currentRating});
   // cards-ui.js restores the last tab before this module finishes loading.

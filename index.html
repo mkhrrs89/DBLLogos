@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kavoon&family=Lobster&family=Shrikhand&display=swap" />
-    <link rel="stylesheet" href="./cards.css?v=20261112-background-mask-fix-v2" />
+    <link rel="stylesheet" href="./cards.css?v=20261112-background-mask-and-selection-v3" />
     <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
@@ -357,6 +357,25 @@
               </label>
             </div>
             <p id="cardsCollectionCount" class="dbl-cards-collection-caption" aria-live="polite">0 card editions</p>
+            <div class="dbl-cards-selection-toolbar" role="group" aria-label="Select cards to delete">
+              <button id="cardsSelectToggleBtn" type="button" class="dbl-cards-selection-button"
+                aria-pressed="false">Select cards</button>
+              <div id="cardsSelectionActions" class="dbl-cards-selection-actions" hidden>
+                <span id="cardsSelectionCount" class="dbl-cards-selection-count"
+                  aria-live="polite">0 selected</span>
+                <button id="cardsSelectVisibleBtn" type="button"
+                  class="dbl-cards-selection-button">Select shown</button>
+                <button id="cardsDeselectAllBtn" type="button"
+                  class="dbl-cards-selection-button">Deselect all</button>
+                <button id="cardsDeleteSelectedBtn" type="button"
+                  class="dbl-cards-selection-button dbl-cards-selection-delete"
+                  disabled>Delete selected</button>
+                <button id="cardsCancelSelectionBtn" type="button"
+                  class="dbl-cards-selection-button">Done</button>
+              </div>
+            </div>
+            <p id="cardsSelectionFeedback" class="dbl-cards-selection-feedback"
+              role="status" aria-live="polite"></p>
             <div id="cardsCollection" class="dbl-cards-collection">
               <p class="dbl-cards-empty">Your collection is empty. Open a pack to start collecting.</p>
             </div>
@@ -1141,9 +1160,9 @@
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./cards-market.js?v=20261111-period-market-v2"></script>
-    <script src="./cards-engine.js?v=20261112-background-mask-fix-v2"></script>
-    <script src="./cards-ui.js?v=20261112-background-mask-fix-v2"></script>
-    <script src="./cards-background-test.js?v=20261112-background-mask-fix-v2"></script>
+    <script src="./cards-engine.js?v=20261112-background-mask-and-selection-v3"></script>
+    <script src="./cards-ui.js?v=20261112-background-mask-and-selection-v3"></script>
+    <script src="./cards-background-test.js?v=20261112-background-mask-and-selection-v3"></script>
     <script src="./story-generator-engine.js?v=20261112-vietnam-draft-story"></script>
     <script src="./story-generator-ui.js?v=20261111-1968-newsroom"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
