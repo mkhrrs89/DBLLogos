@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kavoon&family=Lobster&family=Shrikhand&display=swap" />
-    <link rel="stylesheet" href="./cards.css?v=20261112-background-mask-and-selection-v3" />
+    <link rel="stylesheet" href="./cards.css?v=20261112-proxy-diagnostics-v4" />
     <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
@@ -476,8 +476,12 @@
             <p class="dbl-cards-footnote">Background Test pack pulls are saved in your collection and backups. AI detects the person only when a card is near your screen.
               Photos are processed locally in your browser and remain unchanged in the league file.
               Cutouts are temporary, not added to local storage or your card backups.
-              The model requires an internet connection for its initial download; images hosted on servers
-              that prohibit cross-origin processing will stay original. Tap “Show original” on a processed card to compare.</p>
+              The model requires an internet connection for its initial download. When an image host blocks
+              direct processing, Background Test can use a same-origin image proxy if this site
+              is deployed with the Cloudflare Pages Function included in the repository.
+              On a static-only host, the proxy is unavailable and you can use a temporary local photo instead.
+              Tap “Why?” on a failed card to see the specific reason. GIF backgrounds can be removed
+              from one still frame; MOV and MP4 motion is not yet supported. Tap “Show original” to compare.</p>
           </section>
         </section>
 
@@ -1161,8 +1165,8 @@
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./cards-market.js?v=20261111-period-market-v2"></script>
     <script src="./cards-engine.js?v=20261112-background-mask-and-selection-v3"></script>
-    <script src="./cards-ui.js?v=20261112-background-mask-and-selection-v3"></script>
-    <script src="./cards-background-test.js?v=20261112-background-mask-and-selection-v3"></script>
+    <script src="./cards-ui.js?v=20261112-proxy-diagnostics-v4"></script>
+    <script src="./cards-background-test.js?v=20261112-proxy-diagnostics-v4"></script>
     <script src="./story-generator-engine.js?v=20261112-vietnam-draft-story"></script>
     <script src="./story-generator-ui.js?v=20261111-1968-newsroom"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>

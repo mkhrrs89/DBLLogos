@@ -19,6 +19,11 @@
   const PAGE_SIZE = 12;
   const CACHE_LIMIT = 30;
   const MAX_SIDE = 512;
+  // A Cloudflare Pages Function at this app's own origin is the only proxy
+  // target. If this site is on static GitHub Pages, health detection safely
+  // disables this fallback. No private/local photos are ever sent to it.
+  const PROXY_ENDPOINT = new URL('./api/cards-photo',
+    document.baseURI || window.location.href).toString();
   let currentFile = null;
   let generation = 0;
   let scannedGeneration = -1;
@@ -28,6 +33,7 @@
   let active = false;
   let visibleLimit = PAGE_SIZE;
   let segmenterPromise = null;
+  let proxyHealth = null;
   const cache = new Map();
   const pending = [];
   const pendingIds = new Set();
@@ -53,18 +59,27 @@
   const safePhoto = value => typeof value === 'string' &&
     ((/^https?:\/\/\S+$/i.test(value) && value.length < 2000) ||
       (/^blob:/i.test(value) && value.length < 3000) ||
-      (/^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(value) &&
+      (/^data:image\/(?:jpeg|jpg|png|webp|gif);base64,/i.test(value) &&
         value.length < 2000000))
     ? value : '';
+  // Distinct codes let the card explain the specific failure rather than
+  // showing a generic "Retry Cutout" for unrelated issues.
+  const codedError = (code, message, cause) => {
+    const error = new Error(message);
+    error.code = code;
+    if (cause) error.cause = cause;
+    return error;
+  };
   const errorText = error => {
-    const message = String(error?.message || error || '');
-    if (/taint|cross.origin|cors|securityerror/i.test(message))
-      return 'This photo host does not allow browser image processing. Original kept.';
-    if (/image failed to load/i.test(message))
-      return 'The photo could not be loaded for background removal (broken link or cross-origin restriction).';
-    if (/network|fetch|load|wasm|module|model/i.test(message))
-      return 'Could not load the background model. Tap Retry to try again.';
-    return 'Could not isolate this player. Original photograph kept.';
+    switch (error?.code) {
+      case 'video': return 'Animated MP4/MOV video needs frame-by-frame processing. Choose a still player photo.';
+      case 'photo-access': return 'The image link cannot be read for processing (broken URL or CORS restriction).';
+      case 'proxy-unavailable': return 'Photo host blocked pixel access. The same-origin image proxy is not active on this site. Use a local photo or enable the Cloudflare Pages Function.';
+      case 'proxy-denied': return 'The image proxy refused this source or could not retrieve it. Use a local photo or an approved public image host.';
+      case 'model': return 'The background-removal AI could not load on this device. Check the connection and try again.';
+      case 'segment': return 'The AI could not isolate this player photo. An alternate photo may work.';
+      default: return 'Background removal failed. The original photograph was kept.';
+    }
   };
 
   function currentRating(player, year) {
@@ -353,15 +368,85 @@
     return segmenterPromise;
   }
 
-  async function loadSource(src) {
+  function loadImage(src) {
     return new Promise((resolve, reject) => {
       const image = new Image();
       if (/^https?:/i.test(src)) image.crossOrigin = 'anonymous';
       image.referrerPolicy = 'no-referrer';
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(Error('Image failed to load (possibly CORS).'));
+      image.onload = () => image.naturalWidth > 0 && image.naturalHeight > 0
+        ? resolve(image) : reject(codedError('photo-access', 'Empty or undecodable image.'));
+      image.onerror = () => reject(codedError('photo-access',
+        'Image could not load for pixel processing (CORS, 404 or format).'));
       image.src = src;
     });
+  }
+
+  async function proxyIsReady() {
+    if (!proxyHealth) {
+      proxyHealth = (async () => {
+        if (typeof fetch !== 'function') return false;
+        try {
+          const response = await fetch(PROXY_ENDPOINT + '?health=1', {
+            credentials:'omit', cache:'no-store', mode:'same-origin'
+          });
+          if (!response.ok || response.headers.get('X-DBL-Proxy') !== 'v1')
+            return false;
+          const result = await response.json();
+          return result.service === 'dbl-cards-photo-proxy' && result.version === 1;
+        } catch (_) { return false; }
+      })();
+    }
+    return proxyHealth;
+  }
+
+  async function processProxiedSource(src, segmenter) {
+    const ready = await proxyIsReady();
+    if (!ready) throw codedError('proxy-unavailable', 'The same-origin image proxy is not active.');
+    const url = PROXY_ENDPOINT + '?url=' + encodeURIComponent(src);
+    let response;
+    try {
+      response = await fetch(url, {mode:'same-origin', credentials:'omit'});
+    } catch (error) {
+      throw codedError('proxy-denied', 'Image proxy request failed.', error);
+    }
+    if (!response.ok || response.headers.get('X-DBL-Proxy') !== 'v1')
+      throw codedError('proxy-denied', 'Image proxy returned HTTP ' + response.status + '.');
+    const type = (response.headers.get('content-type') || '').split(';')[0];
+    if (!/^image\/(?:png|jpeg|webp|gif|avif)$/i.test(type))
+      throw codedError('proxy-denied', 'Image proxy returned a non-image response.');
+    const blob = await response.blob();
+    if (!blob.size || blob.size > 8 * 1024 * 1024)
+      throw codedError('proxy-denied', 'Image proxy returned an invalid image size.');
+    const localUrl = URL.createObjectURL(blob);
+    try {
+      const image = await loadImage(localUrl);
+      return await makeCutout(segmenter, image);
+    } finally {
+      URL.revokeObjectURL(localUrl);
+    }
+  }
+
+  async function loadSource(src, segmenter) {
+    if (/\.(?:mp4|mov|m4v)(?:[?#]|$)/i.test(src) ||
+        /^data:video\//i.test(src))
+      throw codedError('video', 'Animated video is not supported by still-image masking.');
+    try {
+      const image = await loadImage(src);
+      return await makeCutout(segmenter, image);
+    } catch (error) {
+      if (!/^https:\/\//i.test(src) ||
+          !(error?.code === 'photo-access' ||
+            error?.name === 'SecurityError' ||
+            /taint|cross.origin|cors/i.test(String(error?.message || ''))))
+        throw error;
+      // The fallback is attempted ONLY for public remote HTTPS images and
+      // ONLY if the same-origin proxy's health endpoint is actually active.
+      try { return await processProxiedSource(src, segmenter); }
+      catch (cause) {
+        if (cause?.code) throw cause;
+        throw codedError('segment', 'AI could not process the fetched image.', cause);
+      }
+    }
   }
 
   function makeCutout(segmenter, image) {
@@ -440,8 +525,10 @@
     const pending = inFlight.get(src);
     if (pending) return pending;
     const job = cutoutQueue.catch(() => {}).then(async () => {
-      const [segmenter, image] = await Promise.all([getSegmenter(), loadSource(src)]);
-      const blob = await makeCutout(segmenter, image);
+      let segmenter;
+      try { segmenter = await getSegmenter(); }
+      catch (cause) { throw codedError('model', 'The AI model failed to load.', cause); }
+      const blob = await loadSource(src, segmenter);
       const url = URL.createObjectURL(blob);
       // The new blob is not yet attached to an image. Trimming here can
       // revoke that very URL when 30 other cutouts are visible. Defer
@@ -483,18 +570,17 @@
       }
       return true;
     }).catch(error => {
+      const code = error?.code || 'segment';
       const reason = errorText(error);
-      // Callers can choose an alternative source or show the local-photo
-      // option rather than endlessly retrying a CORS-blocked host.
-      element.dataset.bgMaskError =
-        /taint|cross.origin|cors|securityerror|image failed to load/i.test(String(error?.message || error))
-          ? 'photo-access' : /model|wasm|network|fetch|module/i.test(String(error?.message || error))
-            ? 'model' : 'processing';
+      element.dataset.bgMaskError = code;
       element.dataset.bgMaskErrorMessage = reason;
       if (label && label.isConnected) {
-        label.textContent = element.dataset.bgMaskError === 'photo-access'
-          ? 'PHOTO HOST BLOCKED' : element.dataset.bgMaskError === 'model'
-            ? 'AI MODEL UNAVAILABLE' : 'CUTOUT FAILED';
+        label.textContent = code === 'proxy-unavailable' ? 'PROXY NOT ACTIVE' :
+          code === 'proxy-denied' ? 'PROXY COULD NOT FETCH' :
+          code === 'photo-access' ? 'PHOTO LINK BLOCKED' :
+          code === 'model' ? 'AI MODEL UNAVAILABLE' :
+          code === 'video' ? 'VIDEO NEEDS FRAME PROCESSING' :
+          'CUTOUT FAILED';
         label.title = reason;
       }
       console.warn('Background Test pack cutout unavailable.', error);
@@ -619,6 +705,7 @@
   hub.subscribe(({file}) => onLeagueFile(file));
   onLeagueFile(hub.getCurrentFile?.() || null);
   window.DBLBackgroundTest = Object.freeze({open, close, maskPhoto, createLocalPhoto, releaseLocalPhoto,
+    proxyIsReady,
     // Exposed for validation, not part of collection storage or pack odds.
     rosterFromRecords, currentRating});
   // cards-ui.js restores the last tab before this module finishes loading.

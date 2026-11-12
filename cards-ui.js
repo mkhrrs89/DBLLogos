@@ -787,9 +787,14 @@
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-bgtest-pack-front');
     front.appendChild(make('span', 'dbl-bgtest-pack-header', 'DBL · BACKGROUND TEST'));
     const frame = make('span', 'dbl-bgtest-pack-frame');
-    const sources = [...new Set([api.findPhoto(card),
-      api.findBackgroundPhotoFallback?.(card)].filter(Boolean))];
-    const missing = make('span', 'dbl-bgtest-pack-empty', 'PHOTO UNAVAILABLE');
+    const rawSources = [api.findPhoto(card),
+      api.findBackgroundPhotoFallback?.(card)].filter(Boolean);
+    const isVideoUrl = url => /\.(?:mp4|mov|m4v)(?:[?#]|$)/i.test(url) ||
+      /^data:video\//i.test(url);
+    const videoOnly = rawSources.length > 0 && rawSources.every(isVideoUrl);
+    const sources = [...new Set(rawSources.filter(url => !isVideoUrl(url)))];
+    const missing = make('span', 'dbl-bgtest-pack-empty',
+      videoOnly ? 'VIDEO NEEDS FRAME PROCESSING' : 'PHOTO UNAVAILABLE');
     missing.hidden = sources.length > 0;
     frame.appendChild(missing);
     // Always include an img so an image without a usable remote URL can be
@@ -804,7 +809,8 @@
     image._bgtestFailedLoad = new Set();
     image._bgtestTriedMasks = new Set();
     const status = make('button', 'dbl-bgtest-pack-mask-status',
-      sources.length ? 'ORIGINAL PHOTO' : 'NO PHOTO');
+      sources.length ? 'ORIGINAL PHOTO' :
+        videoOnly ? 'MOV/MP4 NOT YET SUPPORTED' : 'NO PHOTO');
     status.type = 'button';
     status.disabled = true;
     const local = make('button', 'dbl-bgtest-pack-local-button', 'Use local photo');
@@ -847,6 +853,14 @@
     front.appendChild(status);
     front.appendChild(local);
     front.appendChild(localInput);
+    const why = make('button', 'dbl-bgtest-pack-why', 'Why?');
+    why.type = 'button';
+    why.hidden = true;
+    const reason = make('span', 'dbl-bgtest-pack-reason');
+    reason.hidden = true;
+    reason.setAttribute('role', 'status');
+    front.appendChild(why);
+    front.appendChild(reason);
     return front;
   }
   function backgroundTestBack(card, back) {
@@ -869,6 +883,8 @@
     const image = button.querySelector('.dbl-bgtest-pack-image');
     const label = button.querySelector('.dbl-bgtest-pack-mask-status');
     const local = button.querySelector('.dbl-bgtest-pack-local-button');
+    const why = button.querySelector('.dbl-bgtest-pack-why');
+    const reason = button.querySelector('.dbl-bgtest-pack-reason');
     if (!image || !label || image.hidden || !window.DBLBackgroundTest?.maskPhoto ||
         (image.dataset.bgMaskStarted === 'true' && !retry)) return;
     const begin = () => {
@@ -885,6 +901,8 @@
           image.dataset.bgMaskVisible = 'cutout';
           label.dataset.action = 'compare';
           label.textContent = 'SHOW ORIGINAL';
+          if (why) why.hidden = true;
+          if (reason) reason.hidden = true;
           if (local) local.hidden = true;
         } else {
           image.dataset.bgMaskStarted = '';
@@ -900,9 +918,21 @@
             activateBackgroundPhoto(button, card, true);
           } else {
             label.dataset.action = 'retry';
-            label.textContent = 'RETRY CUTOUT';
-            label.title = image.dataset.bgMaskErrorMessage ||
+            const code = image.dataset.bgMaskError;
+            label.textContent = code === 'proxy-unavailable' ? 'PROXY NOT ACTIVE' :
+              code === 'proxy-denied' ? 'PROXY COULD NOT FETCH' :
+              code === 'photo-access' ? 'PHOTO LINK BLOCKED' :
+              code === 'model' ? 'AI MODEL UNAVAILABLE' :
+              code === 'video' ? 'VIDEO NOT SUPPORTED' : 'RETRY CUTOUT';
+            const message = image.dataset.bgMaskErrorMessage ||
               'The background-removal operation failed.';
+            label.title = message + ' Tap to retry.';
+            label.setAttribute('aria-label', message + ' Tap to retry.');
+            if (reason) {
+              reason.textContent = message;
+              reason.hidden = true;
+            }
+            if (why) why.hidden = false;
             if (local) local.hidden = false;
           }
         }
@@ -1193,6 +1223,13 @@
       const action = inner.querySelector('.dbl-bgtest-pack-mask-status');
       const local = inner.querySelector('.dbl-bgtest-pack-local-button');
       const fileInput = inner.querySelector('.dbl-bgtest-pack-upload');
+      const why = inner.querySelector('.dbl-bgtest-pack-why');
+      const reason = inner.querySelector('.dbl-bgtest-pack-reason');
+      why?.addEventListener('click', event => {
+        event.stopPropagation();
+        event.preventDefault();
+        if (reason) reason.hidden = !reason.hidden;
+      });
       local?.addEventListener('click', event => {
         event.stopPropagation();
         event.preventDefault();
@@ -1222,6 +1259,8 @@
         image._bgtestSources = [url];
         image._bgtestFailedLoad = new Set();
         image._bgtestTriedMasks = new Set();
+        if (why) why.hidden = true;
+        if (reason) reason.hidden = true;
         image.dataset.bgMaskStarted = '';
         image.dataset.bgMaskOriginal = '';
         image.dataset.bgMaskCutout = '';

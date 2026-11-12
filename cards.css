@@ -4367,3 +4367,52 @@
   .dbl-cards-selection-button { min-height: 42px; padding: 9px; }
   .dbl-cards-entry-picker { top: 4px; right: 4px; }
 }
+
+
+/* Background Test proxy diagnostics: the error stays visible and users can
+   tap Why? to see a precise reason, rather than an endless silent retry. */
+.dbl-bgtest-pack-why {
+  position: absolute;
+  top: 12%;
+  right: 6%;
+  z-index: 9;
+  padding: 5px 7px;
+  min-width: 35px;
+  min-height: 28px;
+  color: #2b454a;
+  background: rgba(255,255,255,.95);
+  border: 1px solid #60777c;
+  border-radius: 5px;
+  font: 800 clamp(8px,4cqw,11px)/1.1 Arial,Helvetica,sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.dbl-bgtest-pack-why[hidden],
+.dbl-bgtest-pack-reason[hidden] { display: none !important; }
+.dbl-bgtest-pack-reason {
+  position: absolute;
+  top: 23%;
+  left: 9%;
+  right: 9%;
+  z-index: 10;
+  padding: 10px 8px;
+  border-radius: 5px;
+  border: 1px solid #64787a;
+  background: #fffdfa;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  font: 700 clamp(9px,4.8cqw,13px)/1.4 Arial,Helvetica,sans-serif;
+  color: #294448;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.dbl-bgtest-pack-why:focus-visible { outline: 2px solid #1e4b60; }
+.dbl-bgtest-pack-frame { bottom: 24%; }
+.dbl-bgtest-pack-name { bottom: 15%; }
+.dbl-bgtest-pack-rating { bottom: 8%; }
+.dbl-bgtest-pack-mask-status {
+  bottom: 1.5%;
+  min-height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
