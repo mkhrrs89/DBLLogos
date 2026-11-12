@@ -20,6 +20,7 @@
   const favoritesFilter = document.getElementById('cardsFavoritesFilter');
   const mixedPackType = document.getElementById('cardsMixedPackType');
   const toppsPackType = document.getElementById('cardsToppsPackType');
+  const backgroundPackType = document.getElementById('cardsBackgroundPackType');
   const order = document.getElementById('cardsSort');
   const loadMore = document.getElementById('cardsShowMoreBtn');
   const clearBtn = document.getElementById('cardsClearCollectionBtn');
@@ -51,7 +52,7 @@
   if (!api || !panel || !status || !saveStatus || !packStage || !packsOpenedTotal || !openBtn ||
       !actions || !revealBtn || !againBtn || !counter || !gallery ||
       !galleryCount || !search || !rarityFilter || !teamFilter ||
-      !favoritesFilter || !mixedPackType || !toppsPackType || !order || !loadMore ||
+      !favoritesFilter || !mixedPackType || !toppsPackType || !backgroundPackType || !order || !loadMore ||
       !clearBtn || !exportBtn || !mergeBtn || !mergeFile || !mergeFeedback ||
       !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
       !checklistStats || !checklistFranchises || !checklistSearch || !checklistRarity ||
@@ -93,6 +94,7 @@
   tierIndex['team-season'] = 2.5;
   tierIndex['topps-1968'] = 1.5;
   tierIndex['topps-1968-uniform'] = 2.6;
+  tierIndex['background-test'] = 1;
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Undiscovered editions must never appear in the checklist or public
   // progress totals, even for players who meet their hidden requirements.
@@ -109,6 +111,7 @@
   const isChampionTeam = card => isTeamSeason(card) && card.finishKind === 'champion';
   const isToppsPlayer = card => card?.type === 'topps-player';
   const isToppsUniform = card => card?.type === 'topps-uniform';
+  const isBackgroundTest = card => card?.type === 'background-test';
   const make = (tag, cls, value) => {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -258,7 +261,8 @@
   }
   function showStatus() {
     const s = api.status;
-    const fileKey = [s.hasFile, s.poolSize, s.toppsPoolSize, s.season,
+    const fileKey = [s.hasFile, s.poolSize, s.toppsPoolSize,
+      s.backgroundTestPoolSize, s.season,
       s.loading, s.problem, packType].join('|');
     if (fileKey !== lastFileState) {
       lastFileState = fileKey;
@@ -266,6 +270,10 @@
       else if (!s.hasFile) status.textContent =
         'Upload a league file to open packs. Your existing collection is available below.';
       else if (s.loading) status.textContent = 'Building cards from your league player archive…';
+      else if (packType === 'background-test' && !s.backgroundTestPoolSize) status.textContent =
+        'No current players with OVR 50+ are available for Background Test packs.';
+      else if (packType === 'background-test') status.textContent =
+        format(s.backgroundTestPoolSize) + ' current OVR 50+ players available. Open a Background Test-only pack.';
       else if (packType === 'topps-1968' && !s.toppsPoolSize) status.textContent =
         'No 1968 Topps cards are available. Upload a league export that includes the 1968 season.';
       else if (packType === 'topps-1968') status.textContent =
@@ -277,17 +285,22 @@
         'Open the Cards tab to load players from the uploaded league file.';
     }
     const canOpenSelected = packType === 'topps-1968'
-      ? s.toppsPoolSize > 0 : s.poolSize > 0;
+      ? s.toppsPoolSize > 0 : packType === 'background-test'
+        ? s.backgroundTestPoolSize > 0 : s.poolSize > 0;
     openBtn.disabled = busy || clearing || transferBusy || s.merging ||
       !s.ready || !canOpenSelected || s.loading;
     openBtn.textContent = busy ? 'Opening pack…' :
-      packType === 'topps-1968' ? 'Open 1968 Topps pack' : 'Open five-card pack';
+      packType === 'topps-1968' ? 'Open 1968 Topps pack' :
+      packType === 'background-test' ? 'Open Background Test pack' : 'Open five-card pack';
     mixedPackType.classList.toggle('is-selected', packType === 'mixed');
     toppsPackType.classList.toggle('is-selected', packType === 'topps-1968');
+    backgroundPackType.classList.toggle('is-selected', packType === 'background-test');
     mixedPackType.setAttribute('aria-pressed', String(packType === 'mixed'));
     toppsPackType.setAttribute('aria-pressed', String(packType === 'topps-1968'));
+    backgroundPackType.setAttribute('aria-pressed', String(packType === 'background-test'));
     mixedPackType.disabled = busy;
     toppsPackType.disabled = busy;
+    backgroundPackType.disabled = busy;
   }
   // GitHub-hosted archival portraits for players without an export photo.
   // These are display-only: never store an era placeholder in saved cards.
@@ -750,7 +763,67 @@
     return back;
   }
 
+  function backgroundTestFront(card) {
+    const front = make('span', 'dbl-cards-face dbl-cards-front dbl-bgtest-pack-front');
+    front.appendChild(make('span', 'dbl-bgtest-pack-header', 'DBL · BACKGROUND TEST'));
+    const frame = make('span', 'dbl-bgtest-pack-frame');
+    const portrait = api.findPhoto(card);
+    if (portrait) {
+      const image = make('img', 'dbl-bgtest-pack-image');
+      image.alt = '';
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      image.referrerPolicy = 'no-referrer';
+      image.src = portrait;
+      frame.appendChild(image);
+    } else frame.appendChild(make('span', 'dbl-bgtest-pack-empty', 'NO PHOTO'));
+    front.appendChild(frame);
+    front.appendChild(make('strong', 'dbl-bgtest-pack-name', card.name));
+    front.appendChild(make('span', 'dbl-bgtest-pack-rating', 'CURRENT OVR ' +
+      (card.currentOvr ?? '—')));
+    front.appendChild(make('span', 'dbl-bgtest-pack-mask-status',
+      portrait ? 'ORIGINAL PHOTO' : 'NO PHOTO'));
+    return front;
+  }
+  function backgroundTestBack(card, back) {
+    back.classList.add('dbl-bgtest-pack-back');
+    back.appendChild(make('strong', 'dbl-bgtest-pack-back-heading', 'BACKGROUND TEST'));
+    back.appendChild(make('strong', 'dbl-bgtest-pack-back-name', card.name));
+    back.appendChild(make('span', 'dbl-bgtest-pack-back-team',
+      card.teamName || card.team || 'DBL'));
+    back.appendChild(make('span', 'dbl-bgtest-pack-back-score',
+      'CURRENT OVR · ' + (card.currentOvr ?? '—')));
+    back.appendChild(make('span', 'dbl-bgtest-pack-back-help',
+      'Photo masking is a display-only experiment. Original files remain unchanged.'));
+    back.appendChild(make('span', 'dbl-bgtest-pack-back-footer',
+      'SERIES 2 · ' + (card.era || 'CURRENT SEASON')));
+    back.appendChild(favoriteAction(card));
+    return back;
+  }
+  function activateBackgroundPhoto(button, card) {
+    if (!isBackgroundTest(card)) return;
+    const image = button.querySelector('.dbl-bgtest-pack-image');
+    if (!image || image.dataset.bgMaskStarted) return;
+    const source = api.findPhoto(card);
+    if (!source || !window.DBLBackgroundTest?.maskPhoto) return;
+    image.dataset.bgMaskStarted = 'true';
+    const label = button.querySelector('.dbl-bgtest-pack-mask-status');
+    void window.DBLBackgroundTest.maskPhoto(image, source, label);
+  }
+  // A shared viewport observer prevents unseen binder cards from starting AI.
+  const backgroundPhotoObserver = typeof window.IntersectionObserver === 'function'
+    ? new window.IntersectionObserver(entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          backgroundPhotoObserver.unobserve(entry.target);
+          if (entry.target.isConnected && !panel.hidden)
+            activateBackgroundPhoto(entry.target, entry.target._backgroundTestCard);
+        }
+      }, {rootMargin: '100px 0px'})
+    : null;
+
   function frontOf(card) {
+    if (isBackgroundTest(card)) return backgroundTestFront(card);
     if (isToppsPlayer(card)) return toppsPlayerFront(card);
     if (isToppsUniform(card)) return toppsUniformFront(card);
     if (isTeamSeason(card)) return teamSeasonFront(card);
@@ -830,11 +903,13 @@
     if (sealed) {
       back.appendChild(make('span', 'dbl-cards-back-logo', 'DBL'));
       back.appendChild(make('span', 'dbl-cards-back-ornament', '✦'));
-      back.appendChild(make('strong', 'dbl-cards-back-sealed-series', 'SERIES 0'));
+      back.appendChild(make('strong', 'dbl-cards-back-sealed-series',
+        isBackgroundTest(card) ? 'BACKGROUND TEST' : 'SERIES 0'));
       back.appendChild(make('span', 'dbl-cards-back-small', 'LEGENDS NEVER FADE'));
       back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO REVEAL'));
       return back;
     }
+    if (isBackgroundTest(card)) return backgroundTestBack(card, back);
     if (isToppsPlayer(card) || isToppsUniform(card)) return toppsBack(card);
     if (isTeamSeason(card)) return teamSeasonBack(card, back);
     // Echo the front's stacked FLAGSHIP lockup on the player profile.
@@ -1020,6 +1095,7 @@
         button.dataset.rarity = card.rarity;
         if (isChampionTeam(card)) button.dataset.teamChampion = 'true';
         playCardRevealEffect(button, card);
+        activateBackgroundPhoto(button, card);
         scheduleNameFit();
         button.setAttribute('aria-label', 'View statistics for ' + cardLabel +
           ', ' + tierMap[card.rarity]?.label);
@@ -1037,6 +1113,10 @@
       }
     };
     button.addEventListener('click', flipCard);
+    if (!sealed && isBackgroundTest(card)) {
+      button._backgroundTestCard = card;
+      if (backgroundPhotoObserver) backgroundPhotoObserver.observe(button);
+    }
     button.addEventListener('keydown', event => {
       if (event.target !== button || (event.key !== 'Enter' && event.key !== ' ')) return;
       event.preventDefault();
@@ -1046,16 +1126,22 @@
   }
   function newPackArt(tearing = false) {
     const topps = packType === 'topps-1968';
+    const background = packType === 'background-test';
     const pack = make('div', 'dbl-cards-pack' + (tearing ? ' is-ripping' : ''));
     pack.dataset.packType = packType;
-    pack.appendChild(make('span', 'dbl-cards-pack-crest', topps ? 'DBL / 1968' : 'DBL / 1916'));
-    pack.appendChild(make('strong', 'dbl-cards-pack-name', topps ? 'TOPPS' : 'LEGACY'));
-    pack.appendChild(make('span', 'dbl-cards-pack-shape', topps ? '68' : '◇'));
+    pack.appendChild(make('span', 'dbl-cards-pack-crest',
+      background ? 'DBL / EXPERIMENT' : topps ? 'DBL / 1968' : 'DBL / 1916'));
+    pack.appendChild(make('strong', 'dbl-cards-pack-name',
+      background ? 'MASK' : topps ? 'TOPPS' : 'LEGACY'));
+    pack.appendChild(make('span', 'dbl-cards-pack-shape',
+      background ? '02' : topps ? '68' : '◇'));
     pack.appendChild(make('span', 'dbl-cards-pack-series',
-      topps ? '1968 · TEST ISSUE' :
+      background ? 'SERIES 2 · BACKGROUND TEST' :
+        topps ? '1968 · TEST ISSUE' :
         'SERIES ' + api.currentSeries + ' · THE COLLECTOR SERIES'));
     pack.appendChild(make('span', 'dbl-cards-pack-guarantee',
-      topps ? '5 CARDS · 1968 TOPPS ONLY' : '5 CARDS · RANDOM PULLS'));
+      background ? '5 CARDS · CURRENT OVR 50+' :
+        topps ? '5 CARDS · 1968 TOPPS ONLY' : '5 CARDS · RANDOM PULLS'));
     pack.appendChild(make('span', 'dbl-cards-pack-tear'));
     return pack;
   }
@@ -1729,6 +1815,7 @@
   }
   mixedPackType.addEventListener('click', () => choosePackType('mixed'));
   toppsPackType.addEventListener('click', () => choosePackType('topps-1968'));
+  backgroundPackType.addEventListener('click', () => choosePackType('background-test'));
   openBtn.addEventListener('click', openPack);
   revealBtn.addEventListener('click', revealAll);
   againBtn.addEventListener('click', readyStage);
