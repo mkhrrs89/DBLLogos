@@ -82,7 +82,7 @@
     {
       series: 2,
       name: 'Background Test',
-      subtitle: 'On-device background removal · Current OVR 50+ · No packs',
+      subtitle: 'On-device background removal · Current OVR 50+ · Plain packs',
       establishedIrl: 'Nov 12, 2026',
       establishedInGame: 'Current season'
     }
@@ -243,6 +243,8 @@
       'Est. collection value');
     appendStat(counter, format(api.items.filter(c => c.series === 1)
       .reduce((n, c) => n + c.count, 0)), '1968 Topps pulls');
+    appendStat(counter, format(api.items.filter(c => isBackgroundTest(c))
+      .reduce((n, c) => n + c.count, 0)), 'Background Test pulls');
     appendStat(counter, format(api.items.filter(c => isTeamSeason(c))
       .reduce((n, c) => n + c.count, 0)), 'Team Season inserts');
     appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
@@ -1285,7 +1287,8 @@
     cell.appendChild(element);
     cell.appendChild(make('span', 'dbl-cards-owned', 'OWNED ×' + card.count));
     cell.appendChild(make('span', 'dbl-cards-binder-market',
-      'EST. ' + marketMoney(api.marketValue(card))));
+      isBackgroundTest(card) ? 'TEST · CURRENT OVR ' + (card.currentOvr ?? '—')
+        : 'EST. ' + marketMoney(api.marketValue(card))));
     return cell;
   }
   function showGallery() {
