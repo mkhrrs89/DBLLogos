@@ -122,6 +122,11 @@
     {
       title: 'Fatal Automobile Accident Involving DBL Player', category: 'Police & Society', plan: 'veteran',
       text: "A veteran player is involved in a late-night collision that kills a motorist in another vehicle. Although authorities initially decline to assign blame, conflicting witness accounts and allegations of excessive speed prompt a criminal investigation, threatening the player's career and potentially resulting in a manslaughter charge."
+    },
+    {
+      title: 'Player Drafted for Vietnam War', category: 'Politics & Vietnam', plan: 'young',
+      text: 'A young DBL player receives orders from his local Selective Service board to report for induction into the United States Army. With his basketball career suddenly in jeopardy, the club scrambles to replace him while his teammates prepare a farewell gathering. Whether he will ultimately be sent to Vietnam remains unknown, leaving the player and his family facing an uncertain future.',
+      caution: 'The league export cannot verify military eligibility, deferments, induction, or overseas deployment. This is a fictional scenario; an induction order does not itself establish service in Vietnam.'
     }
   ].map((entry, index) => Object.freeze({ ...entry, id: index + 1, year: 1968 }));
 
@@ -421,6 +426,7 @@
         break;
       }
       case 28: add(rankPick(roster.players,'veteranStar',rng),'Veteran involved in collision'); break;
+      case 29: add(rankPick(roster.players,'young',rng),'Player ordered to report for Army induction'); break;
       default: return null;
     }
     // Owners, coaches, physicians, spouses and reporters are not invented:
