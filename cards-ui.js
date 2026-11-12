@@ -586,9 +586,9 @@
 
   function toppsUniformFront(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-topps-front dbl-topps-uniform-front');
-    front.appendChild(make('span', 'dbl-topps-uniform-heading', '1968 UNIFORM CARD'));
-    front.appendChild(make('span', 'dbl-topps-uniform-kind',
-      (card.uniform || 'home').toUpperCase()));
+    // A single period-style headline leaves more room for the jersey art.
+    front.appendChild(make('span', 'dbl-topps-uniform-heading',
+      '1968 UNIFORM CARD | ' + (card.uniform || 'home').toUpperCase()));
     const artwork = make('span', 'dbl-topps-uniform-art');
     // Artwork overlays the jersey only after the actual image loads.
     // Missing files keep the default sleeveless basketball mockup.

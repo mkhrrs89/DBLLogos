@@ -3346,21 +3346,17 @@
   font: 400 clamp(13px,8.6cqw,28px)/1.1 Arial,Helvetica,sans-serif;
 }
 .dbl-topps-uniform-heading {
-  position: absolute; top: 3%; left: 2%; right: 2%;
-  /* Fit the complete "1968 UNIFORM CARD" line in the printed card at
-     every supported size, especially compact desktop cards. */
-  font: 400 clamp(8px,5.8cqw,18px)/1.18 Arial,Helvetica,sans-serif;
-  letter-spacing: .09em;
+  position: absolute; top: 3%; left: 1.5%; right: 1.5%;
+  /* Single-line "1968 UNIFORM CARD | HOME/AWAY"; sized for phone cards. */
+  font: 400 clamp(7px,4.9cqw,16px)/1.18 Arial,Helvetica,sans-serif;
+  letter-spacing: .055em;
   white-space: nowrap;
   text-align: center;
 }
-.dbl-topps-uniform-kind {
-  position: absolute; top: 11%; left: 0; right: 0;
-  font: 400 clamp(12px,10.2cqw,33px)/1 Arial,Helvetica,sans-serif;
-  letter-spacing: .22em;
-}
 .dbl-topps-uniform-art {
-  position: absolute; top: 20%; bottom: 15%; left: 5%; right: 5%;
+  /* Reclaim the former second heading row and use more horizontal space;
+     contain keeps full uploaded uniform images visible without cropping. */
+  position: absolute; top: 10.5%; bottom: 14%; left: 2.5%; right: 2.5%;
   display: flex; justify-content: center; align-items: center;
 }
 .dbl-topps-placeholder-jersey {
