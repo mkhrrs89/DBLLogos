@@ -4084,3 +4084,118 @@
   .dbl-bgtest-card-top { font-size: 8px; }
   .dbl-bgtest-player-name { font-size: 12px; }
 }
+
+
+/* Background Test Only: one plain, non-foil edition per eligible player. */
+.dbl-cards-pack[data-pack-type="background-test"] {
+  background: linear-gradient(150deg,#284f57 0%,#1f353b 58%,#8cb8a9 100%);
+  color: #f2f8ef;
+  border: 1px solid rgba(240,251,243,.5);
+}
+.dbl-cards-pack[data-pack-type="background-test"] .dbl-cards-pack-crest,
+.dbl-cards-pack[data-pack-type="background-test"] .dbl-cards-pack-series,
+.dbl-cards-pack[data-pack-type="background-test"] .dbl-cards-pack-guarantee {
+  color: #edf7e5;
+}
+.dbl-cards-pack[data-pack-type="background-test"] .dbl-cards-pack-shape {
+  color: #f3e7c1;
+}
+.dbl-cards-card[data-rarity="background-test"],
+.dbl-cards-card[data-rarity="background-test"] .dbl-cards-front,
+.dbl-cards-card[data-rarity="background-test"] .dbl-cards-back {
+  --card-text:#223537;
+  --card-rule:rgba(38,64,70,.35);
+  --card-muted:#405b5b;
+  --card-edge:#7d9e9b;
+  --card-aura:transparent;
+  border-radius:0;
+}
+.dbl-cards-card .dbl-bgtest-pack-front {
+  background: #f4f1e9;
+  color: #223537;
+  border: 2px solid #31565c;
+  text-align: center;
+}
+.dbl-bgtest-pack-header {
+  position:absolute;
+  left:2%;right:2%;top:3.5%;
+  color:#31565c;
+  font: 800 clamp(7px,4.3cqw,13px)/1.2 Arial,Helvetica,sans-serif;
+  letter-spacing:.045em;
+  white-space:nowrap;
+}
+.dbl-bgtest-pack-frame {
+  position:absolute;
+  left:6%;right:6%;top:11%;bottom:21%;
+  overflow:hidden;
+  background: radial-gradient(ellipse at 50% 36%,#f1e8d4 0%,#b9d0c6 100%);
+}
+.dbl-bgtest-pack-frame::before {
+  content:"";position:absolute;inset:8% 12%;
+  border:2px solid rgba(47,88,84,.17);
+  border-radius:50% 50% 10% 10%;
+}
+.dbl-bgtest-pack-frame .dbl-bgtest-pack-image {
+  display:block;
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:contain;
+  object-position:center;
+  z-index:1;
+}
+.dbl-bgtest-pack-empty {
+  position:absolute;inset:0;
+  display:grid;place-items:center;
+  font:800 .7rem/1.2 Arial,Helvetica,sans-serif;
+}
+.dbl-bgtest-pack-name {
+  position:absolute;left:3%;right:3%;bottom:12%;
+  font:900 clamp(11px,8.5cqw,27px)/1.04 Georgia,serif;
+  max-height:13%;overflow:hidden;
+  text-align:center;overflow-wrap:anywhere;
+}
+.dbl-bgtest-pack-rating {
+  position:absolute;left:3%;right:3%;bottom:6%;
+  font:800 clamp(8px,5.5cqw,16px)/1.2 Arial,Helvetica,sans-serif;
+  letter-spacing:.04em;text-align:center;
+}
+.dbl-bgtest-pack-mask-status {
+  position:absolute;left:3%;right:3%;bottom:2.2%;
+  font:700 clamp(6px,3.6cqw,11px)/1.1 Arial,Helvetica,sans-serif;
+  letter-spacing:.06em;text-align:center;color:#547371;
+}
+.dbl-cards-card[data-rarity="background-test"] .dbl-bgtest-pack-back {
+  background:#eee9de;
+  color:#223537;
+  border:2px solid #31565c;
+}
+.dbl-bgtest-pack-back-heading {
+  display:block;position:absolute;top:6%;left:4%;right:4%;
+  text-align:center;font:900 clamp(12px,8.1cqw,26px)/1.08 Georgia,serif;
+}
+.dbl-bgtest-pack-back-name {
+  display:block;position:absolute;top:27%;left:5%;right:5%;
+  text-align:center;font:900 clamp(12px,9cqw,27px)/1.12 Georgia,serif;
+}
+.dbl-bgtest-pack-back-team {
+  display:block;position:absolute;top:40%;left:5%;right:5%;
+  text-align:center;font:700 clamp(9px,6cqw,19px)/1.2 Arial,Helvetica,sans-serif;
+}
+.dbl-bgtest-pack-back-score {
+  display:block;position:absolute;top:53%;left:5%;right:5%;
+  text-align:center;font:900 clamp(12px,9cqw,29px)/1.15 Arial,Helvetica,sans-serif;
+}
+.dbl-bgtest-pack-back-help {
+  display:block;position:absolute;left:8%;right:8%;bottom:18%;
+  text-align:center;font:500 clamp(8px,4.2cqw,14px)/1.35 Arial,Helvetica,sans-serif;
+}
+.dbl-bgtest-pack-back-footer {
+  position:absolute;left:5%;right:5%;bottom:5%;
+  text-align:center;font:800 clamp(7px,4.5cqw,13px)/1 Arial,Helvetica,sans-serif;
+  letter-spacing:.08em;
+}
+.dbl-bgtest-owned {
+  color:var(--text);
+  font:850 .72rem/1.2 Arial,Helvetica,sans-serif;
+  text-align:center;font-variant-numeric:tabular-nums;
+}
