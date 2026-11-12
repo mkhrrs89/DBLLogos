@@ -3,6 +3,7 @@
   if (window.DBLCardEngine) return;
   const hub = window.DBLLeagueFileHub;
   const reader = window.DBLLeagueStream;
+  const market = window.DBLCardMarket;
   if (!hub?.subscribe || !reader?.forEachTopLevelArrayItem || !reader?.readTopLevelValue) return;
 
   // Three Mythical designs share a combined 0.1% chance PER CARD SLOT.
@@ -119,6 +120,8 @@
   let pool = [], poolByPid = new Map(), teamLogos = new Map(), activeSeason = null;
   let teamSeasonPool = [], teamSeasonById = new Map();
   let toppsPlayerPool = [], toppsUniformPool = [], toppsById = new Map();
+  // Derived from the uploaded file, never stored in the collection.
+  let marketProfiles = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
   let packSources = {}, mergingCollection = false;
   let savedOK = true, saveQueue = Promise.resolve();
@@ -162,6 +165,7 @@
         team, teamName, franchiseName: str(row.franchiseName) || teamName,
         teamLogo: photoUrl(row.teamLogo, true),
         pos: str(row.pos) || '—', rookie: row.rookie === true,
+        draftPick: integer(row.draftPick),
         ovr: number(row.ovr), gp: number(row.gp), ppg: number(row.ppg),
         rpg: number(row.rpg), apg: number(row.apg), photo: photoUrl(row.photo, true)
       };
@@ -181,7 +185,7 @@
   function updateTopps(target, fresh) {
     let changed = false;
     for (const key of ['name','firstName','lastName','jersey','team','teamName',
-      'franchiseName','teamLogo','tid','pos','rookie','ovr','gp','ppg','rpg','apg',
+      'franchiseName','teamLogo','tid','pos','rookie','draftPick','ovr','gp','ppg','rpg','apg',
       'photo','uniformImage']) {
       if (fresh[key] !== undefined && fresh[key] !== null && fresh[key] !== '' &&
           fresh[key] !== target[key]) {
@@ -231,7 +235,7 @@
       franchiseName: franchise?.name || historic?.name || 'Unknown team',
       teamLogo: photoUrl(historic?.logo, true), logo: historic?.logo || '',
       pos: str(current.pos) || str(player.pos) || '—',
-      rookie: !hasPreviousGames,
+      rookie: !hasPreviousGames, draftPick: integer(player.draft?.pick),
       ovr: number(current.ovr), gp,
       ppg: gp ? Math.round(pts / gp * 10) / 10 : 0,
       rpg: gp ? Math.round(trb / gp * 10) / 10 : 0,
@@ -390,6 +394,7 @@
       publicTeamLogo: photoUrl(historicTeam?.logo, true),
       pos: str(rating.pos) || str(player.pos) || '—',
       era: peakYear, peakVerified: peakYear !== null, rookie, ovr, pot,
+      draftPick: integer(player.draft?.pick),
       peak: ratings.peak,
       gp: career.gp, ppg: career.ppg, ws: career.ws,
       image: photoUrl(player?.imgURL),
@@ -513,6 +518,7 @@
         era: row.peakVerified === true ? integer(row.era) : null,
         peakVerified: row.peakVerified === true,
         rookie: row.peakVerified === true && row.rookie === true,
+        draftPick: integer(row.draftPick),
         ovr: row.peakVerified === true ? number(row.ovr) :
           (number(row.peak) ?? number(row.ovr)),
         peak: number(row.peak),
@@ -610,6 +616,7 @@
           era: row.peakVerified === true ? integer(row.era) : null,
           peakVerified: row.peakVerified === true,
           rookie: row.peakVerified === true && row.rookie === true,
+          draftPick: integer(row.draftPick),
           ovr: row.peakVerified === true ? number(row.ovr) :
             (number(row.peak) ?? number(row.ovr)),
           peak: number(row.peak), pot: number(row.pot),
@@ -723,7 +730,7 @@
   // rarity, ownership quantity, portrait or collectible identity.
   function updateCardFromPlayer(target, player) {
     const fields = ['name', 'firstName', 'lastName', 'jersey', 'team', 'teamName',
-      'teamLogo', 'pos', 'era', 'rookie', 'ovr', 'pot', 'peak', 'peakVerified',
+      'teamLogo', 'pos', 'era', 'rookie', 'draftPick', 'ovr', 'pot', 'peak', 'peakVerified',
       'gp', 'ppg', 'ws'];
     let modified = false;
     for (const key of fields) {
@@ -953,6 +960,7 @@
         jersey: p.jersey, team: p.team, teamName: p.teamName,
         teamLogo: p.publicTeamLogo,
         pos: p.pos, era: p.era, peakVerified: p.peakVerified, rookie: p.rookie,
+        draftPick: p.draftPick,
         ovr: p.ovr, peak: p.peak, pot: p.pot,
         gp: p.gp, ppg: p.ppg, ws: p.ws, photo: p.publicImage
       });
@@ -1134,6 +1142,7 @@
       if (!current()) return;
       const players = [], seen = new Set();
       const toppsPlayers = [], seenTopps = new Set();
+      const nextMarketProfiles = new Map();
       await reader.forEachTopLevelArrayItem(file, 'players', player => {
         if (!current()) return;
         const topps = topperPlayer(player, season, teams);
@@ -1142,6 +1151,10 @@
           toppsPlayers.push(topps);
         }
         const data = playerInfo(player, season, teams);
+        if (topps || data) {
+          const valueProfile = market?.profile(player, season);
+          if (valueProfile) nextMarketProfiles.set(valueProfile.pid, valueProfile);
+        }
         if (!data || seen.has(data.pid)) return;
         seen.add(data.pid);
         players.push(data);
@@ -1179,6 +1192,7 @@
         a.uniform.localeCompare(b.uniform));
       pool = players;
       poolByPid = new Map(players.map(p => [p.pid, p]));
+      marketProfiles = nextMarketProfiles;
       teamSeasonPool = teamSeasons;
       teamSeasonById = new Map(teamSeasons.map(team => [team.id, team]));
       toppsPlayerPool = toppsPlayers;
@@ -1192,6 +1206,7 @@
       if (!current()) return;
       console.warn('Could not load card player pool.', error);
       pool = [];
+      marketProfiles = new Map();
       teamSeasonPool = [];
       teamSeasonById = new Map();
       toppsPlayerPool = [];
@@ -1213,6 +1228,7 @@
     poolFile = null;
     pool = [];
     poolByPid = new Map();
+    marketProfiles = new Map();
     teamSeasonPool = [];
     teamSeasonById = new Map();
     toppsPlayerPool = [];
@@ -1223,6 +1239,15 @@
     scanning = false;
     problem = '';
     notify();
+  }
+  function marketValue(card) {
+    if (!market?.value || !card) return 0;
+    const year = activeSeason ?? integer(card.era) ?? TOPPS_YEAR;
+    const profile = marketProfiles.get(integer(card.pid)) || null;
+    const team = card.type === 'topps-uniform'
+      ? teamSeasonById.get('team:' + integer(card.tid) + ':' + TOPPS_YEAR)
+      : card.type === 'team-season' ? teamSeasonById.get(card.id) : null;
+    return market.value(card, year, profile, team);
   }
   const api = Object.freeze({
     currentSeries: CARD_SERIES,
@@ -1236,17 +1261,20 @@
       return pool.map(p => ({
         pid: p.pid, name: p.name, teamName: p.teamName,
         team: p.team, peak: p.peak, era: p.era,
-        franchiseTid: p.franchiseTid, franchiseName: p.franchiseName
+        franchiseTid: p.franchiseTid, franchiseName: p.franchiseName,
+        rookie: p.rookie, draftPick: p.draftPick
       }));
     },
     // All eligible 1968 Topps player and uniform editions, independently
     // collected from Series 0 and unaffected by Series 0 OVR floors.
     get checklistTopps() {
       return [...toppsPlayerPool, ...toppsUniformPool].map(c => ({
-        id: c.id, type: c.type, rarity: c.rarity, era: TOPPS_YEAR,
+        id: c.id, pid: c.pid, tid: c.tid,
+        type: c.type, rarity: c.rarity, era: TOPPS_YEAR,
         name: c.name, team: c.team, teamName: c.teamName,
         franchiseTid: c.tid, franchiseName: c.franchiseName,
-        peak: c.ovr ?? null, rookie: c.rookie === true, uniform: c.uniform
+        peak: c.ovr ?? null, rookie: c.rookie === true,
+        draftPick: c.draftPick, uniform: c.uniform
       }));
     },
     // Read-only historical team season catalog for Checklist completion.
@@ -1255,7 +1283,9 @@
         id: card.id, tid: card.tid, era: card.era, name: card.name,
         teamName: card.teamName, team: card.team,
         franchiseName: card.franchiseName, rarity: TEAM_INSERT.id,
-        finish: card.finish
+        finish: card.finish, finishKind: card.finishKind,
+        won: card.won, lost: card.lost, tied: card.tied,
+        playoffRoundsWon: card.playoffRoundsWon
       }));
     },
     ready, subscribe(callback) {
@@ -1263,6 +1293,7 @@
       return () => listeners.delete(callback);
     },
     ensurePool, getPack, collectPack, clearCollection, isFavorite, setFavorite,
+    marketValue,
     isRookie(card) {
       if (card?.rookie === true) return true;
       // Older saved cards lack a rookie flag. Use the current export if it
