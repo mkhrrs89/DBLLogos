@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kavoon&family=Lobster&family=Shrikhand&display=swap" />
-    <link rel="stylesheet" href="./cards.css?v=20261112-background-test-v1" />
+    <link rel="stylesheet" href="./cards.css?v=20261112-background-test-packs-v1" />
     <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
@@ -279,6 +279,7 @@
               <div class="dbl-cards-pack-selector" role="group" aria-label="Pack type">
                 <button type="button" id="cardsMixedPackType" class="dbl-cards-pack-type is-selected" aria-pressed="true">Legacy · Mixed</button>
                 <button type="button" id="cardsToppsPackType" class="dbl-cards-pack-type" aria-pressed="false">1968 Topps Only</button>
+                <button type="button" id="cardsBackgroundPackType" class="dbl-cards-pack-type" aria-pressed="false">Background Test Only</button>
               </div>
               <div id="cardsPackStage" class="dbl-cards-pack-stage" aria-live="polite"></div>
               <div class="dbl-cards-ritual-controls">
@@ -288,7 +289,7 @@
                 <button id="cardsRevealAllBtn" class="dbl-cards-action-button" type="button">Reveal all cards</button>
                 <button id="cardsNextPackBtn" class="dbl-cards-action-button" type="button">Next pack</button>
               </div>
-              <p class="dbl-cards-save-status">Legacy Mixed packs — Player-card pull weights: Base 87.5% · Chrome 10% · Refractor 2% · Black Label 0.5%. Team Season inserts have a 3% chance and 1968 Topps cards have a 15% chance per eligible slot (including uniform placeholders). No rarity is guaranteed per pack; standard player-card rarity weights apply to non-insert pulls. Actual overall pull rates may differ. 1968 Topps Only packs contain five 1968 Topps cards, with player and uniform editions drawn from the available 1968 set (typically 80% players and 20% uniforms when both are available).</p>
+              <p class="dbl-cards-save-status">Legacy Mixed packs — Player-card pull weights: Base 87.5% · Chrome 10% · Refractor 2% · Black Label 0.5%. Team Season inserts have a 3% chance and 1968 Topps cards have a 15% chance per eligible slot (including uniform placeholders). No rarity is guaranteed per pack; standard player-card rarity weights apply to non-insert pulls. Actual overall pull rates may differ. 1968 Topps Only packs contain five 1968 Topps cards, with player and uniform editions drawn from the available 1968 set (typically 80% players and 20% uniforms when both are available). Background Test Only packs contain five plain player cards exclusively from active players with current OVR 50+, with no inserts or parallels.</p>
             </section>
           </div>
 
@@ -328,6 +329,7 @@
                   <option value="team-season">Team Season insert</option>
                    <option value="topps-1968">1968 Topps player</option>
                    <option value="topps-1968-uniform">1968 Topps uniform</option>
+                  <option value="background-test">Background Test player</option>
                 </select>
               </label>
               <label class="dbl-cards-field" for="cardsTeamFilter">
@@ -431,7 +433,7 @@
             <header class="dbl-cards-checklist-heading">
               <h3>Background Test</h3>
               <p>A third experimental card collection. One simple card for every current-roster player with
-                <strong>current OVR 50 or higher</strong>. No packs, inserts, parallels, or changes to your saved binder.</p>
+                <strong>current OVR 50 or higher</strong>. Open Background Test Only packs in the Pack Room to collect these plain editions; no inserts or parallels.</p>
             </header>
             <p id="cardsBackgroundTestStatus" class="dbl-bgtest-status" role="status" aria-live="polite">
               Open a league file to preview the background-removal test.
@@ -452,7 +454,7 @@
             <div id="cardsBackgroundTestGrid" class="dbl-cards-collection dbl-bgtest-grid"
               aria-label="Player photo background removal experiments"></div>
             <button id="cardsBackgroundTestMore" class="dbl-cards-more" type="button" hidden>Show more players</button>
-            <p class="dbl-cards-footnote">AI detects the person only when a card is near your screen.
+            <p class="dbl-cards-footnote">Background Test pack pulls are saved in your collection and backups. AI detects the person only when a card is near your screen.
               Photos are processed locally in your browser and remain unchanged in the league file.
               Cutouts are temporary, not added to local storage or your card backups.
               The model requires an internet connection for its initial download; images hosted on servers
@@ -1139,9 +1141,9 @@
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./cards-market.js?v=20261111-period-market-v2"></script>
-    <script src="./cards-engine.js?v=20261111-market-v1"></script>
-    <script src="./cards-ui.js?v=20261112-background-test-v1"></script>
-    <script src="./cards-background-test.js?v=20261112-background-test-v1"></script>
+    <script src="./cards-engine.js?v=20261112-background-test-packs-v1"></script>
+    <script src="./cards-ui.js?v=20261112-background-test-packs-v1"></script>
+    <script src="./cards-background-test.js?v=20261112-background-test-packs-v1"></script>
     <script src="./story-generator-engine.js?v=20261112-vietnam-draft-story"></script>
     <script src="./story-generator-ui.js?v=20261111-1968-newsroom"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
