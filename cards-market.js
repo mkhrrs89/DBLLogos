@@ -87,6 +87,26 @@
       return {ok:false, error:'Could not save the multiplier in this browser. No changes were applied.'};
     return {ok:true, pid, multiplier, removed:multiplier === 1};
   }
+  // Atomically edit an existing rule, including changing its PID. A failed
+  // write or a duplicate target PID must leave BOTH original rules intact.
+  function updatePlayerMultiplier(rawPreviousPid, rawPid, rawMultiplier) {
+    const previousPid = parsePid(rawPreviousPid);
+    const pid = parsePid(rawPid);
+    const multiplier = parseMultiplier(rawMultiplier);
+    if (previousPid === null || pid === null || multiplier === null)
+      return {ok:false, error:'Enter a nonnegative integer PID and a multiplier from 1 to 1000 (up to 3 decimal places).'};
+    if (!playerMultipliers.has(previousPid))
+      return {ok:false, error:'That saved multiplier no longer exists. Please choose Edit again.'};
+    if (pid !== previousPid && multiplier > 1 && playerMultipliers.has(pid))
+      return {ok:false, error:'That PID already has a saved multiplier. Edit its existing row instead.'};
+    const next = new Map(playerMultipliers);
+    next.delete(previousPid);
+    if (multiplier > 1) next.set(pid, multiplier);
+    if (!savePlayerMultipliers(next))
+      return {ok:false, error:'Could not save the edit in this browser. The original multiplier was kept.'};
+    return {ok:true, pid, previousPid, multiplier,
+      removed:multiplier === 1};
+  }
   function removePlayerMultiplier(rawPid) {
     const pid = parsePid(rawPid);
     if (pid === null) return {ok:false, error:'Invalid PID.'};
@@ -242,6 +262,7 @@
 
   window.DBLCardMarket = Object.freeze({
     profile, value, multipliers: MULT, playerMultiplier,
-    listPlayerMultipliers, setPlayerMultiplier, removePlayerMultiplier
+    listPlayerMultipliers, setPlayerMultiplier, updatePlayerMultiplier,
+    removePlayerMultiplier
   });
 })();

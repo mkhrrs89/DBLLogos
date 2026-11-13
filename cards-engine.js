@@ -120,6 +120,9 @@
   const listeners = new Set();
   let currentFile = null, fileVersion = 0, scanning = false, poolFile = null;
   let pool = [], poolByPid = new Map(), teamLogos = new Map(), activeSeason = null;
+  // Lookup names from every player in the current league export, including
+  // players outside collectible OVR ranges. Derived only; never persisted.
+  let playerNamesByPid = new Map();
   let teamSeasonPool = [], teamSeasonById = new Map();
   let toppsPlayerPool = [], toppsUniformPool = [], toppsById = new Map();
   let backgroundTestPool = [], backgroundTestByPid = new Map();
@@ -1292,8 +1295,13 @@
       const toppsPlayers = [], seenTopps = new Set();
       const nextBackgroundPlayers = [], seenBackground = new Set();
       const nextMarketProfiles = new Map();
+      const nextPlayerNames = new Map();
       await reader.forEachTopLevelArrayItem(file, 'players', player => {
         if (!current()) return;
+        const playerPid = integer(player?.pid);
+        if (playerPid !== null && playerPid >= 0 &&
+            Number.isSafeInteger(playerPid))
+          nextPlayerNames.set(playerPid, nameOf(player));
         const background = backgroundPlayerCard(player, season, teams);
         if (background && !seenBackground.has(background.pid)) {
           seenBackground.add(background.pid);
@@ -1346,6 +1354,7 @@
         a.uniform.localeCompare(b.uniform));
       pool = players;
       poolByPid = new Map(players.map(p => [p.pid, p]));
+      playerNamesByPid = nextPlayerNames;
       marketProfiles = nextMarketProfiles;
       backgroundTestPool = nextBackgroundPlayers;
       backgroundTestByPid = new Map(nextBackgroundPlayers.map(p => [p.pid, p]));
@@ -1362,6 +1371,7 @@
       if (!current()) return;
       console.warn('Could not load card player pool.', error);
       pool = [];
+      playerNamesByPid = new Map();
       backgroundTestPool = [];
       backgroundTestByPid = new Map();
       marketProfiles = new Map();
@@ -1386,6 +1396,7 @@
     poolFile = null;
     pool = [];
     poolByPid = new Map();
+    playerNamesByPid = new Map();
     backgroundTestPool = [];
     backgroundTestByPid = new Map();
     marketProfiles = new Map();
@@ -1454,6 +1465,19 @@
     },
     ensurePool, getPack, collectPack, clearCollection, deleteSelectedCards, isFavorite, setFavorite,
     marketValue,
+    findPlayerName(pid) {
+      const id = integer(pid);
+      if (id === null || id < 0 || !Number.isSafeInteger(id)) return '';
+      const fromLeague = playerNamesByPid.get(id);
+      if (fromLeague) return fromLeague === 'Unknown player' ? '' : fromLeague;
+      // Old collections still have useful display names when their league
+      // source isn't currently loaded. Do not confuse team inserts with PIDs.
+      const fromCollection = [...collection.values()].find(card =>
+        integer(card.pid) === id && card.type !== 'team-season' &&
+        card.type !== 'topps-uniform' && str(card.name));
+      const name = str(fromCollection?.name);
+      return name && name !== 'Unknown player' ? name : '';
+    },
     isRookie(card) {
       if (card?.rookie === true) return true;
       // Older saved cards lack a rookie flag. Use the current export if it

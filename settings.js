@@ -28,24 +28,40 @@
     });
   });
 
-  // Optional card-value controls: separate browser-local preferences from
-  // saved cards, so existing collection backups and ownership are untouched.
+  // Card-value preferences remain separate from card ownership and league
+  // files. Edit can update both fields; PID changes move a rule atomically.
   const market = window.DBLCardMarket;
+  const cards = window.DBLCardEngine;
   const valueForm = document.getElementById('settingsCardValueForm');
   const pidInput = document.getElementById('settingsCardPid');
   const multiplierInput = document.getElementById('settingsCardMultiplier');
+  const valueSave = document.getElementById('settingsCardValueSave');
+  const cancelEditButton = document.getElementById('settingsCardValueCancel');
   const valueStatus = document.getElementById('settingsCardValueStatus');
   const valueList = document.getElementById('settingsCardValueList');
+  let editingPid = null;
+  let refreshMultiplierNames = () => {};
+  let ensureMultiplierNames = () => {};
 
-  if (market?.setPlayerMultiplier && market?.listPlayerMultipliers &&
-      market?.removePlayerMultiplier && valueForm && pidInput &&
-      multiplierInput && valueStatus && valueList) {
+  if (market?.setPlayerMultiplier && market?.updatePlayerMultiplier &&
+      market?.listPlayerMultipliers && market?.removePlayerMultiplier &&
+      valueForm && pidInput && multiplierInput && valueSave &&
+      cancelEditButton && valueStatus && valueList) {
     const report = (message, isError = false) => {
       valueStatus.textContent = message;
       valueStatus.classList.toggle('is-error', isError);
     };
+    const exitEdit = () => {
+      editingPid = null;
+      pidInput.value = '';
+      multiplierInput.value = '';
+      valueSave.textContent = 'Save multiplier';
+      cancelEditButton.hidden = true;
+    };
     const renderMultipliers = () => {
       const rows = market.listPlayerMultipliers();
+      if (editingPid !== null && !rows.some(row => row.pid === editingPid))
+        exitEdit();
       const fragment = document.createDocumentFragment();
       if (!rows.length) {
         const empty = document.createElement('p');
@@ -56,12 +72,38 @@
         for (const {pid, multiplier} of rows) {
           const row = document.createElement('div');
           row.className = 'settings-card-value-entry';
+          row.classList.toggle('is-editing', editingPid === pid);
           const caption = document.createElement('span');
           caption.className = 'settings-card-value-entry-caption';
-          caption.append('PID ' + pid + ' · ');
+          const pidLabel = document.createElement('span');
+          pidLabel.textContent = 'PID ' + pid;
+          caption.appendChild(pidLabel);
+          const name = cards?.findPlayerName?.(pid);
+          const playerName = document.createElement('span');
+          playerName.className = 'settings-card-value-player-name';
+          playerName.textContent = name || 'Name unavailable';
+          caption.appendChild(playerName);
           const amount = document.createElement('strong');
           amount.textContent = multiplier + '×';
           caption.appendChild(amount);
+
+          const actions = document.createElement('span');
+          actions.className = 'settings-card-value-entry-actions';
+          const edit = document.createElement('button');
+          edit.className = 'action-btn settings-card-value-edit';
+          edit.type = 'button';
+          edit.textContent = 'Edit';
+          edit.setAttribute('aria-label', 'Edit value multiplier for PID ' + pid);
+          edit.addEventListener('click', () => {
+            editingPid = pid;
+            pidInput.value = String(pid);
+            multiplierInput.value = String(multiplier);
+            valueSave.textContent = 'Update multiplier';
+            cancelEditButton.hidden = false;
+            report('Editing PID ' + pid + '. Change the PID or multiplier, then save.');
+            renderMultipliers();
+            multiplierInput.focus();
+          });
           const remove = document.createElement('button');
           remove.className = 'action-btn settings-card-value-remove';
           remove.type = 'button';
@@ -73,31 +115,55 @@
               report(result.error || 'Could not remove multiplier.', true);
               return;
             }
+            if (editingPid === pid) exitEdit();
             report('PID ' + pid + ' is back to its normal card values.');
             renderMultipliers();
           });
-          row.append(caption, remove);
+          actions.append(edit, remove);
+          row.append(caption, actions);
           fragment.appendChild(row);
         }
       }
       valueList.replaceChildren(fragment);
     };
+    refreshMultiplierNames = renderMultipliers;
+    ensureMultiplierNames = () => {
+      if (market.listPlayerMultipliers().length && cards?.status?.hasFile)
+        cards.ensurePool?.();
+    };
+    cancelEditButton.addEventListener('click', () => {
+      exitEdit();
+      report('Editing cancelled; your saved multipliers were not changed.');
+      renderMultipliers();
+    });
     valueForm.addEventListener('submit', event => {
       event.preventDefault();
-      const result = market.setPlayerMultiplier(pidInput.value, multiplierInput.value);
+      const previousPid = editingPid;
+      const result = previousPid === null
+        ? market.setPlayerMultiplier(pidInput.value, multiplierInput.value)
+        : market.updatePlayerMultiplier(previousPid, pidInput.value, multiplierInput.value);
       if (!result.ok) {
         report(result.error || 'Please check the PID and multiplier.', true);
         return;
       }
       report(result.removed
-        ? 'PID ' + result.pid + ' restored to its regular card values.'
-        : 'Saved: every valued player card for PID ' + result.pid +
+        ? 'PID ' + (previousPid ?? result.pid) + ' restored to its normal card values.'
+        : (previousPid === null ? 'Saved: ' : 'Updated: ') +
+          'every valued player card for PID ' + result.pid +
           ' is now worth ' + result.multiplier + '× its normal estimate.');
-      pidInput.value = '';
-      multiplierInput.value = '';
+      exitEdit();
       renderMultipliers();
+      ensureMultiplierNames();
     });
     window.addEventListener('dbl:card-values-changed', renderMultipliers);
+    cards?.subscribe?.(() => {
+      if (!panel.hidden) renderMultipliers();
+    });
+    // If a different league file is uploaded while Settings is open, resolve
+    // names from the new roster without requiring a trip to the Cards tab.
+    window.DBLLeagueFileHub?.subscribe?.(({file}) => {
+      if (file && !panel.hidden) ensureMultiplierNames();
+    }, {immediate:false});
     renderMultipliers();
   }
 
@@ -113,6 +179,8 @@
     });
 
     panel.hidden = false;
+    ensureMultiplierNames();
+    refreshMultiplierNames();
   }
 
   function normalizeTheme(value) {
