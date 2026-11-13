@@ -224,8 +224,13 @@
   function marketMoney(value) {
     return '$' + format(value, 2);
   }
+  // Track rendered market labels without retaining detached card DOM nodes.
+  // Saving a PID multiplier can refresh visible pack cards in place, without
+  // restarting card animations or flipping cards back over.
+  const marketTags = new WeakMap();
   function marketTag(card) {
     const tag = make('span', 'dbl-cards-market-value');
+    marketTags.set(tag, card);
     tag.appendChild(make('span', 'dbl-cards-market-caption', 'EST. VALUE'));
     tag.appendChild(make('strong', 'dbl-cards-market-price',
       marketMoney(api.marketValue(card))));
@@ -2321,6 +2326,19 @@
       showStatus();
       clearBtn.disabled = !api.status.count;
     }
+  });
+  // A Settings change never alters ownership or the saved collection.
+  // Keep current pack reveal animations and flipped states intact while
+  // refreshing the computed price labels, totals and value-based sorting.
+  window.addEventListener('dbl:card-values-changed', () => {
+    showCounters();
+    for (const tag of document.querySelectorAll('.dbl-cards-market-value')) {
+      const card = marketTags.get(tag);
+      const amount = tag.querySelector('.dbl-cards-market-price');
+      if (card && amount) amount.textContent = marketMoney(api.marketValue(card));
+    }
+    if (activeCardsSubtab === 1 && !panel.hidden) showGallery();
+    if (activeCardsSubtab === CHECKLIST_TAB_INDEX && !panel.hidden) showChecklist();
   });
   window.addEventListener('dbl:tab-change', event => {
     if (event.detail?.panelId === 'cardsPanel') {

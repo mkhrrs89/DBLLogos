@@ -11,6 +11,108 @@
   const num = v => v === null || v === undefined || v === '' ||
     !Number.isFinite(Number(v)) ? null : Number(v);
   const yr = v => Number.isInteger(num(v)) ? num(v) : null;
+
+  // User-defined fictional player-card price boosts are independent of
+  // collection ownership, pack odds, and the league file. Keep this small
+  // browser-local settings record separate from existing collection backups.
+  const PLAYER_MULTIPLIERS_KEY = 'dbl-card-player-value-multipliers:v1';
+  const MAX_PLAYER_MULTIPLIER = 1000;
+  const MAX_OVERRIDES = 5000;
+  const parsePid = raw => {
+    const str = String(raw ?? '').trim();
+    if (!/^\d+$/.test(str)) return null;
+    const pid = Number(str);
+    return Number.isSafeInteger(pid) && pid >= 0 ? pid : null;
+  };
+  const parseMultiplier = raw => {
+    const str = String(raw ?? '').trim();
+    if (!/^\d+(?:\.\d{1,3})?$/.test(str)) return null;
+    const multiplier = Number(str);
+    return Number.isFinite(multiplier) && multiplier >= 1 &&
+      multiplier <= MAX_PLAYER_MULTIPLIER ? multiplier : null;
+  };
+  function readPlayerMultipliers() {
+    const parsed = new Map();
+    try {
+      const raw = window.localStorage?.getItem(PLAYER_MULTIPLIERS_KEY);
+      if (!raw) return parsed;
+      const saved = JSON.parse(raw);
+      if (saved?.version !== 1 || !Array.isArray(saved.items)) return parsed;
+      for (const entry of saved.items.slice(0, MAX_OVERRIDES)) {
+        const pid = parsePid(entry?.pid);
+        const multiplier = parseMultiplier(entry?.multiplier);
+        if (pid !== null && multiplier !== null && multiplier > 1)
+          parsed.set(pid, multiplier);
+      }
+    } catch (error) {
+      console.warn('Could not restore player card value multipliers.', error);
+    }
+    return parsed;
+  }
+  let playerMultipliers = readPlayerMultipliers();
+  function playerMultiplier(pid) {
+    const key = parsePid(pid);
+    return key === null ? 1 : playerMultipliers.get(key) || 1;
+  }
+  function listPlayerMultipliers() {
+    return [...playerMultipliers].sort(([a],[b]) => a - b)
+      .map(([pid, multiplier]) => Object.freeze({pid, multiplier}));
+  }
+  function savePlayerMultipliers(next) {
+    const items = [...next].map(([pid, multiplier]) => ({pid, multiplier}));
+    try {
+      window.localStorage.setItem(PLAYER_MULTIPLIERS_KEY,
+        JSON.stringify({version:1, items}));
+    } catch (error) {
+      console.warn('Could not save player card value multipliers.', error);
+      return false;
+    }
+    playerMultipliers = next;
+    if (typeof window.dispatchEvent === 'function' &&
+        typeof window.Event === 'function')
+      window.dispatchEvent(new window.Event('dbl:card-values-changed'));
+    return true;
+  }
+  function setPlayerMultiplier(rawPid, rawMultiplier) {
+    const pid = parsePid(rawPid);
+    const multiplier = parseMultiplier(rawMultiplier);
+    if (pid === null || multiplier === null)
+      return {ok:false, error:'Enter a nonnegative integer PID and a multiplier from 1 to 1000 (up to 3 decimal places).'};
+    const next = new Map(playerMultipliers);
+    if (multiplier === 1) next.delete(pid);
+    else next.set(pid, multiplier);
+    if (next.size > MAX_OVERRIDES)
+      return {ok:false, error:'The player multiplier list is full.'};
+    if (!savePlayerMultipliers(next))
+      return {ok:false, error:'Could not save the multiplier in this browser. No changes were applied.'};
+    return {ok:true, pid, multiplier, removed:multiplier === 1};
+  }
+  function removePlayerMultiplier(rawPid) {
+    const pid = parsePid(rawPid);
+    if (pid === null) return {ok:false, error:'Invalid PID.'};
+    if (!playerMultipliers.has(pid)) return {ok:true, pid, removed:false};
+    const next = new Map(playerMultipliers);
+    next.delete(pid);
+    if (!savePlayerMultipliers(next))
+      return {ok:false, error:'Could not save the removal. The original multiplier was kept.'};
+    return {ok:true, pid, removed:true};
+  }
+  window.addEventListener?.('storage', event => {
+    if (event.key !== PLAYER_MULTIPLIERS_KEY) return;
+    playerMultipliers = readPlayerMultipliers();
+    if (typeof window.dispatchEvent === 'function' &&
+        typeof window.Event === 'function')
+      window.dispatchEvent(new window.Event('dbl:card-values-changed'));
+  });
+  function boostedPrice(card, base) {
+    // Neither historical team inserts nor uniform issues represent a PID.
+    // Experimental Background Test cards have no base market price; those
+    // remain unpriced rather than gaining an invented valuation.
+    if (!card || card.type === 'team-season' || card.type === 'topps-uniform' ||
+        !(base > 0) || !Number.isFinite(base)) return base;
+    const factor = playerMultiplier(card.pid);
+    return factor === 1 ? base : Math.round((base * factor + Number.EPSILON) * 100) / 100;
+  }
   const MULT = Object.freeze({
     common: 1,
     // Scarcity is deliberately sublinear: a 0.03% pull is substantially
@@ -133,9 +235,13 @@
       ? 1 + (6 - draftPick) * .055 : 1;
     // Start a regular card near a few cents (a nickel bought a whole pack
     // in 1968). Better careers and scarce finishes still earn premiums.
-    return Math.round(clamp(.04 * star * multiple * vintage *
+    const base = Math.round(clamp(.04 * star * multiple * vintage *
       rookiePremium * draftHype, .01, 250) * 100) / 100;
+    return boostedPrice(card, base);
   }
 
-  window.DBLCardMarket = Object.freeze({profile, value, multipliers: MULT});
+  window.DBLCardMarket = Object.freeze({
+    profile, value, multipliers: MULT, playerMultiplier,
+    listPlayerMultipliers, setPlayerMultiplier, removePlayerMultiplier
+  });
 })();

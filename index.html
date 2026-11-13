@@ -44,7 +44,7 @@
     <link rel="stylesheet" href="./news.css?v=20261027-offscreen-news-layout" />
     <link rel="stylesheet" href="./rivals.css" />
     <link rel="stylesheet" href="./colleges.css?v=20261027-hide-assigned-filter" />
-    <link rel="stylesheet" href="./settings.css?v=20261025-uniform-news-years" />
+    <link rel="stylesheet" href="./settings.css?v=20261113-player-multiplier-v1" />
     <style>
       #recordsWrap .record-item:nth-child(n + 51) {
         display: none;
@@ -1120,6 +1120,39 @@
               </button>
             </div>
           </div>
+
+          <section class="settings-section settings-card-value-section" aria-labelledby="settingsCardValueTitle">
+            <div class="settings-section-heading">
+              <h3 id="settingsCardValueTitle">Player card value multipliers</h3>
+              <p>Increase the estimated value of every player card with a matching game-file PID,
+                across Series 0 and 1968 Topps. For example, 2 means 2× the normal value.
+                Enter 1 to restore normal pricing. These preferences are saved in this browser;
+                card ownership, league files, and pull odds are not changed.</p>
+            </div>
+            <form id="settingsCardValueForm" class="settings-card-value-form" novalidate>
+              <label for="settingsCardPid">
+                <span>Player PID</span>
+                <input id="settingsCardPid" name="pid" type="number" inputmode="numeric"
+                  min="0" step="1" placeholder="e.g. 123" required />
+              </label>
+              <label for="settingsCardMultiplier">
+                <span>Value multiplier</span>
+                <input id="settingsCardMultiplier" name="multiplier" type="number"
+                  inputmode="decimal" min="1" max="1000" step="any"
+                  placeholder="e.g. 2 or 1.5" required />
+              </label>
+              <button id="settingsCardValueSave" class="action-btn settings-card-value-save"
+                type="submit">Save multiplier</button>
+            </form>
+            <p id="settingsCardValueStatus" class="settings-card-value-status"
+              role="status" aria-live="polite"></p>
+            <div class="settings-card-value-active">
+              <strong>Active multipliers</strong>
+              <div id="settingsCardValueList" class="settings-card-value-list"
+                aria-live="polite"></div>
+            </div>
+          </section>
+
           <div class="settings-section saved-links-section">
             <div class="settings-section-heading">
               <h3>Saved links backup</h3>
@@ -1166,9 +1199,9 @@
     <script src="./home-season-preview.js?v=20261106-home-team-badges"></script>
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
-    <script src="./cards-market.js?v=20261113-team-season-value-rebalance-v1"></script>
+    <script src="./cards-market.js?v=20261113-player-multiplier-v1"></script>
     <script src="./cards-engine.js?v=20261112-black-label-gloss-v1"></script>
-    <script src="./cards-ui.js?v=20261112-black-label-gloss-v1"></script>
+    <script src="./cards-ui.js?v=20261113-player-multiplier-v1"></script>
     <script src="./cards-background-test.js?v=20261112-stock-cutout-v5"></script>
     <script src="./story-generator-engine.js?v=20261112-vietnam-draft-story"></script>
     <script src="./story-generator-ui.js?v=20261111-1968-newsroom"></script>
@@ -1198,7 +1231,7 @@
     <script src="./rivals.js?v=20261027-reuse-selects"></script>
     <script src="./college-auto-locations.js?v=20261027-expanded-geography"></script>
     <script src="./colleges.js?v=20261027-hide-assigned-filter"></script>
-    <script src="./settings.js?v=20260921-dark-newspaper"></script>
+    <script src="./settings.js?v=20261113-player-multiplier-v1"></script>
     <script src="./saved-links-backup.js?v=20261021-border-ratings"></script>
     <script src="./tab-router.js?v=20261109-restore-refresh"></script>
   </body>
