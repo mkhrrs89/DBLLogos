@@ -91,9 +91,11 @@
       const playoff = 1 + .12 * clamp(num(team.playoffRoundsWon) ?? 0, 0, 6);
       const title = team.finishKind === 'champion' ? 2.5 :
         team.finishKind === 'finalist' ? 1.55 : 1;
-      // Team inserts generally trade for dimes and select champions for
-      // dollars in the fictional period market.
-      const starter = card.type === 'topps-uniform' ? .05 : .07;
+      // Series 0 Team Season inserts use a deliberately restrained period
+      // price: ~57% lower than the previous .07 starter. Champions and
+      // stronger teams still earn their existing relative premiums.
+      // Keep the separate 1968 Topps Uniform starter unchanged.
+      const starter = card.type === 'topps-uniform' ? .05 : .03;
       return Math.round(clamp(starter * multiple * strength * playoff *
         title * vintage, .01, 250) * 100) / 100;
     }
