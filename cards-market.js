@@ -253,10 +253,19 @@
     const draftHype = card.rookie === true && elapsed === 0 &&
       draftPick !== null && draftPick >= 1 && draftPick <= 5
       ? 1 + (6 - draftPick) * .055 : 1;
-    // Start a regular card near a few cents (a nickel bought a whole pack
-    // in 1968). Better careers and scarce finishes still earn premiums.
+    // A strong 1968 rookie's contemporary Topps card is more desirable
+    // than an ordinary base card. Only the top 10 by 1968 rookie OVR
+    // receive this extra distinction (rank 1-3 get a slightly higher boost).
+    // Rank comes from the actual 1968 class, not later career performance.
+    const rookieRank = num(card.rookieRank);
+    const rookieStanding = card.type === 'topps-player' &&
+      card.rookie === true && Number.isInteger(rookieRank) &&
+      rookieRank >= 1 && rookieRank <= 10
+      ? (rookieRank <= 3 ? 2.15 : 1.9) : 1;
+    // Start ordinary cards at a few cents, then reflect rookie prominence,
+    // achievements and scarcity without changing any pack probabilities.
     const base = Math.round(clamp(.04 * star * multiple * vintage *
-      rookiePremium * draftHype, .01, 250) * 100) / 100;
+      rookiePremium * draftHype * rookieStanding, .01, 250) * 100) / 100;
     // An independently rare 1-in-1,000 autograph is a distinct collectible
     // edition, but keeps the player's normal Base/Chrome/Refractor pricing
     // inputs. Price the auto premium separately from PID preferences.

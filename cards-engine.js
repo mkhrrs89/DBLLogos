@@ -235,6 +235,11 @@
         teamLogo: photoUrl(row.teamLogo, true),
         pos: str(row.pos) || '—', rookie: row.rookie === true,
         draftPick: integer(row.draftPick),
+        // Optional rank for top ten 1968 rookies, derived from 1968 OVR.
+        // Older saved cards and backups without it remain fully compatible.
+        rookieRank: row.rookie === true && Number.isSafeInteger(integer(row.rookieRank)) &&
+          integer(row.rookieRank) >= 1 && integer(row.rookieRank) <= 10
+          ? integer(row.rookieRank) : null,
         ovr: number(row.ovr), gp: number(row.gp), ppg: number(row.ppg),
         rpg: number(row.rpg), apg: number(row.apg), photo: photoUrl(row.photo, true)
       };
@@ -323,6 +328,14 @@
         changed = true;
       }
     }
+    // Recalculate the ranking from the actual 1968 rookies whenever a
+    // league file is loaded. A player falling out of the top ten must lose
+    // an old rank, so unlike ordinary metadata, null is meaningful here.
+    if (Object.prototype.hasOwnProperty.call(fresh,'rookieRank') &&
+        fresh.rookieRank !== target.rookieRank) {
+      target.rookieRank = fresh.rookieRank;
+      changed = true;
+    }
     return changed;
   }
   function topperPlayer(player, fileYear, teams) {
@@ -366,6 +379,7 @@
       teamLogo: photoUrl(historic?.logo, true), logo: historic?.logo || '',
       pos: str(current.pos) || str(player.pos) || '—',
       rookie: !hasPreviousGames, draftPick: integer(player.draft?.pick),
+      rookieRank: null,
       ovr: number(current.ovr), gp,
       ppg: gp ? Math.round(pts / gp * 10) / 10 : 0,
       rpg: gp ? Math.round(trb / gp * 10) / 10 : 0,
@@ -821,7 +835,12 @@
       if (imported.type === 'background-test') {
         if (updateBackgroundTest(current, imported)) refreshed = true;
       } else if (imported.type === 'topps-player' || imported.type === 'topps-uniform') {
-        if (updateTopps(current, imported)) refreshed = true;
+        // Rankless older backups must not erase a valid top-10 rookie rank
+        // already saved on this device. A live league scan may still
+        // explicitly reset the rank to null when class standings change.
+        const importMetadata = {...imported};
+        if (importMetadata.rookieRank == null) delete importMetadata.rookieRank;
+        if (updateTopps(current, importMetadata)) refreshed = true;
       } else if (imported.type === 'team-season') {
         if (updateTeamSeason(current, imported)) refreshed = true;
       } else if ((imported.peakVerified && !current.peakVerified) ||
@@ -1444,6 +1463,18 @@
       });
       if (!current()) return;
       players.sort((a, b) => b.score - a.score || (b.peak ?? 0) - (a.peak ?? 0) || a.pid - b.pid);
+      // Rank only rookies on the 1968 Topps checklist, by their ratings
+      // in 1968 (not future OVR, achievements or current league year).
+      // Use first-year PPG, then draft position/PID for stable tie breaks.
+      // Don't change IDs, pool selection weights, or the rookie designation.
+      const rankedToppsRookies = toppsPlayers
+        .filter(card => card.rookie === true && Number.isFinite(card.ovr))
+        .sort((a, b) => b.ovr - a.ovr || (b.ppg ?? 0) - (a.ppg ?? 0) ||
+          (a.draftPick ?? Infinity) - (b.draftPick ?? Infinity) ||
+          a.pid - b.pid);
+      rankedToppsRookies.slice(0, 10).forEach((card, index) => {
+        card.rookieRank = index + 1;
+      });
       // One home and one away uniform card per franchise fielding a team in
       // 1968. Until artwork is uploaded these are intentional placeholders.
       const toppsUniforms = [];
@@ -1539,7 +1570,13 @@
     const team = card.type === 'topps-uniform'
       ? teamSeasonById.get('team:' + integer(card.tid) + ':' + TOPPS_YEAR)
       : card.type === 'team-season' ? teamSeasonById.get(card.id) : null;
-    return market.value(card, year, profile, team);
+    // Prefer current 1968 ranking when available, even if an older saved
+    // copy has stale metadata; otherwise honor its persisted rookieRank.
+    const liveTopps = card.type === 'topps-player'
+      ? toppsById.get(baseCardId(card)) : null;
+    const pricedCard = liveTopps
+      ? {...card, rookieRank: liveTopps.rookieRank} : card;
+    return market.value(pricedCard, year, profile, team);
   }
   const api = Object.freeze({
     currentSeries: CARD_SERIES,
