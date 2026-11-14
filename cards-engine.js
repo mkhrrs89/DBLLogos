@@ -12,6 +12,42 @@
   // One independent 0.1% autograph roll per eligible PLAYER card slot.
   // The player-card rarity and insert odds remain unchanged.
   const AUTOGRAPH_RATE = .001;
+  // Gentle, never-guaranteed pity: ordinary odds until long miss streaks,
+  // then at most a 25% *relative* boost (not +25 percentage points).
+  // Auto 0.100% -> max 0.125%; Black 0.250% -> max 0.3125%;
+  // Mythical 0.100% -> max 0.125%.
+  const PITY_RULES = Object.freeze({
+    autograph: {base: AUTOGRAPH_RATE, start: 500, ramp: 1000},
+    blackLabel: {base: .0025, start: 250, ramp: 500},
+    mythical: {base: MYTHICAL_RATE, start: 500, ramp: 1000}
+  });
+  const PITY_MAX_STREAK = 1000000;
+  const PITY_NAMES = Object.keys(PITY_RULES);
+  const emptyPity = () => ({autograph:0,blackLabel:0,mythical:0});
+  function validatedPity(raw, strict = false) {
+    const result = emptyPity();
+    if (raw == null && !strict) return result;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      if (strict) throw Error('The backup contains invalid pity counters.');
+      return result;
+    }
+    for (const name of PITY_NAMES) {
+      const value = raw[name];
+      if (!Number.isSafeInteger(value) || value < 0 || value > PITY_MAX_STREAK) {
+        if (strict) throw Error('The backup contains an invalid ' + name + ' pity counter.');
+        return emptyPity();
+      }
+      result[name] = value;
+    }
+    return result;
+  }
+  function pityChance(name, missed) {
+    const rule = PITY_RULES[name];
+    const boost = .25 * Math.min(1,
+      Math.max(0, missed - rule.start) / rule.ramp);
+    return rule.base * (1 + boost);
+  }
+  const missPity = missed => Math.min(PITY_MAX_STREAK, missed + 1);
   // One independent Team Season insert roll per eligible pack slot.
   // Its roll never changes the standard player-card rarity weights.
   const TEAM_INSERT_RATE = .03;
@@ -132,9 +168,12 @@
   const autoId = (baseId, row) => baseId + (isAutograph(row) ? ':auto' : '');
   const baseCardId = card => card?.autograph === true ?
     String(card.id || '').replace(/:auto$/, '') : card?.id;
-  const autographPull = card => canAutograph(card) &&
-    Math.random() < AUTOGRAPH_RATE ?
-    {...card, autograph:true, id:card.id + ':auto'} : card;
+  function autographPull(card, streaks) {
+    if (!canAutograph(card)) return card;
+    const signed = Math.random() < pityChance('autograph', streaks.autograph);
+    streaks.autograph = signed ? 0 : missPity(streaks.autograph);
+    return signed ? {...card, autograph:true, id:card.id + ':auto'} : card;
+  }
   const nameOf = p => [p?.firstName, p?.lastName].filter(Boolean).join(' ').trim() || str(p?.name) || 'Unknown player';
   const listeners = new Set();
   let currentFile = null, fileVersion = 0, scanning = false, poolFile = null;
@@ -149,6 +188,10 @@
   let marketProfiles = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
   let packSources = {}, mergingCollection = false, deletingCards = false;
+  // Pity advances only when a generated pack is actually collected, never
+  // just because the user previewed/drew an uncollected pack.
+  let pity = emptyPity();
+  const pendingPity = new WeakMap();
   let savedOK = true, saveQueue = Promise.resolve();
   let problem = '';
 
@@ -638,9 +681,11 @@
     packs = Math.max(0, integer(value?.packs) ?? 0);
     packSources = sourceCounts(value?.packSources, packs);
     packs = sumSourceCounts(packSources);
+    pity = validatedPity(value?.pity);
   }
   function snapshot() {
     return {version: STATE_VERSION, packs, packSources: {...packSources},
+      pity: {...pity},
       items: [...collection.values()].map(i => ({
         ...i, sourceCounts: {...i.sourceCounts},
         photo: photoUrl(i.photo, true),
@@ -667,6 +712,10 @@
         backup.packs > 100000000)
       throw Error('The collection backup has an invalid pack total.');
     const incomingPacks = sourceCounts(backup.packSources, backup.packs, true);
+    // Backups from before the pity system are valid and do not reset the
+    // destination's local streak progress.
+    const incomingPity = Object.prototype.hasOwnProperty.call(backup, 'pity')
+      ? validatedPity(backup.pity, true) : null;
     const cards = new Map();
     for (const row of backup.items) {
       if (!row || typeof row !== 'object' || Array.isArray(row))
@@ -739,7 +788,7 @@
       if (cards.has(item.id)) throw Error('The backup contains duplicate card rows.');
       cards.set(item.id, item);
     }
-    return {cards, packSources: incomingPacks};
+    return {cards, packSources: incomingPacks, pity: incomingPity};
   }
 
   function planCollectionMerge(backup) {
@@ -788,15 +837,23 @@
     }
     const nextPackSources = unionSourceCounts(packSources, incoming.packSources);
     const nextPacks = sumSourceCounts(nextPackSources);
+    // Use maximum streak, never addition: repeated imports are idempotent
+    // and an older backup cannot erase local pity progress.
+    const nextPity = {...pity};
+    if (incoming.pity)
+      for (const name of PITY_NAMES)
+        nextPity[name] = Math.max(pity[name], incoming.pity[name]);
+    const pityChanged = PITY_NAMES.some(name => nextPity[name] !== pity[name]);
     if (nextPacks > 100000000) throw Error('Merged pack totals exceed the collection limit.');
     const addedPacks = nextPacks - packs;
     const info = {
       addedCards, addedEditions, addedPacks,
       totalCards: [...next.values()].reduce((n, card) => n + card.count, 0),
       totalEditions: next.size, totalPacks: nextPacks,
-      unchanged: addedCards === 0 && addedPacks === 0 && !refreshed
+      unchanged: addedCards === 0 && addedPacks === 0 && !refreshed &&
+        !pityChanged
     };
-    return {info, next, nextPacks, nextPackSources};
+    return {info, next, nextPacks, nextPackSources, nextPity};
   }
 
   function previewCollectionMerge(backup) {
@@ -815,7 +872,7 @@
     // until the merged state is actually written. On failure, nothing is lost.
     const state = {
       version: STATE_VERSION, packs: plan.nextPacks,
-      packSources: {...plan.nextPackSources},
+      packSources: {...plan.nextPackSources}, pity: {...plan.nextPity},
       items: [...plan.next.values()].map(item => ({
         ...item, sourceCounts: {...item.sourceCounts},
         photo: photoUrl(item.photo, true),
@@ -833,6 +890,7 @@
       collection = plan.next;
       packSources = plan.nextPackSources;
       packs = plan.nextPacks;
+      pity = plan.nextPity;
       savedOK = true;
       return {...plan.info, saved: true};
     } finally {
@@ -947,7 +1005,8 @@
     if (!collectionLoaded || mergingCollection || deletingCards) return false;
     // Serialize the reset behind any in-flight pack saves so an older write
     // can never resurrect cards after the user clears them.
-    const empty = {version: STATE_VERSION, packs: 0, packSources: {}, items: []};
+    const empty = {version: STATE_VERSION, packs: 0, packSources: {},
+      pity: emptyPity(), items: []};
     saveQueue = saveQueue.catch(() => {}).then(() => writeState(empty));
     const cleared = await saveQueue;
     if (!cleared) {
@@ -958,6 +1017,7 @@
     collection.clear();
     packs = 0;
     packSources = {};
+    pity = emptyPity();
     savedOK = true;
     notify();
     return true;
@@ -975,6 +1035,7 @@
     const next = new Map([...collection].filter(([id]) => !unique.has(id)));
     const state = {
       version:STATE_VERSION, packs, packSources:{...packSources},
+      pity:{...pity},
       items:[...next.values()].map(item => ({
         ...item, sourceCounts:{...item.sourceCounts},
         photo:photoUrl(item.photo, true),
@@ -1001,20 +1062,35 @@
       notify({type:'collection-delete-end'});
     }
   }
-  function sampleTier() {
+  function sampleTier(streaks) {
+    const blackEligible = pool.some(p =>
+      p.peak >= MIN_OVR_BY_RARITY['black-label']);
+    // Add only a tiny bonus to Black Label. Subtract exactly that from
+    // Base, leaving the Chrome/Refractor weights and their odds unchanged.
+    const extra = blackEligible
+      ? (pityChance('blackLabel', streaks.blackLabel) -
+        PITY_RULES.blackLabel.base) * 100 : 0;
     const total = STANDARD_RARITIES.reduce((n, tier) => n + tier.chance, 0);
     let ticket = Math.random() * total;
+    let chosen = STANDARD_RARITIES[STANDARD_RARITIES.length - 1];
     for (const tier of STANDARD_RARITIES) {
-      ticket -= tier.chance;
-      if (ticket < 0) return tier;
+      const chance = tier.id === 'common' ? tier.chance - extra :
+        tier.id === 'black-label' ? tier.chance + extra : tier.chance;
+      ticket -= chance;
+      if (ticket < 0) {chosen = tier; break;}
     }
-    return STANDARD_RARITIES[STANDARD_RARITIES.length - 1];
+    if (blackEligible)
+      streaks.blackLabel = chosen.id === 'black-label' ?
+        0 : missPity(streaks.blackLabel);
+    return chosen;
   }
-  // Roll Mythical independently at 0.1% per card slot, with no
-  // guaranteed upgrade. Each design gets one third of Mythical pulls.
-  function sampleMythical() {
+  // Roll Mythical independently at 0.1% per eligible mixed-pack slot.
+  // Each design still gets one third of Mythical pulls; no hard pity.
+  function sampleMythical(streaks) {
     if (!pool.some(p => p.peak >= MIN_OVR_BY_RARITY['mythic-aether'])) return null;
-    if (Math.random() >= MYTHICAL_RATE) return null;
+    const hit = Math.random() < pityChance('mythical', streaks.mythical);
+    streaks.mythical = hit ? 0 : missPity(streaks.mythical);
+    if (!hit) return null;
     return MYTHICAL_RARITIES[Math.floor(Math.random() * MYTHICAL_RARITIES.length)];
   }
   function pickMythical(tier, taken) {
@@ -1069,6 +1145,12 @@
     if (packType !== 'mixed' && packType !== 'topps-1968' &&
         packType !== 'background-test') return [];
     const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set(), picks = [];
+    const startingPity = {...pity};
+    const nextPity = {...pity};
+    const finish = () => {
+      pendingPity.set(picks, {startingPity, nextPity});
+      return picks;
+    };
     if (packType === 'background-test') {
       if (!backgroundTestPool.length) return [];
       // Only one identical plain edition per qualifying current player.
@@ -1082,9 +1164,9 @@
         // Keep the original embedded photo available through the live pool,
         // never copy a base64 image into persistent card storage/backups.
         const {image, imageFallback, ...cardData} = selected;
-        picks.push(autographPull({...cardData, count: 1}));
+        picks.push(autographPull({...cardData, count: 1}, nextPity));
       }
-      return picks;
+      return finish();
     }
     if (packType === 'topps-1968') {
       if (!toppsById.size) return [];
@@ -1094,12 +1176,12 @@
         const insert = chooseToppsInsert(takenToppsIds);
         if (!insert) return [];
         takenToppsIds.add(insert.id);
-        picks.push(autographPull({...insert, count: 1}));
+        picks.push(autographPull({...insert, count: 1}, nextPity));
       }
-      return picks;
+      return finish();
     }
     for (let i = 0; i < 5; i++) {
-      const mythicalTier = sampleMythical();
+      const mythicalTier = sampleMythical(nextPity);
       // Both inserts share a single roll: Team Season at 3% and 1968
       // Topps at 15% of non-Mythical slots, with no protected fifth slot.
       if (!mythicalTier) {
@@ -1118,12 +1200,14 @@
           const insert = chooseToppsInsert(takenToppsIds);
           if (insert) {
             takenToppsIds.add(insert.id);
-            picks.push({...insert, count: 1});
+            // Mixed-pack Topps PLAYERS get the same autograph roll as
+            // Topps-only packs; uniforms remain explicitly ineligible.
+            picks.push(autographPull({...insert, count: 1}, nextPity));
             continue;
           }
         }
       }
-      const requestedTier = mythicalTier || sampleTier();
+      const requestedTier = mythicalTier || sampleTier(nextPity);
       const chosen = mythicalTier ?
         {tier: mythicalTier, player: pickMythical(mythicalTier, taken)} :
         (pickForRarity(requestedTier, taken) ||
@@ -1141,13 +1225,20 @@
         draftPick: p.draftPick,
         ovr: p.ovr, peak: p.peak, pot: p.pot,
         gp: p.gp, ppg: p.ppg, ws: p.ws, photo: p.publicImage
-      }));
+      }, nextPity));
     }
-    return picks;
+    return finish();
   }
   function collectPack(picks) {
     if (!collectionLoaded || mergingCollection || deletingCards ||
         !Array.isArray(picks) || picks.length !== 5) return false;
+    const pending = pendingPity.get(picks);
+    // Only a pack produced by getPack can advance pity. A second uncollected
+    // draw cannot overwrite progress already committed by another pack.
+    if (pending && PITY_NAMES.every(name =>
+        pending.startingPity[name] === pity[name]))
+      pity = {...pending.nextPity};
+    pendingPity.delete(picks);
     for (const card of picks) {
       const owned = collection.get(card.id);
       if (owned) {
