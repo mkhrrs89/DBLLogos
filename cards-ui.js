@@ -119,8 +119,8 @@
   const activeCompletionTiers = () => activeChecklistSeries === 1
     ? toppsCompletionTiers : completionTiers;
   const isTeamSeason = card => card?.type === 'team-season';
-  // Refractor treatment is an honor for verified champion team-seasons,
-  // not a new rarity/pull category and never a clue on sealed backs.
+  // The distinct bronze finish is reserved for verified champion
+  // team-seasons: visual only, not a new rarity or sealed-card clue.
   const isChampionTeam = card => isTeamSeason(card) && card.finishKind === 'champion';
   const isToppsPlayer = card => card?.type === 'topps-player';
   const isToppsUniform = card => card?.type === 'topps-uniform';
@@ -1185,6 +1185,9 @@
   const REVEAL_EFFECTS = Object.freeze({
     crome: {duration: 1100, sparks: 5, spread: .43, glyph: '✦'},
     refractor: {duration: 1580, sparks: 10, spread: .62, glyph: '✧'},
+    // Historical champions receive bronze/copper engraving glints instead
+    // of the prismatic Refractor spectacle; regular Refractors are unchanged.
+    'bronze-champion': {duration: 1660, sparks: 8, spread: .46, glyph: '◆'},
     // Retain the Black Label reveal's flash, halo, ring and foil sweep.
     // Remove star-shaped particles and the star sigil per the finish redesign.
     'black-label': {duration: 2100, sparks: 0, spread: 0, glyph: ''},
@@ -1194,9 +1197,9 @@
   });
 
   function playCardRevealEffect(button, card) {
-    // Champion team-season cards borrow the Refractor flourish; ordinary
-    // team seasons still have just the normal flip.
-    const effect = isChampionTeam(card) ? 'refractor' : card.rarity;
+    // Only verified league champions get the bronze reveal; normal Team
+    // Seasons keep their ordinary flip and player Refractors stay prismatic.
+    const effect = isChampionTeam(card) ? 'bronze-champion' : card.rarity;
     const config = REVEAL_EFFECTS[effect];
     // Base cards have no extra effect. Respect OS reduced-motion preferences.
     if (!config || reduced()) return;
@@ -1206,11 +1209,10 @@
     fx.dataset.effect = effect;
     fx.style.setProperty('--fx-duration', config.duration + 'ms');
     fx.style.setProperty('--fx-delay', '170ms');
-    // Confine ONLY the one-time glint to the card surface for these three
-    // grades. The flash, halo, ring, symbol and particles can still burst
-    // beyond the card edge because the main FX layer remains unclipped.
+    // Confine just the one-time glint to the card surface for reflective
+    // editions; the bronze spark/ring may extend outside the silhouette.
     if (effect === 'crome' || effect === 'refractor' ||
-        effect === 'black-label') {
+        effect === 'black-label' || effect === 'bronze-champion') {
       fx.appendChild(make('span', 'dbl-cards-reveal-sweep-window'));
     }
     fx.appendChild(make('span', 'dbl-cards-reveal-halo'));

@@ -2538,6 +2538,28 @@
   box-shadow: 0 0 14px rgba(138,239,239,.77),
     inset 0 0 13px rgba(255,129,226,.49);
 }
+/* A champion-only copper/bronze flash with etched diamond flecks.
+   No pastel prismatic halo, and no player-card rarity changes. */
+.dbl-cards-reveal-fx[data-effect="bronze-champion"] {
+  --fx-ink: #ffe1ad;
+  --fx-glow: rgba(213,133,74,.80);
+  --fx-haze: rgba(122,63,31,.38);
+}
+.dbl-cards-reveal-fx[data-effect="bronze-champion"]::before {
+  background: radial-gradient(ellipse at 50% 47%,
+    rgba(255,244,214,.95) 0%,rgba(232,165,103,.70) 15%,
+    rgba(158,83,48,.32) 34%,transparent 65%);
+}
+.dbl-cards-reveal-fx[data-effect="bronze-champion"] .dbl-cards-reveal-ring {
+  border-color: #e9b580;
+  box-shadow: 0 0 15px rgba(202,113,65,.73),
+    inset 0 0 10px rgba(255,213,155,.52);
+}
+.dbl-cards-reveal-fx[data-effect="bronze-champion"] .dbl-cards-reveal-halo {
+  border-color: #d99b6c;
+  box-shadow: 0 0 14px rgba(176,87,47,.49),
+    inset 0 0 9px rgba(255,214,158,.47);
+}
 /* Black Label: high-polish silver flash, ring and glint, without stars. */
 .dbl-cards-reveal-fx[data-effect="black-label"] {
   --fx-ink: #f3f6f9;
@@ -3208,7 +3230,8 @@
    Other reveal treatments keep their existing unrestricted sweeps. */
 .dbl-cards-reveal-fx[data-effect="crome"]::after,
 .dbl-cards-reveal-fx[data-effect="refractor"]::after,
-.dbl-cards-reveal-fx[data-effect="black-label"]::after {
+.dbl-cards-reveal-fx[data-effect="black-label"]::after,
+.dbl-cards-reveal-fx[data-effect="bronze-champion"]::after {
   content: none;
 }
 .dbl-cards-reveal-sweep-window {
@@ -3732,41 +3755,66 @@
 }
 
 
-/* Confirmed DBL championship Team Season cards borrow the REFRACTOR foil
-   treatment while keeping their 1960s archival layout, logo outline,
-   rounded inset artwork, year and title status. These selectors require
-   the UI's verified champion-only flag, never an ordinary team-season. */
+/* Verified league champions get an exclusive burnished BRONZE edition,
+   never Refractor rainbow foil. Keep the original historical layout,
+   text, season, team crest and exact rarity/ownership identity. */
 .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] {
-  --card-aura: rgba(165,210,247,.36);
-  --card-rule: rgba(91,112,140,.46);
-  --flagship-panel: rgba(244,248,255,.14);
+  --card-metal: #ac683d;
+  --card-edge: #874a29;
+  --card-ink: #efd0a4;
+  --card-text: #2b190f;
+  --card-muted: #55311d;
+  --card-aura: rgba(164,96,50,.43);
+  --card-rule: rgba(105,53,29,.56);
+  --flagship-panel: rgba(252,228,182,.24);
 }
 .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-team-season-front,
 .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-back {
   background:
-    linear-gradient(125deg,rgba(255,255,255,.52) 0%,transparent 29%,
-      rgba(255,255,255,.20) 48%,transparent 70%,rgba(255,255,255,.30)),
-    conic-gradient(from 38deg at 49% 45%,
-      #f6e8c7, #a7dfeb, #c9c1f5, #f5bbdf, #fae9bd, #a7e8d3,
-      #abc8ec, #f6e8c7);
-  color: #342923;
-  box-shadow: 0 8px 18px rgba(28,14,9,.32),
-    inset 0 0 0 3px rgba(255,255,255,.34);
+    linear-gradient(116deg,rgba(255,244,219,.48) 0%,transparent 24%,
+      rgba(101,46,25,.13) 39%,rgba(255,235,194,.34) 53%,transparent 68%,
+      rgba(244,206,153,.42) 100%),
+    linear-gradient(148deg,#f1cf9c 0%,#bb8054 16%,#e6b886 29%,
+      #ad704b 43%,#e9bd8b 56%,#b37a51 75%,#ddb087 88%,#f4d2a0 100%);
+  color: #2b190f;
+  border: 3px double #8c4d2a;
+  box-shadow: 0 9px 19px rgba(62,30,17,.42),
+    inset 0 0 0 2px rgba(255,237,200,.48),
+    0 0 12px rgba(183,106,61,.19);
 }
-/* Thin archival inner frame remains legible against the rainbow finish. */
+/* Embossed copper/bronze inner frame remains distinct behind team logos. */
 .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-team-season-front::before {
-  border-color: rgba(70,74,111,.54);
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,.42);
+  border-color: rgba(95,49,26,.72);
+  box-shadow: inset 0 0 0 2px rgba(255,233,189,.40),
+    0 0 0 1px rgba(255,219,169,.17);
 }
-/* Same moving spectral foil sweep used by Refractor player editions.
-   Both sides shimmer; the actual flash/spark FX plays only on card flips. */
+/* Subtle copper-print title instead of the former golden champion badge.
+   Preserve the existing unboxed 1960s footer layout on the front. */
+.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"]
+  .dbl-cards-team-season-finish[data-finish="champion"] {
+  color: #45230f;
+  text-shadow: 0 1px 0 rgba(255,227,182,.58);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"]
+  .dbl-cards-team-season-back-finish[data-finish="champion"] {
+  color: #3e200f;
+  background: linear-gradient(95deg,#b87748,#f1c999 52%,#b9794f);
+  border-color: #814323;
+  box-shadow: 0 0 9px rgba(166,89,42,.26);
+}
+/* Slow rose-copper foil glint on both sides, not multicolored prismatic foil. */
 .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-foil {
-  background: linear-gradient(110deg,transparent 20%,rgba(128,255,235,.20) 34%,
-    rgba(255,255,255,.70) 44%,rgba(255,149,224,.30) 51%,
-    rgba(163,188,255,.18) 57%,transparent 69%);
-  animation: dbl-card-foil 4.8s ease-in-out infinite;
+  background: linear-gradient(110deg,transparent 20%,
+    rgba(251,211,155,.09) 34%,rgba(255,242,206,.69) 44%,
+    rgba(196,109,59,.23) 52%,rgba(239,181,124,.15) 58%,transparent 69%);
+  animation: dbl-card-foil 5.5s ease-in-out infinite;
 }
-/* The shared reduced-motion rule suppresses this animation automatically. */
+/* Respect the same reduced-motion preference as other animated foils. */
+@media (prefers-reduced-motion: reduce) {
+  .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-foil {
+    animation: none !important;
+  }
+}
 
 
 /* On mobile, only light logos receive the stronger pixel-aligned outline
