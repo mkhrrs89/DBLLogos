@@ -3777,9 +3777,10 @@
     linear-gradient(148deg,#f1cf9c 0%,#bb8054 16%,#e6b886 29%,
       #ad704b 43%,#e9bd8b 56%,#b37a51 75%,#ddb087 88%,#f4d2a0 100%);
   color: #2b190f;
-  border: 3px double #8c4d2a;
+  /* The bronze finish no longer adds two outer rectangular piping lines.
+     Keep the one inner rounded archival frame drawn by ::before below. */
+  border: 0;
   box-shadow: 0 9px 19px rgba(62,30,17,.42),
-    inset 0 0 0 2px rgba(255,237,200,.48),
     0 0 12px rgba(183,106,61,.19);
 }
 /* Embossed copper/bronze inner frame remains distinct behind team logos. */
@@ -3787,6 +3788,41 @@
   border-color: rgba(95,49,26,.72);
   box-shadow: inset 0 0 0 2px rgba(255,233,189,.40),
     0 0 0 1px rgba(255,219,169,.17);
+}
+/* All verified championship crests get the same dark silhouette stroke.
+   Light-logo pixel sampling may classify two-tone cream/black artwork (like
+   Providence Royals) as dark or be CORS-blocked; neither should make the
+   logo disappear against metallic bronze. This applies only to champion
+   Team Season fronts, not to normal cards or player portraits. */
+.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"]
+  .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
+  -webkit-filter:
+    drop-shadow(.65px 0 0 #16110b)
+    drop-shadow(-.65px 0 0 #16110b)
+    drop-shadow(0 .65px 0 #16110b)
+    drop-shadow(0 -.65px 0 #16110b);
+  filter:
+    drop-shadow(.65px 0 0 #16110b)
+    drop-shadow(-.65px 0 0 #16110b)
+    drop-shadow(0 .65px 0 #16110b)
+    drop-shadow(0 -.65px 0 #16110b);
+}
+@media (max-width: 800px) {
+  /* Maintain the crisp one-pixel edge already used by light-logo cards
+     on mobile WebKit, regardless of the champion crest's measured tone. */
+  .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"]
+    .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
+    -webkit-filter:
+      drop-shadow(1px 0 0 #16110b)
+      drop-shadow(-1px 0 0 #16110b)
+      drop-shadow(0 1px 0 #16110b)
+      drop-shadow(0 -1px 0 #16110b);
+    filter:
+      drop-shadow(1px 0 0 #16110b)
+      drop-shadow(-1px 0 0 #16110b)
+      drop-shadow(0 1px 0 #16110b)
+      drop-shadow(0 -1px 0 #16110b);
+  }
 }
 /* Subtle copper-print title instead of the former golden champion badge.
    Preserve the existing unboxed 1960s footer layout on the front. */
