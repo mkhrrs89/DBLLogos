@@ -9,6 +9,9 @@
   // Three Mythical designs share a combined 0.1% chance PER CARD SLOT.
   // Keep standard-tier pull weights independent, with no guaranteed rarity.
   const MYTHICAL_RATE = .001;
+  // One independent 0.1% autograph roll per eligible PLAYER card slot.
+  // The player-card rarity and insert odds remain unchanged.
+  const AUTOGRAPH_RATE = .001;
   // One independent Team Season insert roll per eligible pack slot.
   // Its roll never changes the standard player-card rarity weights.
   const TEAM_INSERT_RATE = .03;
@@ -116,6 +119,22 @@
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
   const integer = x => Number.isInteger(number(x)) ? number(x) : null;
   const str = x => typeof x === 'string' ? x.trim() : '';
+  // Autographs are a separate edition sharing a player's normal rarity,
+  // with a canonical :auto suffix. Team cards, uniforms, Black Label and
+  // Mythicals may never be autographed.
+  const canAutograph = card =>
+    card && Number.isSafeInteger(integer(card.pid)) && integer(card.pid) >= 0 &&
+    card.type !== 'team-season' && card.type !== 'topps-uniform' &&
+    card.rarity !== 'black-label' && !String(card.rarity || '').startsWith('mythic-') &&
+    (card.type === 'topps-player' || card.type === 'background-test' ||
+      (!card.type && card.series === CARD_SERIES));
+  const isAutograph = row => row?.autograph === true && canAutograph(row);
+  const autoId = (baseId, row) => baseId + (isAutograph(row) ? ':auto' : '');
+  const baseCardId = card => card?.autograph === true ?
+    String(card.id || '').replace(/:auto$/, '') : card?.id;
+  const autographPull = card => canAutograph(card) &&
+    Math.random() < AUTOGRAPH_RATE ?
+    {...card, autograph:true, id:card.id + ':auto'} : card;
   const nameOf = p => [p?.firstName, p?.lastName].filter(Boolean).join(' ').trim() || str(p?.name) || 'Unknown player';
   const listeners = new Set();
   let currentFile = null, fileVersion = 0, scanning = false, poolFile = null;
@@ -162,8 +181,9 @@
       const pid = integer(row.pid);
       if (row.rarity !== TOPPS_PLAYER.id || pid === null || pid < 0) return null;
       return {
-        id: 'topps:1968:player:' + pid,
+        id: autoId('topps:1968:player:' + pid, row),
         type: 'topps-player', rarity: TOPPS_PLAYER.id, series: TOPPS_SERIES,
+        autograph: isAutograph(row),
         count, sourceCounts: sourceLedger, favorite: row.favorite === true, pid, era: TOPPS_YEAR, tid,
         name: str(row.name) || 'Unknown player',
         firstName: str(row.firstName), lastName: str(row.lastName),
@@ -197,8 +217,9 @@
         pid === null || pid < 0 || era === null ||
         !Number.isInteger(count) || count < 1 || count > 1000000) return null;
     return {
-      id: 'bgtest:player:' + pid, type: 'background-test',
+      id: autoId('bgtest:player:' + pid, row), type: 'background-test',
       rarity: BACKGROUND_TEST.id, series: BACKGROUND_TEST_SERIES,
+      autograph: isAutograph(row),
       count, sourceCounts: origins, favorite: row.favorite === true,
       pid, era, tid: integer(row.tid),
       name: str(row.name) || 'Unknown player',
@@ -580,9 +601,11 @@
           !tierMap[rarity]) continue;
       // Consolidate both prior visual variants and retired rarity names;
       // merging records adds their duplicate quantities, not replacing them.
-      const id = pid + ':' + rarity;
+      const eligible = {pid, rarity, series:CARD_SERIES};
+      const autograph = isAutograph({...eligible, autograph:row.autograph});
+      const id = autoId(pid + ':' + rarity, {...eligible, autograph});
       const item = {
-        id, pid, rarity, series: CARD_SERIES, count: qty,
+        id, pid, rarity, autograph, series: CARD_SERIES, count: qty,
         favorite: row.favorite === true,
         name: str(row.name) || 'Unknown player',
         firstName: str(row.firstName), lastName: str(row.lastName),
@@ -654,9 +677,13 @@
       const origins = sourceCounts(row.sourceCounts, qty, true);
       let item;
       if (row.type === 'background-test') {
+        if (row.autograph === true && !canAutograph(row))
+          throw Error('The backup contains an ineligible Background Test autograph.');
         item = normalizeBackgroundTest(row, qty, origins);
         if (!item) throw Error('The backup contains an invalid Background Test card.');
       } else if (row.type === 'topps-player' || row.type === 'topps-uniform') {
+        if (row.autograph === true && !canAutograph(row))
+          throw Error('The backup contains an ineligible Topps autograph.');
         item = normalizedTopps(row, qty, origins);
         if (!item) throw Error('The backup contains an invalid 1968 Topps card.');
       } else if (row.type === 'team-season') {
@@ -682,9 +709,12 @@
         if (row.type || pid === null || pid < 0 ||
             !tierMap[rarity] || rarity === TEAM_INSERT.id)
           throw Error('The backup contains an invalid player edition.');
-        const id = pid + ':' + rarity;
+        if (row.autograph === true && !canAutograph({pid,rarity,series:CARD_SERIES}))
+          throw Error('The backup contains an ineligible autographed player edition.');
+        const autograph = isAutograph({pid, rarity, series:CARD_SERIES, autograph:row.autograph});
+        const id = autoId(pid + ':' + rarity, {pid,rarity,series:CARD_SERIES,autograph});
         item = {
-          id, pid, rarity, series: CARD_SERIES, count: qty, sourceCounts: origins,
+          id, pid, rarity, autograph, series: CARD_SERIES, count: qty, sourceCounts: origins,
           favorite: row.favorite === true,
           name: str(row.name) || 'Unknown player',
           firstName: str(row.firstName), lastName: str(row.lastName),
@@ -855,7 +885,7 @@
         continue;
       }
       if (item.type === 'topps-player' || item.type === 'topps-uniform') {
-        const live = toppsById.get(item.id);
+        const live = toppsById.get(baseCardId(item));
         if (live && updateTopps(item, live)) modified = true;
         continue;
       }
@@ -1052,7 +1082,7 @@
         // Keep the original embedded photo available through the live pool,
         // never copy a base64 image into persistent card storage/backups.
         const {image, imageFallback, ...cardData} = selected;
-        picks.push({...cardData, count: 1});
+        picks.push(autographPull({...cardData, count: 1}));
       }
       return picks;
     }
@@ -1064,7 +1094,7 @@
         const insert = chooseToppsInsert(takenToppsIds);
         if (!insert) return [];
         takenToppsIds.add(insert.id);
-        picks.push({...insert, count: 1});
+        picks.push(autographPull({...insert, count: 1}));
       }
       return picks;
     }
@@ -1101,7 +1131,7 @@
       if (!chosen?.player) return []; // A nonempty eligible pool yields a card.
       const {tier, player: p} = chosen;
       taken.add(p.pid);
-      picks.push({
+      picks.push(autographPull({
         id: p.pid + ':' + tier.id, pid: p.pid,
         rarity: tier.id, series: CARD_SERIES, count: 1,
         name: p.name, firstName: p.firstName, lastName: p.lastName,
@@ -1111,7 +1141,7 @@
         draftPick: p.draftPick,
         ovr: p.ovr, peak: p.peak, pot: p.pot,
         gp: p.gp, ppg: p.ppg, ws: p.ws, photo: p.publicImage
-      });
+      }));
     }
     return picks;
   }
@@ -1492,7 +1522,7 @@
     findPhoto(card) {
       if (card?.type === 'background-test')
         return backgroundTestByPid.get(card.pid)?.image || card.photo || '';
-      if (card?.type === 'topps-player') return toppsById.get(card.id)?.image || card.photo || '';
+      if (card?.type === 'topps-player') return toppsById.get(baseCardId(card))?.image || card.photo || '';
       return poolByPid.get(card.pid)?.image || card.photo || '';
     },
     findJersey(card) { return card?.jersey || poolByPid.get(card?.pid)?.jersey || ''; },
@@ -1508,7 +1538,7 @@
         return teamSeasonById.get(card.id)?.logo || card.teamLogo || '';
       }
       if (card?.type === 'topps-player' || card?.type === 'topps-uniform') {
-        return toppsById.get(card.id)?.logo || card.teamLogo || '';
+        return toppsById.get(baseCardId(card))?.logo || card.teamLogo || '';
       }
       const player = poolByPid.get(card.pid);
       return card.teamLogo || teamLogos.get(card.team) ||

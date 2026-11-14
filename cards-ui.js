@@ -270,6 +270,8 @@
       .reduce((n, c) => n + c.count, 0)), 'Team Season inserts');
     appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
       .reduce((n, c) => n + c.count, 0)), 'Black Label pulls');
+    appendStat(counter, format(api.items.filter(c => c.autograph === true)
+      .reduce((n, c) => n + c.count, 0)), 'Autograph pulls');
     const hiddenPulls = api.items.filter(c => tierMap[c.rarity]?.mythical)
       .reduce((n, c) => n + c.count, 0);
     if (hiddenPulls > 0) appendStat(counter, format(hiddenPulls), 'Mythical pulls');
@@ -1101,8 +1103,9 @@
       metrics.appendChild(part);
     }
     back.appendChild(metrics);
-    const editionText = card.rarity === 'common' ? '' :
-      ' · ' + (tierMap[card.rarity]?.label.toUpperCase() || '');
+    const editionText = (card.rarity === 'common' ? '' :
+      ' · ' + (tierMap[card.rarity]?.label.toUpperCase() || '')) +
+      (card.autograph === true ? ' · AUTOGRAPH' : '');
     back.appendChild(make('span', 'dbl-cards-back-foot',
       'SERIES ' + (card.series ?? api.currentSeries) + ' · ' +
       (card.era ?? 'DBL') + editionText));
@@ -1232,6 +1235,81 @@
     window.setTimeout(() => fx.remove(), config.duration + 650);
   }
 
+  // Deterministic per-player on-card ink: an SVG signature with a
+  // PID-seeded writing style, pen angle and underline. No generated
+  // bitmap is saved or exported; it is redrawn from player name and PID.
+  function autographArtwork(card) {
+    if (card.autograph !== true || !Number.isSafeInteger(Number(card.pid))) return null;
+    const overlay = make('span', 'dbl-cards-autograph');
+    overlay.setAttribute('aria-hidden', 'true');
+    const name = String(card.name || '').trim();
+    const nameParts = name.split(/\s+/).filter(Boolean);
+    // A few players abbreviate their given name in their signatures.
+    let seed = (Number(card.pid) + 1) >>> 0;
+    for (const character of name) seed = (Math.imul(seed ^ character.charCodeAt(0), 16777619)) >>> 0;
+    const first = nameParts.shift() || '';
+    const last = nameParts.join(' ');
+    const signature = last && seed % 5 === 0
+      ? first.charAt(0) + '. ' + last : (first + ' ' + last).trim();
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 340 110');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.setAttribute('focusable', 'false');
+    const text = document.createElementNS(svgNS, 'text');
+    const families = [
+      '"Snell Roundhand","Segoe Script","Brush Script MT",cursive',
+      '"Brush Script MT","Apple Chancery","Snell Roundhand",cursive',
+      '"Apple Chancery","Segoe Script","Snell Roundhand",cursive',
+      '"Segoe Script","Snell Roundhand","Brush Script MT",cursive'
+    ];
+    const fontSize = Math.max(34, Math.min(63, 67 - Math.max(0, signature.length - 11) * 1.9));
+    const ink = ['#183e72','#173763','#23446e','#1d477b'][seed % 4];
+    overlay.style.setProperty('--autograph-ink', ink);
+    text.setAttribute('x', '170');
+    text.setAttribute('y', '61');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('font-family', families[(seed >>> 5) % families.length]);
+    text.setAttribute('font-style', 'italic');
+    text.setAttribute('font-size', String(fontSize));
+    text.setAttribute('font-weight', String(seed % 3 === 0 ? 500 : 400));
+    text.setAttribute('letter-spacing', String(((seed >>> 8) % 7 - 3) / 8));
+    text.setAttribute('fill', 'currentColor');
+    text.setAttribute('transform',
+      'rotate(' + (((seed >>> 11) % 13) - 6) + ' 170 55)');
+    // Keep longer signatures inside the printed portrait without clipping.
+    const length = Math.min(310, signature.length * fontSize * .53);
+    if (signature.length > 15) {
+      text.setAttribute('textLength', String(length));
+      text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+    }
+    text.textContent = signature;
+    svg.appendChild(text);
+    if ((seed >>> 3) % 5 !== 0) {
+      const flourish = document.createElementNS(svgNS, 'path');
+      const start = 53 + (seed % 23);
+      const end = 298 - ((seed >>> 7) % 26);
+      const y = 78 + ((seed >>> 14) % 9);
+      flourish.setAttribute('d', 'M ' + start + ' ' + y +
+        ' C 127 ' + (y + 13) + ' 244 ' + (y - 4) +
+        ' ' + end + ' ' + (y - 9));
+      flourish.setAttribute('fill', 'none');
+      flourish.setAttribute('stroke', 'currentColor');
+      flourish.setAttribute('stroke-width', String(1.4 + (seed % 5) * .2));
+      flourish.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(flourish);
+    }
+    overlay.appendChild(svg);
+    return overlay;
+  }
+  function applyAutograph(front, card) {
+    const ink = autographArtwork(card);
+    if (!ink) return front;
+    front.appendChild(ink);
+    front.appendChild(make('span', 'dbl-cards-auto-stamp', 'AUTOGRAPH'));
+    return front;
+  }
+
   function cardElement(card, sealed = false, onFirst = null) {
     const button = make('div', 'dbl-cards-card' + (sealed ? ' is-sealed' : ''));
     button.setAttribute('role', 'group');
@@ -1242,14 +1320,16 @@
     // Revealed cards and cards already owned use their proper rarity color.
     if (!sealed) {
       button.dataset.rarity = card.rarity;
+      if (card.autograph === true) button.dataset.autograph = 'true';
       if (isChampionTeam(card)) button.dataset.teamChampion = 'true';
     }
     const cardLabel = isTeamSeason(card)
       ? String(card.era) + ' ' + card.name : card.name;
     button.setAttribute('aria-label', sealed ? 'Reveal mystery DBL card' :
-      'View statistics for ' + cardLabel + ', ' + tierMap[card.rarity]?.label);
+      'View statistics for ' + cardLabel + ', ' + tierMap[card.rarity]?.label +
+      (card.autograph ? ', autographed' : ''));
     const inner = make('span', 'dbl-cards-inner');
-    inner.appendChild(frontOf(card));
+    inner.appendChild(applyAutograph(frontOf(card), card));
     if (isBackgroundTest(card)) {
       const action = inner.querySelector('.dbl-bgtest-pack-mask-status');
       const local = inner.querySelector('.dbl-bgtest-pack-local-button');
@@ -1340,12 +1420,14 @@
         reverse.replaceChildren(...Array.from(newBack.childNodes));
         button.classList.remove('is-sealed');
         button.dataset.rarity = card.rarity;
+        if (card.autograph === true) button.dataset.autograph = 'true';
         if (isChampionTeam(card)) button.dataset.teamChampion = 'true';
         playCardRevealEffect(button, card);
         activateBackgroundPhoto(button, card);
         scheduleNameFit();
         button.setAttribute('aria-label', 'View statistics for ' + cardLabel +
-          ', ' + tierMap[card.rarity]?.label);
+          ', ' + tierMap[card.rarity]?.label +
+          (card.autograph === true ? ', autographed' : ''));
         if (onFirst) onFirst();
       } else {
         button.classList.toggle('is-turned');
@@ -1489,7 +1571,8 @@
     const favoritesOnly = favoritesFilter.value === 'favorites';
     const result = api.items.filter(item => {
       if (favoritesOnly && !api.isFavorite(item.id)) return false;
-      if (tier !== 'all' && tier !== item.rarity) return false;
+      if (tier === 'autograph' ? item.autograph !== true :
+          tier !== 'all' && tier !== item.rarity) return false;
       if (selectedTeam !== 'all' && teamNameForCard(item) !== selectedTeam) return false;
       return !q || item.name.toLocaleLowerCase().includes(q) ||
         item.team.toLocaleLowerCase().includes(q) ||
@@ -1549,7 +1632,8 @@
       if (favorite) favorite.tabIndex = 0;
     }
     cell.appendChild(element);
-    cell.appendChild(make('span', 'dbl-cards-owned', 'OWNED ×' + card.count));
+    cell.appendChild(make('span', 'dbl-cards-owned',
+      (card.autograph === true ? 'AUTOGRAPH · ' : '') + 'OWNED ×' + card.count));
     cell.appendChild(make('span', 'dbl-cards-binder-market',
       isBackgroundTest(card) ? 'TEST · CURRENT OVR ' + (card.currentOvr ?? '—')
         : 'EST. ' + marketMoney(api.marketValue(card))));
@@ -1918,8 +2002,8 @@
       ? '1968 Topps player and uniform completion, grouped by 1968 franchise. Duplicates count once.'
       : 'Completion by franchise, including peak-season player editions and historical Team Season inserts. Name changes stay grouped; duplicates count once.';
     checklistNote.textContent = topps
-      ? 'One plain-paper 1968 Topps card per eligible player, with rookie styling for first-season players, plus one home and one away uniform placeholder per 1968 team. No Chrome or other premium versions. The checklist comes from the uploaded league export; owned cards remain saved even when that file is unloaded.'
-      : 'One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR, plus one Team Season insert per recorded team-season. Duplicates count once. Owned cards missing from a newer export stay in My Collection.';
+      ? 'One plain-paper 1968 Topps card per eligible player, with rookie styling for first-season players, plus one home and one away uniform placeholder per 1968 team. No Chrome or Refractor tiers; rare autograph variations can appear but are not required for standard set completion. The checklist comes from the uploaded league export; owned cards remain saved even when that file is unloaded.'
+      : 'One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR, plus one Team Season insert per recorded team-season. Autograph variations are separately collectible and do not change standard set completion. Duplicates count once. Owned cards missing from a newer export stay in My Collection.';
     const s = api.status;
     checklistStats.replaceChildren();
     checklistFranchises.replaceChildren();

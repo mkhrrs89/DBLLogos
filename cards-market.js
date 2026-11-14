@@ -257,7 +257,15 @@
     // in 1968). Better careers and scarce finishes still earn premiums.
     const base = Math.round(clamp(.04 * star * multiple * vintage *
       rookiePremium * draftHype, .01, 250) * 100) / 100;
-    return boostedPrice(card, base);
+    // An independently rare 1-in-1,000 autograph is a distinct collectible
+    // edition, but keeps the player's normal Base/Chrome/Refractor pricing
+    // inputs. Price the auto premium separately from PID preferences.
+    const signed = card.autograph === true &&
+      card.rarity !== 'black-label' &&
+      !String(card.rarity || '').startsWith('mythic-') &&
+      card.type !== 'team-season' && card.type !== 'topps-uniform';
+    const autographPrice = signed ? Math.round((base * 8 + Number.EPSILON) * 100) / 100 : base;
+    return boostedPrice(card, autographPrice);
   }
 
   window.DBLCardMarket = Object.freeze({
