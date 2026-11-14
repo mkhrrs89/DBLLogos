@@ -12,14 +12,14 @@
   // One independent 0.1% autograph roll per eligible PLAYER card slot.
   // The player-card rarity and insert odds remain unchanged.
   const AUTOGRAPH_RATE = .001;
-  // Gentle, never-guaranteed pity: ordinary odds until long miss streaks,
-  // then at most a 25% *relative* boost (not +25 percentage points).
-  // Auto 0.100% -> max 0.125%; Black 0.250% -> max 0.3125%;
-  // Mythical 0.100% -> max 0.125%.
+  // Never-guaranteed pity: keep base odds until the miss threshold,
+  // then gradually increase to each rarity's individual maximum.
+  // Auto 0.100% -> max 1%; Black 0.250% -> max 1%;
+  // Mythical 0.100% -> max 0.250%.
   const PITY_RULES = Object.freeze({
-    autograph: {base: AUTOGRAPH_RATE, start: 500, ramp: 1000},
-    blackLabel: {base: .0025, start: 250, ramp: 500},
-    mythical: {base: MYTHICAL_RATE, start: 500, ramp: 1000}
+    autograph: {base: AUTOGRAPH_RATE, max: .01, start: 500, ramp: 1000},
+    blackLabel: {base: .0025, max: .01, start: 250, ramp: 500},
+    mythical: {base: MYTHICAL_RATE, max: .0025, start: 500, ramp: 1000}
   });
   const PITY_MAX_STREAK = 1000000;
   const PITY_NAMES = Object.keys(PITY_RULES);
@@ -43,9 +43,9 @@
   }
   function pityChance(name, missed) {
     const rule = PITY_RULES[name];
-    const boost = .25 * Math.min(1,
+    const progress = Math.min(1,
       Math.max(0, missed - rule.start) / rule.ramp);
-    return rule.base * (1 + boost);
+    return rule.base + (rule.max - rule.base) * progress;
   }
   const missPity = missed => Math.min(PITY_MAX_STREAK, missed + 1);
   // One independent Team Season insert roll per eligible pack slot.
