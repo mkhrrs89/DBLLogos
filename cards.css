@@ -4492,3 +4492,105 @@
 @media (prefers-reduced-motion: reduce) {
   .dbl-cards-card .dbl-cards-autograph { transform: none; }
 }
+
+
+/* Pack Room only: prices are revealed beneath the CARD on first flip,
+   rather than placed over artwork, stats, or autograph ink. */
+.dbl-cards-pull-grid .dbl-cards-pull-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+  min-height: 25px;
+  padding: 4px 8px;
+  border: 1px solid rgba(210,175,113,.28);
+  background: linear-gradient(155deg,rgba(31,24,24,.9),rgba(56,39,31,.82));
+  color: #f6e8d5;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  border-radius: 4px;
+}
+.dbl-cards-pull-grid .dbl-cards-pull-value[hidden] {
+  display: none !important;
+}
+.dbl-cards-pull-value-caption {
+  color: #d5bca2;
+  font: 800 clamp(9px,.85vw,11px)/1.25 Arial,Helvetica,sans-serif;
+  letter-spacing: .11em;
+}
+.dbl-cards-pull-price {
+  font: 900 clamp(14px,1.5vw,19px)/1.1 Arial,Helvetica,sans-serif;
+  letter-spacing: .015em;
+}
+.dbl-cards-pull-value.is-revealed {
+  animation: dbl-cards-price-arrive .48s cubic-bezier(.21,.75,.27,1) .24s both;
+}
+@keyframes dbl-cards-price-arrive {
+  0% {opacity:0;transform:translateY(-8px);}
+  100% {opacity:1;transform:translateY(0);}
+}
+
+/* NEW CARD! appears in a quick crimson comic-book starburst. The red
+   seal stays legible afterwards; no permanent particle animation runs. */
+.dbl-cards-pull-grid .dbl-cards-pull-status.is-new {
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
+  color: #fff9ed;
+  font-weight: 950;
+  font-size: clamp(12px,1.2vw,16px);
+  letter-spacing: .11em;
+  text-shadow: 0 1px 2px rgba(68,6,14,.8);
+  animation: dbl-cards-new-label-arrive .57s cubic-bezier(.18,.95,.25,1.18) .08s both;
+}
+.dbl-cards-pull-grid .dbl-cards-pull-status.is-new::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  left: 50%;
+  top: 50%;
+  width: min(92%, 174px);
+  height: 40px;
+  background: linear-gradient(145deg,#ff7669 2%,#e32439 38%,#a40f28 85%);
+  clip-path: polygon(
+    50% 0%, 57% 17%, 70% 4%, 74% 24%, 93% 14%, 87% 33%,
+    100% 44%, 87% 52%, 99% 67%, 80% 68%, 89% 89%, 70% 79%,
+    61% 100%, 49% 84%, 36% 99%, 32% 80%, 11% 90%, 19% 67%,
+    0% 58%, 14% 48%, 0% 35%, 20% 33%, 12% 12%, 35% 22%,
+    40% 3%);
+  filter: drop-shadow(0 2px 2px rgba(67,0,11,.45));
+}
+.dbl-cards-pull-grid .dbl-cards-pull-status.is-new::after {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  pointer-events: none;
+  left: 50%;
+  top: 50%;
+  width: min(98%, 186px);
+  height: 52px;
+  border: 2px solid rgba(255,106,83,.85);
+  border-radius: 50%;
+  transform: translate(-50%,-50%) scale(.35);
+  opacity: 0;
+  animation: dbl-cards-new-shockwave .6s ease-out .12s both;
+}
+@keyframes dbl-cards-new-label-arrive {
+  0% {opacity:0;transform:translateY(6px) scale(.35) rotate(-9deg);}
+  60% {opacity:1;transform:translateY(-1px) scale(1.12) rotate(2deg);}
+  100% {opacity:1;transform:translateY(0) scale(1) rotate(0deg);}
+}
+@keyframes dbl-cards-new-shockwave {
+  0% {opacity:0;transform:translate(-50%,-50%) scale(.32);}
+  20% {opacity:.95;}
+  100% {opacity:0;transform:translate(-50%,-50%) scale(1.25);}
+}
+@media (prefers-reduced-motion: reduce) {
+  .dbl-cards-pull-grid .dbl-cards-pull-value.is-revealed,
+  .dbl-cards-pull-grid .dbl-cards-pull-status.is-new,
+  .dbl-cards-pull-grid .dbl-cards-pull-status.is-new::after {
+    animation: none !important;
+  }
+}

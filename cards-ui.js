@@ -1503,15 +1503,33 @@
       const status = make('span', 'dbl-cards-pull-status');
       const alreadyOwned = ownedBeforePack.get(card.id) || 0;
       entry.appendChild(status);
+      // A separate caption below the card avoids covering its portrait,
+      // signature, or stats. Both rarity and estimated value stay secret
+      // until the first flip; only the original card owns the price.
+      const pullValue = make('div', 'dbl-cards-pull-value');
+      pullValue.hidden = true;
+      pullValue.title = 'Fictional DBL card market estimate; not real money';
+      pullValue.appendChild(make('span', 'dbl-cards-pull-value-caption', 'EST. VALUE'));
+      pullValue.appendChild(make('strong', 'dbl-cards-pull-price',
+        marketMoney(api.marketValue(card))));
+      // Share the existing weakly referenced value lookup with Settings
+      // updates; no card copies or persistent prices are created.
+      marketTags.set(pullValue, card);
       const element = cardElement(card, true, () => {
-        status.textContent = alreadyOwned === 0 ? 'NEW CARD' :
+        const isNew = alreadyOwned === 0;
+        status.textContent = isNew ? 'NEW CARD' :
           format(alreadyOwned) + (alreadyOwned === 1 ? ' COPY' : ' COPIES') + ' ALREADY OWNED';
-        status.classList.add(alreadyOwned === 0 ? 'is-new' : 'is-owned');
+        status.classList.add(isNew ? 'is-new' : 'is-owned');
+        // This callback runs only the first time the card is revealed.
+        // Repeated flips cannot replay the NEW burst or hide the value.
+        pullValue.hidden = false;
+        pullValue.classList.add('is-revealed');
         if (packCards.every(c => !c.classList.contains('is-sealed'))) revealBtn.disabled = true;
       });
       element.classList.add('dbl-cards-appearing');
       element.style.setProperty('--pack-position', index);
       entry.appendChild(element);
+      entry.appendChild(pullValue);
       spread.appendChild(entry);
       return element;
     });
@@ -2416,9 +2434,9 @@
   // refreshing the computed price labels, totals and value-based sorting.
   window.addEventListener('dbl:card-values-changed', () => {
     showCounters();
-    for (const tag of document.querySelectorAll('.dbl-cards-market-value')) {
+    for (const tag of document.querySelectorAll('.dbl-cards-market-value, .dbl-cards-pull-value')) {
       const card = marketTags.get(tag);
-      const amount = tag.querySelector('.dbl-cards-market-price');
+      const amount = tag.querySelector('.dbl-cards-market-price, .dbl-cards-pull-price');
       if (card && amount) amount.textContent = marketMoney(api.marketValue(card));
     }
     if (activeCardsSubtab === 1 && !panel.hidden) showGallery();
