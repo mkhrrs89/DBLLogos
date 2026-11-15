@@ -741,7 +741,14 @@
     const emblem = make('span', 'dbl-cards-team-season-emblem');
     emblem.appendChild(teamCrest(card, true));
     front.appendChild(emblem);
-    front.appendChild(make('span', 'dbl-cards-team-season-name', card.teamName));
+    const teamName = make('span', 'dbl-cards-team-season-name', card.teamName);
+    // Scale long names to fit the inset card frame, including on mobile.
+    const nameLength = String(card.teamName || '').trim().length;
+    if (nameLength > 17) {
+      const scale = Math.max(.58, Math.min(1, 17 / nameLength));
+      teamName.style.setProperty('--team-season-name-scale', String(scale));
+    }
+    front.appendChild(teamName);
     const known = Number.isFinite(card.won) && Number.isFinite(card.lost);
     const record = known ? format(card.won) + ' – ' + format(card.lost) +
       (Number.isFinite(card.tied) && card.tied > 0 ? ' – ' + format(card.tied) : '') :
