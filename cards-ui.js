@@ -1259,24 +1259,21 @@
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svg.setAttribute('focusable', 'false');
     const text = document.createElementNS(svgNS, 'text');
-    const families = [
-      '"Snell Roundhand","Apple Chancery","Brush Script MT",cursive',
-      '"Apple Chancery","Snell Roundhand","Brush Script MT",cursive',
-      '"Brush Script MT","Snell Roundhand","Apple Chancery",cursive',
-      '"Snell Roundhand","Brush Script MT","Apple Chancery",cursive'
-    ];
+    // Great Vibes is loaded explicitly in index.html, so mobile browsers
+    // do not silently fall back to a generic italic serif face.
+    const signatureFont = '"Great Vibes","Snell Roundhand",cursive';
     const fontSize = Math.max(34, Math.min(63, 67 - Math.max(0, signature.length - 11) * 1.9));
     const ink = ['#123f98','#174baf','#16449d','#204da8'][seed % 4];
     overlay.style.setProperty('--autograph-ink', ink);
     text.setAttribute('x', '170');
     text.setAttribute('y', '61');
     text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('font-family', families[(seed >>> 5) % families.length]);
+    text.setAttribute('font-family', signatureFont);
     text.setAttribute('font-style', 'italic');
     text.setAttribute('font-size', String(fontSize));
-    text.setAttribute('font-weight', '600');
+    text.setAttribute('font-weight', '400');
     text.setAttribute('stroke', 'currentColor');
-    text.setAttribute('stroke-width', '.85');
+    text.setAttribute('stroke-width', '1.2');
     text.setAttribute('stroke-linejoin', 'round');
     text.setAttribute('paint-order', 'stroke fill');
     text.setAttribute('letter-spacing', String(((seed >>> 8) % 7 - 3) / 8));
