@@ -4526,8 +4526,8 @@
   z-index: 9;
   pointer-events: none;
   display: block;
-  color: var(--autograph-ink, #183e72);
-  opacity: .94;
+  color: var(--autograph-ink, #174baf);
+  opacity: .97;
   transform: rotate(-3deg);
   mix-blend-mode: multiply;
 }
@@ -4538,32 +4538,11 @@
   overflow: visible;
   filter: drop-shadow(.25px .5px .25px rgba(12,22,44,.25));
 }
-.dbl-cards-auto-stamp {
-  position: absolute;
-  z-index: 10;
-  right: 6%;
-  bottom: 23%;
-  padding: .15em .42em;
-  color: #183e72;
-  border: 1px solid rgba(24,62,114,.55);
-  border-radius: 2px;
-  background: rgba(255,255,255,.76);
-  font: 800 clamp(6px, 4.0cqw, 12px)/1.2 Arial,Helvetica,sans-serif;
-  letter-spacing: .075em;
-  pointer-events: none;
-  transform: rotate(-3deg);
-}
 .dbl-cards-card .dbl-topps-player-front .dbl-cards-autograph {
   top: 49%;
   left: 6%;
   width: 88%;
   height: 28%;
-}
-.dbl-cards-card .dbl-topps-player-front .dbl-cards-auto-stamp {
-  right: 7%;
-  bottom: 21%;
-  color: #183e72;
-  background: rgba(250,246,238,.85);
 }
 .dbl-cards-card .dbl-bgtest-pack-front .dbl-cards-autograph {
   top: 46%;
@@ -4571,13 +4550,8 @@
   width: 84%;
   height: 26%;
 }
-.dbl-cards-card .dbl-bgtest-pack-front .dbl-cards-auto-stamp {
-  bottom: 23%;
-  color: #174d65;
-}
 /* Signature identity is never displayed through the back of a sealed pack. */
-.dbl-cards-card.is-sealed .dbl-cards-autograph,
-.dbl-cards-card.is-sealed .dbl-cards-auto-stamp { visibility: hidden; }
+.dbl-cards-card.is-sealed .dbl-cards-autograph { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .dbl-cards-card .dbl-cards-autograph { transform: none; }
 }
