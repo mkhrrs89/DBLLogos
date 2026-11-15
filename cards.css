@@ -3029,8 +3029,12 @@
   font-size: clamp(32px, 33cqw, 95px);
 }
 .dbl-cards-team-season-name {
-  font-size: clamp(14px, 8.5cqw, 29px);
-  line-height: 1;
+  box-sizing: border-box;
+  padding-inline: 3%;
+  font-size: clamp(9px, calc(8.5cqw * var(--team-season-name-scale, 1)), 29px);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 .dbl-cards-team-season-record {
   padding: 1.6% 0;
