@@ -109,6 +109,12 @@
   tierIndex['topps-1968'] = .5;
   tierIndex['background-test'] = .25;
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
+  // Autographs sort between Black Label and Refractor, regardless of
+  // their underlying card edition. This changes display order only.
+  const raritySortRank = card => card.autograph === true &&
+    !tierMap[card.rarity]?.mythical && card.rarity !== 'black-label'
+    ? 2.5 : (tierIndex[card.rarity] ?? -1);
+
   // Undiscovered editions must never appear in the checklist or public
   // progress totals, even for players who meet their hidden requirements.
   const checklistTiers = api.rarities.filter(r => !r.mythical && !r.insert);
@@ -1609,16 +1615,16 @@
     switch (order.value) {
       case 'name': result.sort((a, b) => a.name.localeCompare(b.name)); break;
       case 'duplicates':
-        result.sort((a, b) => b.count - a.count || tierIndex[b.rarity] - tierIndex[a.rarity]);
+        result.sort((a, b) => b.count - a.count || raritySortRank(b) - raritySortRank(a));
         break;
       case 'player':
         result.sort((a, b) => (b.peak ?? -1) - (a.peak ?? -1) ||
-          tierIndex[b.rarity] - tierIndex[a.rarity]); break;
+          raritySortRank(b) - raritySortRank(a)); break;
       case 'value':
         result.sort((a, b) => api.marketValue(b) - api.marketValue(a) ||
           a.name.localeCompare(b.name)); break;
       default:
-        result.sort((a, b) => tierIndex[b.rarity] - tierIndex[a.rarity] ||
+        result.sort((a, b) => raritySortRank(b) - raritySortRank(a) ||
           (b.peak ?? -1) - (a.peak ?? -1) || a.name.localeCompare(b.name));
     }
     return result;
@@ -2089,12 +2095,12 @@
         String(card.era ?? '').includes(query)));
     if (checklistSort.value === 'rating') {
       result.sort((a, b) => b.peak - a.peak ||
-        a.name.localeCompare(b.name) || tierIndex[b.rarity] - tierIndex[a.rarity]);
+        a.name.localeCompare(b.name) || raritySortRank(b) - raritySortRank(a));
     } else if (checklistSort.value === 'value') {
       result.sort((a, b) => api.marketValue(b) - api.marketValue(a) ||
         a.name.localeCompare(b.name));
     } else if (checklistSort.value === 'rarity') {
-      result.sort((a, b) => tierIndex[b.rarity] - tierIndex[a.rarity] ||
+      result.sort((a, b) => raritySortRank(b) - raritySortRank(a) ||
         a.name.localeCompare(b.name));
     } else {
       result.sort((a, b) => a.name.localeCompare(b.name) ||
