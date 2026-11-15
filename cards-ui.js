@@ -1260,13 +1260,13 @@
     svg.setAttribute('focusable', 'false');
     const text = document.createElementNS(svgNS, 'text');
     const families = [
-      '"Snell Roundhand","Segoe Script","Brush Script MT",cursive',
-      '"Brush Script MT","Apple Chancery","Snell Roundhand",cursive',
-      '"Apple Chancery","Segoe Script","Snell Roundhand",cursive',
-      '"Segoe Script","Snell Roundhand","Brush Script MT",cursive'
+      '"Snell Roundhand","Apple Chancery","Brush Script MT",cursive',
+      '"Apple Chancery","Snell Roundhand","Brush Script MT",cursive',
+      '"Brush Script MT","Snell Roundhand","Apple Chancery",cursive',
+      '"Snell Roundhand","Brush Script MT","Apple Chancery",cursive'
     ];
     const fontSize = Math.max(34, Math.min(63, 67 - Math.max(0, signature.length - 11) * 1.9));
-    const ink = ['#183e72','#173763','#23446e','#1d477b'][seed % 4];
+    const ink = ['#123f98','#174baf','#16449d','#204da8'][seed % 4];
     overlay.style.setProperty('--autograph-ink', ink);
     text.setAttribute('x', '170');
     text.setAttribute('y', '61');
@@ -1274,7 +1274,11 @@
     text.setAttribute('font-family', families[(seed >>> 5) % families.length]);
     text.setAttribute('font-style', 'italic');
     text.setAttribute('font-size', String(fontSize));
-    text.setAttribute('font-weight', String(seed % 3 === 0 ? 500 : 400));
+    text.setAttribute('font-weight', '600');
+    text.setAttribute('stroke', 'currentColor');
+    text.setAttribute('stroke-width', '.85');
+    text.setAttribute('stroke-linejoin', 'round');
+    text.setAttribute('paint-order', 'stroke fill');
     text.setAttribute('letter-spacing', String(((seed >>> 8) % 7 - 3) / 8));
     text.setAttribute('fill', 'currentColor');
     text.setAttribute('transform',
@@ -1297,7 +1301,7 @@
         ' ' + end + ' ' + (y - 9));
       flourish.setAttribute('fill', 'none');
       flourish.setAttribute('stroke', 'currentColor');
-      flourish.setAttribute('stroke-width', String(1.4 + (seed % 5) * .2));
+      flourish.setAttribute('stroke-width', String(2.5 + (seed % 5) * .25));
       flourish.setAttribute('stroke-linecap', 'round');
       svg.appendChild(flourish);
     }
@@ -1308,7 +1312,6 @@
     const ink = autographArtwork(card);
     if (!ink) return front;
     front.appendChild(ink);
-    front.appendChild(make('span', 'dbl-cards-auto-stamp', 'AUTOGRAPH'));
     return front;
   }
 
