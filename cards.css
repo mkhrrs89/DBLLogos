@@ -2224,6 +2224,14 @@
   pointer-events: none;
   cursor: inherit;
 }
+/* Collection-browser cover only: the sealed pack design elsewhere is unchanged. */
+.dbl-cards-series-tile > .dbl-cards-series-cover.is-sealed .dbl-cards-back {
+  /* Remove the square outer stroke, retaining the rounded inset ::before. */
+  border: 0;
+}
+.dbl-cards-series-tile > .dbl-cards-series-cover.is-sealed .dbl-cards-back-tap {
+  display: none;
+}
 .dbl-cards-series-title {
   display: block;
   font-family: Georgia, "Times New Roman", serif;
@@ -4150,7 +4158,13 @@
   text-align: center;
   padding: 8%;
 }
-.dbl-bgtest-cover > strong { font: 900 clamp(20px, 15cqw, 39px)/1 Georgia,serif; }
+.dbl-bgtest-cover > strong {
+  /* Fit the full BACKGROUND word within the inset, even on narrow tiles. */
+  max-width: 100%;
+  white-space: nowrap;
+  font: 900 clamp(10px, 9.5cqw, 24px)/1 Georgia,serif;
+  letter-spacing: -.025em;
+}
 .dbl-bgtest-cover > span { font: 800 clamp(27px, 24cqw, 64px)/1 Georgia,serif; letter-spacing: .15em; }
 .dbl-bgtest-cover > small { font: 700 .63rem/1.4 Arial,Helvetica,sans-serif; letter-spacing: .06em; }
 @media (max-width: 520px) {
