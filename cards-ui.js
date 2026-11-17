@@ -1304,7 +1304,7 @@
     // Great Vibes is loaded explicitly in index.html, so mobile browsers
     // do not silently fall back to a generic italic serif face.
     const signatureFont = '"Great Vibes","Snell Roundhand",cursive';
-    const fontSize = Math.max(46, Math.min(85, 90 - Math.max(0, signature.length - 11) * 2.6));
+    const fontSize = Math.max(49, Math.min(91, 96 - Math.max(0, signature.length - 11) * 2.8));
     const ink = ['#123f98','#174baf','#16449d','#204da8'][seed % 4];
     overlay.style.setProperty('--autograph-ink', ink);
     text.setAttribute('x', '170');
