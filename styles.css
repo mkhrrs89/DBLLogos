@@ -64,8 +64,37 @@ select {
 }
 
 .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 14px;
   padding: 14px 4px 0;
+}
+.topbar > div { min-width: 0; }
+.topbar-randomize {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  color: var(--text);
+  background: var(--panel);
+  font-size: .82rem;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.topbar-randomize:hover { border-color: var(--accent); background: var(--panel-2); }
+.topbar-randomize:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 520px) {
+  .topbar { gap: 6px; }
+  .topbar h1 { font-size: clamp(1.15rem, 5.9vw, 1.72rem); }
+  .topbar-randomize { padding: 7px 9px; font-size: .75rem; min-height: 34px; }
 }
 
 .eyebrow {
