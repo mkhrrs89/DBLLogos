@@ -563,17 +563,18 @@
     const colors = corners.map(i => [pixels[i], pixels[i + 1], pixels[i + 2]]);
     const difference = (a, b) => Math.max(
       Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]));
-    const neutral = colors.every(c =>
-      Math.min(...c) >= 185 && Math.max(...c) - Math.min(...c) < 55);
-    // Never cut around a busy or strongly colored photographic background.
-    if (!neutral && colors.some(c => difference(c, colors[0]) > 40)) return null;
+    // White uniforms often have nearly the same color as a white backdrop.
+    // Require a consistent corner backdrop, and match that actual color
+    // closely. Never flood-fill every generic bright/neutral pixel: doing so
+    // can travel into a pale jersey even though its fabric is the foreground.
+    if (colors.some(c => difference(c, colors[0]) > 24)) return null;
+    const background = [0, 1, 2].map(channel =>
+      colors.reduce((sum, c) => sum + c[channel], 0) / colors.length);
     const candidate = p => {
       const i = p * 4;
       if (pixels[i + 3] < 240) return true;
-      const color = [pixels[i], pixels[i + 1], pixels[i + 2]];
-      return colors.some(c => difference(color, c) <= 35) ||
-        (neutral && Math.min(...color) >= 215 &&
-          Math.max(...color) - Math.min(...color) < 40);
+      return difference(
+        [pixels[i], pixels[i + 1], pixels[i + 2]], background) <= 16;
     };
     const total = width * height;
     const visited = new Uint8Array(total);
@@ -601,9 +602,22 @@
       if (p >= width) enqueue(p - width);
       if (p < total - width) enqueue(p + width);
     }
+    // Reject suspicious cutouts that eat into the central body of a jersey.
+    // A white-on-white uniform may be impossible to separate reliably by
+    // color alone; showing its original is preferable to deleting fabric.
+    const x1 = Math.floor(width * .24), x2 = Math.ceil(width * .76);
+    const y1 = Math.floor(height * .22), y2 = Math.ceil(height * .80);
+    let removedFromCenter = 0;
+    for (let y = y1; y < y2; y++) {
+      for (let x = x1; x < x2; x++) {
+        if (visited[y * width + x]) removedFromCenter++;
+      }
+    }
+    const centerArea = (x2 - x1) * (y2 - y1);
     // A detectable object and a substantial surrounding backdrop are both
     // required. Uncertain images remain original rather than losing artwork.
-    if (tail < total * .035 || tail > total * .92) return null;
+    if (tail < total * .035 || tail > total * .92 ||
+        removedFromCenter > centerArea * .16) return null;
     for (let p = 0; p < total; p++) {
       if (visited[p]) pixels[p * 4 + 3] = 0;
     }
