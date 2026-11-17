@@ -1299,6 +1299,47 @@
   font-weight: 400;
   line-height: 1.03;
 }
+/* Only Black Label cards: serial shares the first-name baseline below
+   the portrait and ends at the portrait's 87% right-hand edge. */
+.dbl-cards-card[data-rarity="black-label"] .dbl-cards-black-first-line {
+  display: flex;
+  box-sizing: border-box;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  padding-right: 11.6%;
+}
+.dbl-cards-card[data-rarity="black-label"] .dbl-cards-black-first-line > .dbl-cards-first-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dbl-cards-card[data-rarity="black-label"] .dbl-cards-black-serial {
+  flex: 0 0 auto;
+  display: inline-block;
+  color: #e4bd65;
+  background: linear-gradient(180deg, #fff0bc 0%, #f0d486 24%,
+    #ae7a29 53%, #ebcb7b 77%, #9b681e 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: clamp(8px, 5.6cqw, 20px);
+  font-weight: 900;
+  line-height: 1.03;
+  letter-spacing: .012em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@supports not (font-size: 1cqw) {
+  .dbl-cards-card[data-rarity="black-label"] .dbl-cards-black-serial {
+    font-size: 10px;
+  }
+}
+
 .dbl-cards-name {
   display: block;
   width: 100%;
