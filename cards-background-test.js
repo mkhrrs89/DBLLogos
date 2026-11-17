@@ -35,6 +35,7 @@
   let segmenterPromise = null;
   let proxyHealth = null;
   const cache = new Map();
+  const unchangedUniforms = new Set();
   const pending = [];
   const pendingIds = new Set();
   let working = false;
@@ -434,7 +435,7 @@
     return proxyHealth;
   }
 
-  async function processProxiedSource(src, segmenter) {
+  async function processProxiedSource(src, segmenter, cutout = makeCutout) {
     const ready = await proxyIsReady();
     if (!ready) throw codedError('proxy-unavailable', 'The same-origin image proxy is not active.');
     const url = PROXY_ENDPOINT + '?url=' + encodeURIComponent(src);
@@ -455,19 +456,19 @@
     const localUrl = URL.createObjectURL(blob);
     try {
       const image = await loadImage(localUrl);
-      return await makeCutout(segmenter, image);
+      return await cutout(segmenter, image);
     } finally {
       URL.revokeObjectURL(localUrl);
     }
   }
 
-  async function loadSource(src, segmenter) {
+  async function loadSource(src, segmenter, cutout = makeCutout) {
     if (/\.(?:mp4|mov|m4v)(?:[?#]|$)/i.test(src) ||
         /^data:video\//i.test(src))
       throw codedError('video', 'Animated video is not supported by still-image masking.');
     try {
       const image = await loadImage(src);
-      return await makeCutout(segmenter, image);
+      return await cutout(segmenter, image);
     } catch (error) {
       if (!/^https:\/\//i.test(src) ||
           !(error?.code === 'photo-access' ||
@@ -476,7 +477,7 @@
         throw error;
       // The fallback is attempted ONLY for public remote HTTPS images and
       // ONLY if the same-origin proxy's health endpoint is actually active.
-      try { return await processProxiedSource(src, segmenter); }
+      try { return await processProxiedSource(src, segmenter, cutout); }
       catch (cause) {
         if (cause?.code) throw cause;
         throw codedError('segment', 'AI could not process the fetched image.', cause);
@@ -533,10 +534,134 @@
     });
   }
 
+  // Uniform-only cutouts use edge-connected backdrop detection, rather than
+  // the person-only selfie model (which would erase a standalone jersey).
+  // Run on-device at a capped resolution and preserve the original when the
+  // backdrop cannot be identified confidently or is already transparent.
+  function makeUniformCutout(image) {
+    const ratio = Math.min(1, MAX_SIDE / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * ratio));
+    const height = Math.max(1, Math.round(image.naturalHeight * ratio));
+    if (width < 8 || height < 8) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', {willReadFrequently:true});
+    if (!ctx) return null;
+    ctx.drawImage(image, 0, 0, width, height);
+    const rgba = ctx.getImageData(0, 0, width, height);
+    const pixels = rgba.data;
+    const at = (x, y) => (y * width + x) * 4;
+    const inset = Math.max(1, Math.floor(Math.min(width, height) * .015));
+    const corners = [
+      at(inset, inset), at(width - 1 - inset, inset),
+      at(inset, height - 1 - inset),
+      at(width - 1 - inset, height - 1 - inset)
+    ];
+    // Transparent PNGs already have the desired cutout.
+    if (corners.some(i => pixels[i + 3] < 240)) return null;
+    const colors = corners.map(i => [pixels[i], pixels[i + 1], pixels[i + 2]]);
+    const difference = (a, b) => Math.max(
+      Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]));
+    const neutral = colors.every(c =>
+      Math.min(...c) >= 185 && Math.max(...c) - Math.min(...c) < 55);
+    // Never cut around a busy or strongly colored photographic background.
+    if (!neutral && colors.some(c => difference(c, colors[0]) > 40)) return null;
+    const candidate = p => {
+      const i = p * 4;
+      if (pixels[i + 3] < 240) return true;
+      const color = [pixels[i], pixels[i + 1], pixels[i + 2]];
+      return colors.some(c => difference(color, c) <= 35) ||
+        (neutral && Math.min(...color) >= 215 &&
+          Math.max(...color) - Math.min(...color) < 40);
+    };
+    const total = width * height;
+    const visited = new Uint8Array(total);
+    const queue = new Int32Array(total);
+    let head = 0, tail = 0;
+    const enqueue = p => {
+      if (!visited[p] && candidate(p)) {
+        visited[p] = 1;
+        queue[tail++] = p;
+      }
+    };
+    for (let x = 0; x < width; x++) {
+      enqueue(x);
+      enqueue((height - 1) * width + x);
+    }
+    for (let y = 1; y < height - 1; y++) {
+      enqueue(y * width);
+      enqueue(y * width + width - 1);
+    }
+    while (head < tail) {
+      const p = queue[head++];
+      const x = p % width;
+      if (x > 0) enqueue(p - 1);
+      if (x + 1 < width) enqueue(p + 1);
+      if (p >= width) enqueue(p - width);
+      if (p < total - width) enqueue(p + width);
+    }
+    // A detectable object and a substantial surrounding backdrop are both
+    // required. Uncertain images remain original rather than losing artwork.
+    if (tail < total * .035 || tail > total * .92) return null;
+    for (let p = 0; p < total; p++) {
+      if (visited[p]) pixels[p * 4 + 3] = 0;
+    }
+    ctx.putImageData(rgba, 0, 0);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob ? resolve(blob) :
+        reject(Error('Could not create uniform cutout.')), 'image/png');
+    });
+  }
+
+  // Share the existing serialized image-processing queue and temporary blob
+  // cache with the player cutouts, but namespace uniform results separately.
+  function uniformCutoutFor(src) {
+    const key = 'uniform:' + src;
+    if (unchangedUniforms.has(src)) return Promise.resolve(null);
+    if (cache.has(key)) return Promise.resolve(cache.get(key));
+    if (inFlight.has(key)) return inFlight.get(key);
+    const job = cutoutQueue.catch(() => {}).then(async () => {
+      const blob = await loadSource(src, null, (_unused, image) =>
+        makeUniformCutout(image));
+      if (!blob) {
+        unchangedUniforms.add(src);
+        return null;
+      }
+      const url = URL.createObjectURL(blob);
+      cache.set(key, url);
+      return url;
+    });
+    inFlight.set(key, job);
+    cutoutQueue = job.catch(() => {});
+    void job.then(() => inFlight.delete(key), () => inFlight.delete(key));
+    return job;
+  }
+
+  function maskUniformPhoto(element, source) {
+    const src = safePhoto(source);
+    if (!element || !src) return Promise.resolve(false);
+    return uniformCutoutFor(src).then(url => {
+      // Do not overwrite an image that was removed, replaced, or switched
+      // to a different uniform while its cutout was being generated.
+      if (!url || !element.isConnected || element.dataset.uniformOriginal !== src)
+        return false;
+      element.dataset.uniformCutout = url;
+      element.src = url;
+      trimCache();
+      return true;
+    }).catch(error => {
+      // This is an optional display enhancement: failed/blocked processing
+      // must leave the original uniform visible and usable.
+      console.warn('Uniform cutout unavailable; original preserved.', error);
+      return false;
+    });
+  }
+
   function trimCache() {
     if (cache.size <= CACHE_LIMIT) return;
     const inUse = new Set([...document.querySelectorAll(
-      'img.dbl-bgtest-cutout, img.dbl-bgtest-pack-image')]
+      'img.dbl-bgtest-cutout, img.dbl-bgtest-pack-image, img.dbl-topps-uniform-image')]
       .map(img => img.src));
     for (const [source, url] of cache) {
       if (cache.size <= CACHE_LIMIT) break;
@@ -749,7 +874,8 @@
   });
   hub.subscribe(({file}) => onLeagueFile(file));
   onLeagueFile(hub.getCurrentFile?.() || null);
-  window.DBLBackgroundTest = Object.freeze({open, close, maskPhoto, createLocalPhoto, releaseLocalPhoto,
+  window.DBLBackgroundTest = Object.freeze({open, close, maskPhoto, maskUniformPhoto,
+    createLocalPhoto, releaseLocalPhoto,
     proxyIsReady,
     // Exposed for validation, not part of collection storage or pack odds.
     rosterFromRecords, currentRating});
