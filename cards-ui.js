@@ -599,6 +599,17 @@
     }
     return urls;
   }
+  // Run the optional uniform cutout when its real image is visible. The
+  // original stays on screen while processing and whenever masking fails.
+  function activateUniformCutout(image) {
+    if (!image?.isConnected || !window.DBLBackgroundTest?.maskUniformPhoto ||
+        image.closest('.dbl-cards-card.is-sealed')) return;
+    const source = image.dataset.uniformOriginal;
+    if (!source || image.src !== source ||
+        image.dataset.uniformMaskStarted === source) return;
+    image.dataset.uniformMaskStarted = source;
+    void window.DBLBackgroundTest.maskUniformPhoto(image, source);
+  }
   function applyUniformImage(artwork, card) {
     const side = String(card.uniform || '').toLowerCase();
     if (side !== 'home' && side !== 'away') return;
@@ -613,20 +624,38 @@
       img.loading = 'lazy';
       img.decoding = 'async';
       let index = 0;
+      const loadNext = () => {
+        const next = urls[index++];
+        if (!next) return false;
+        img.dataset.uniformCutout = '';
+        img.dataset.uniformMaskStarted = '';
+        img.src = next;
+        // Keep this original URL separate from the temporary cutout URL.
+        img.dataset.uniformOriginal = img.src;
+        return true;
+      };
       img.addEventListener('load', () => {
-        uniformImageResults.set(key, img.src);
+        uniformImageResults.set(key, img.dataset.uniformOriginal || img.src);
         artwork.classList.add('has-image');
+        // Lazy-loaded images are processed only after the asset loads.
+        // Sealed cards wait until the player reveals them.
+        if (img.src === img.dataset.uniformOriginal) activateUniformCutout(img);
       });
       img.addEventListener('error', () => {
+        if (img.dataset.uniformCutout &&
+            img.src === img.dataset.uniformCutout) {
+          // An evicted or invalid temporary PNG must never break a card.
+          img.src = img.dataset.uniformOriginal;
+          return;
+        }
         artwork.classList.remove('has-image');
-        if (index < urls.length) img.src = urls[index++];
-        else {
+        if (!loadNext()) {
           uniformImageResults.set(key, null);
           img.remove();
         }
       });
       artwork.appendChild(img);
-      img.src = urls[index++];
+      loadNext();
     };
     if (typeof cached === 'string') {
       addImage([card.uniformImage, cached]);
@@ -1439,6 +1468,11 @@
         if (isChampionTeam(card)) button.dataset.teamChampion = 'true';
         playCardRevealEffect(button, card);
         activateBackgroundPhoto(button, card);
+        if (isToppsUniform(card)) {
+          const uniform = button.querySelector('.dbl-topps-uniform-image');
+          if (uniform?.complete && uniform.naturalWidth > 0)
+            activateUniformCutout(uniform);
+        }
         scheduleNameFit();
         button.setAttribute('aria-label', 'View statistics for ' + cardLabel +
           ', ' + tierMap[card.rarity]?.label +
