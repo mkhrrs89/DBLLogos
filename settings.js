@@ -59,7 +59,10 @@
       cancelEditButton.hidden = true;
     };
     const renderMultipliers = () => {
-      const rows = market.listPlayerMultipliers();
+      // Display highest multipliers first; PID breaks equal-value ties.
+      // This is presentation-only: saved values and pricing stay untouched.
+      const rows = market.listPlayerMultipliers().sort((a, b) =>
+        b.multiplier - a.multiplier || a.pid - b.pid);
       if (editingPid !== null && !rows.some(row => row.pid === editingPid))
         exitEdit();
       const fragment = document.createDocumentFragment();
