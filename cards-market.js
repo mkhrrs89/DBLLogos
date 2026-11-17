@@ -211,11 +211,14 @@
         Math.max(0, num(team.tied) ?? 0) : 0;
       const strength = clamp(.8 + ((gp ? won / gp : .5) - .35) * 1.75, .65, 2);
       const playoff = 1 + .12 * clamp(num(team.playoffRoundsWon) ?? 0, 0, 6);
-      const title = team.finishKind === 'champion' ? 2.5 :
+      // Bronze champions get only a small (~12%) title-specific premium
+      // over an otherwise identical Team Season card. Win record, playoff
+      // performance and age continue to affect every team's value normally.
+      const title = team.finishKind === 'champion' ? 1.12 :
         team.finishKind === 'finalist' ? 1.55 : 1;
       // Series 0 Team Season inserts use a deliberately restrained period
-      // price: ~57% lower than the previous .07 starter. Champions and
-      // stronger teams still earn their existing relative premiums.
+      // price: ~57% lower than the previous .07 starter. Team performance
+      // still affects value; only the bronze champion title bonus is reduced.
       // Keep the separate 1968 Topps Uniform starter unchanged.
       const starter = card.type === 'topps-uniform' ? .05 : .03;
       return Math.round(clamp(starter * multiple * strength * playoff *
