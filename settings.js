@@ -113,6 +113,8 @@
           remove.textContent = 'Remove';
           remove.setAttribute('aria-label', 'Remove card value multiplier for PID ' + pid);
           remove.addEventListener('click', () => {
+            // Cancel keeps the saved multiplier and any active edit intact.
+            if (!window.confirm('Are you sure?')) return;
             const result = market.removePlayerMultiplier(pid);
             if (!result.ok) {
               report(result.error || 'Could not remove multiplier.', true);
