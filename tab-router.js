@@ -150,6 +150,21 @@
     activateById('homeTabBtn', { persist: true, source: 'startup' });
   }
 
+  // Jump to a random real page using the SAME tab click path as the menu.
+  // This preserves each feature's existing click hooks and tab-change events.
+  const randomizeButton = document.getElementById('randomizePageBtn');
+  randomizeButton?.addEventListener('click', () => {
+    const pages = [...tabBar.querySelectorAll('.tab-btn')].filter(button =>
+      !button.disabled && document.getElementById(getPanelId(button)));
+    const alternatives = pages.filter(button => button.id !== activeTabId);
+    const choices = alternatives.length ? alternatives : pages;
+    if (!choices.length) return;
+    const selected = choices[Math.floor(Math.random() * choices.length)];
+    selected.click();
+    // Open at the beginning instead of carrying over scroll from last page.
+    window.scrollTo(0, 0);
+  });
+
   tabBar.addEventListener('click', (event) => {
     const button = event.target.closest('.tab-btn');
     if (!button || !tabBar.contains(button)) return;
