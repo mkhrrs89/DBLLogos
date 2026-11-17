@@ -1039,6 +1039,17 @@
       }, {rootMargin: '100px 0px'})
     : null;
 
+  // Black Label print-number styling. Stable for each card identity across
+  // pack pulls, device reloads and collection imports; this is a visual
+  // serial, not a change to collection counts or Black Label pull limits.
+  function blackLabelSerial(card) {
+    const identity = String(card.id || card.pid || card.name || 'black-label');
+    let hash = 2166136261;
+    for (let i = 0; i < identity.length; i++)
+      hash = Math.imul(hash ^ identity.charCodeAt(i), 16777619) >>> 0;
+    return String(hash % 500 + 1).padStart(3, '0') + '/500';
+  }
+
   function frontOf(card) {
     if (isBackgroundTest(card)) return backgroundTestFront(card);
     if (isToppsPlayer(card)) return toppsPlayerFront(card);
@@ -1083,7 +1094,19 @@
 
     const details = make('span', 'dbl-cards-identity-details');
     const names = nameParts(card);
-    if (names.first) details.appendChild(make('span', 'dbl-cards-first-name', names.first));
+    if (card.rarity === 'black-label') {
+      // Keep the first name in its existing row. Line up the gold serial
+      // with the right edge of the portrait immediately above that row.
+      const firstLine = make('span', 'dbl-cards-black-first-line');
+      if (names.first)
+        firstLine.appendChild(make('span', 'dbl-cards-first-name', names.first));
+      const serial = make('span', 'dbl-cards-black-serial', blackLabelSerial(card));
+      serial.setAttribute('aria-label', 'Card serial ' + serial.textContent);
+      firstLine.appendChild(serial);
+      details.appendChild(firstLine);
+    } else if (names.first) {
+      details.appendChild(make('span', 'dbl-cards-first-name', names.first));
+    }
     const surname = make('strong', 'dbl-cards-name');
     surname.appendChild(make('span', 'dbl-cards-surname-glyphs',
       names.last.toLocaleUpperCase()));
