@@ -15,8 +15,10 @@
   const clear = document.getElementById('clearLeagueFileBtn');
   if (!panel || !wrap || !status || !tab || !stream) return;
 
-  const CACHE_KEY = 'dbl-player-stocks:v1';
+  // v2 recalculates results with the minimum recent playing-time requirement.
+  const CACHE_KEY = 'dbl-player-stocks:v2';
   const RECENT = 5, BASELINE = 10, MIN_BASELINE = 3;
+  const MIN_RECENT_MPG = 10;
   let activeFile = null, version = 0, loadedVersion = -1, loadingVersion = -1;
   let rows = [], season = null, shown = 100;
   const asNumber = value => value == null || value === '' ? null :
@@ -103,7 +105,7 @@
     if (pts === null || pts < 0) return null;
     const minutes = asNumber(gamePlayer?.min ?? gamePlayer?.minutes);
     if (minutes !== null && minutes <= 0) return null; // DNP
-    return {pts, reb, ast, stl, blk, tov,
+    return {pts, reb, ast, stl, blk, tov, minutes,
       index: Math.max(0, pts + 1.2 * reb + 1.5 * ast + 2 * stl + 2 * blk - 1.5 * tov)};
   }
   function averaged(games) {
@@ -126,6 +128,12 @@
       const recent = sorted.slice(0, RECENT);
       const previous = sorted.slice(RECENT, RECENT + BASELINE);
       if (previous.length < MIN_BASELINE) continue;
+      // Only rate players with a substantial current role. Require actual
+      // box-score minutes in all five recent appearances rather than
+      // treating missing data as zero or assuming a player qualifies.
+      if (recent.some(game => !Number.isFinite(game.minutes))) continue;
+      const recentMpg = recent.reduce((sum, game) => sum + game.minutes, 0) / RECENT;
+      if (recentMpg < MIN_RECENT_MPG) continue;
       const current = averaged(recent);
       const prior = averaged(previous);
       if (prior.index < 2) continue; // avoid meaningless +/- infinity
@@ -135,7 +143,7 @@
       result.push({
         pid, name: info.name || latest.name || 'Player ' + pid,
         photo: info.photo || '', team: teamNames.get(latest.tid) || latest.team || '',
-        recent, previousCount: previous.length, trend,
+        recent, recentMpg, previousCount: previous.length, trend,
         status:classify(trend), recentStats:current, priorStats:prior,
       });
     }
@@ -246,7 +254,7 @@
     if (!panel || !rows.length) {
       report(season === null ? 'No league file loaded.' :
         'Season ' + season + ' · insufficient recent-game history');
-      empty('Player Stocks needs at least 8 games per player this season: the last 5 compared with up to 10 earlier games.');
+      empty('Player Stocks needs at least 8 games per player this season and 10+ minutes per game over the last 5 appearances.');
       if (more) more.hidden = true;
       return;
     }
@@ -262,7 +270,7 @@
       return b.trend - a.trend || a.name.localeCompare(b.name);
     });
     wrap.replaceChildren();
-    report('Season ' + season + ' · ' + filtered.length + ' players · last 5 games vs previous 3–10');
+    report('Season ' + season + ' · ' + filtered.length + ' players · 10+ recent MPG · last 5 vs previous 3–10 games');
     if (!filtered.length) {
       empty('No players match these filters.');
       if (more) more.hidden = true;
@@ -297,6 +305,7 @@
         'RPG ' + format(player.recentStats.reb) + ' / ' + format(player.priorStats.reb)));
       metrics.appendChild(rowElement('span','',
         'APG ' + format(player.recentStats.ast) + ' / ' + format(player.priorStats.ast)));
+      metrics.appendChild(rowElement('span','', 'MPG ' + format(player.recentMpg)));
       card.appendChild(metrics);
       const meter = rowElement('div','player-stocks-meter');
       const bar = rowElement('span','player-stocks-meter-fill');
