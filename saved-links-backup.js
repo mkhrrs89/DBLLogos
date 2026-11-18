@@ -6,6 +6,8 @@
     headshotBackgroundStatuses: 'dbl-logo-headshot-background-statuses:v1',
   };
   const FORMAT = 'dbl-saved-links';
+  const NOTES_KEY = 'dbl-home-notes:v1';
+  const NOTES_MAX_LENGTH = 120000;
   const exportButton = document.getElementById('exportSavedLinksBtn');
   const importButton = document.getElementById('importSavedLinksBtn');
   const fileInput = document.getElementById('savedLinksImportFile');
@@ -47,8 +49,14 @@
 
   exportButton.addEventListener('click', () => {
     try {
+      // Flush unsaved typing before taking the backup snapshot; abort rather
+      // than silently exporting an older copy of the notes.
+      if (window.DBLHomeNotes?.save && !window.DBLHomeNotes.save())
+        throw new Error('Notes could not be saved. Export cancelled to protect them.');
       const links = Object.fromEntries(Object.entries(KEYS).map(([name, key]) => [name, readMap(key, name)]));
-      const payload = { format: FORMAT, version: 2, exportedAt: new Date().toISOString(), links };
+      const notes = localStorage.getItem(NOTES_KEY) || '';
+      if (notes.length > NOTES_MAX_LENGTH) throw new Error('Saved notes exceed the backup limit.');
+      const payload = { format: FORMAT, version: 3, exportedAt: new Date().toISOString(), links, notes };
       const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
       const anchor = document.createElement('a');
       anchor.href = url;
@@ -57,7 +65,7 @@
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      report('Exported banners, uniforms, headshot background links, and border selections.');
+      report('Exported banners, uniforms, headshot background links, border selections, and Home notes.');
     } catch (error) {
       report(error?.message || 'Export failed.');
     }
@@ -79,7 +87,13 @@
         if (!Object.hasOwn(data.links, category)) continue;
         incoming[category] = cleanMap(data.links[category], category);
       }
-      if (!Object.keys(incoming).length) throw new Error('The backup does not contain supported link collections.');
+      // Older v1/v2 backups have no notes field and must NEVER erase notes.
+      if (Object.hasOwn(data, 'notes')) {
+        if (typeof data.notes !== 'string' || data.notes.length > NOTES_MAX_LENGTH)
+          throw new Error('The backup contains invalid Home notes.');
+        incoming.notes = data.notes;
+      }
+      if (!Object.keys(incoming).length) throw new Error('The backup does not contain supported saved data.');
 
       // An import changes only collections provided by the backup. Never
       // delete/reset the league file, or unrelated local app preferences.
@@ -87,15 +101,17 @@
       const updated = [];
       try {
         for (const [category, values] of Object.entries(incoming)) {
-          previous[category] = localStorage.getItem(KEYS[category]);
-          localStorage.setItem(KEYS[category], JSON.stringify(values));
+          const key = category === 'notes' ? NOTES_KEY : KEYS[category];
+          previous[category] = localStorage.getItem(key);
+          localStorage.setItem(key, category === 'notes' ? values : JSON.stringify(values));
           updated.push(category);
         }
       } catch (error) {
         for (const category of updated) {
           try {
-            if (previous[category] === null) localStorage.removeItem(KEYS[category]);
-            else localStorage.setItem(KEYS[category], previous[category]);
+            const key = category === 'notes' ? NOTES_KEY : KEYS[category];
+            if (previous[category] === null) localStorage.removeItem(key);
+            else localStorage.setItem(key, previous[category]);
           } catch (ignored) {
             console.warn('Could not roll back a failed saved-links import.', ignored);
           }
@@ -108,6 +124,7 @@
           uniforms: 'uniforms' in incoming,
           headshotBackgrounds: 'headshotBackgrounds' in incoming,
           headshotBackgroundStatuses: 'headshotBackgroundStatuses' in incoming,
+          notes: 'notes' in incoming,
         },
       }));
       report('Imported saved links: ' + Object.keys(incoming).join(', ') + '.');
