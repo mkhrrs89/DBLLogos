@@ -20,6 +20,7 @@
     allTimeLeadersTabBtn: 'allTimeLeadersPanel',
     teamLeadersTabBtn: 'teamLeadersPanel',
     ratingsTabBtn: 'ratingsPanel',
+    playerStocksTabBtn: 'playerStocksPanel',
     draftClassStrengthTabBtn: 'draftClassStrengthPanel',
     playersOfMonthTabBtn: 'playersOfMonthPanel',
     hallOfFameTabBtn: 'hallOfFamePanel',
