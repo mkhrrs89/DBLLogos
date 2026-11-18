@@ -1,5 +1,6 @@
 (() => {
   const CACHE_KEY = 'dbl-logo-adjusted-scoring-records:v1';
+  const RAW_CACHE_KEY = 'dbl-logo-raw-scoring-records:v1';
   const RECORDS_SUBTAB_KEY = 'dbl-records-active-subtab:v1';
   const RECORD_LIMIT = 50;
 
@@ -25,8 +26,15 @@
   let adjustedRecords = [];
   let environment = null;
   let cachedPayload = loadCache();
+  let rawLoadedVersion = -1;
+  let rawLoadingVersion = -1;
+  let rawRecords = [];
+  let cachedRawPayload = loadRawCache();
 
-  rawBtn.addEventListener('click', () => setView('raw'));
+  rawBtn.addEventListener('click', () => {
+    setView('raw');
+    void ensureRawRecords();
+  });
   adjustedBtn.addEventListener('click', () => {
     setView('adjusted');
     void ensureAdjustedRecords();
@@ -34,11 +42,13 @@
 
   recordsTabBtn?.addEventListener('click', () => {
     if (activeView === 'adjusted') void ensureAdjustedRecords();
+    else void ensureRawRecords();
   });
 
   window.addEventListener('dbl:tab-change', (event) => {
     if (event.detail?.panelId !== 'recordsPanel') return;
     if (activeView === 'adjusted') void ensureAdjustedRecords();
+    else void ensureRawRecords();
   });
 
   const acceptLeagueFile = (file) => {
@@ -50,8 +60,15 @@
     loadingVersion = -1;
     adjustedRecords = [];
     environment = null;
+    rawLoadedVersion = -1;
+    rawLoadingVersion = -1;
+    rawRecords = [];
 
     const signature = fileSignature(file);
+    if (cachedRawPayload?.signature === signature) {
+      rawRecords = normalizeRawRecords(cachedRawPayload.records);
+      if (rawRecords.length) rawLoadedVersion = fileVersion;
+    }
     if (cachedPayload?.signature === signature) {
       adjustedRecords = normalizeSavedRecords(cachedPayload.records);
       environment = normalizeSavedEnvironment(cachedPayload.environment);
@@ -63,6 +80,7 @@
     }
 
     if (activeView === 'adjusted') void ensureAdjustedRecords();
+    else if (!document.getElementById('recordsPanel')?.hidden) void ensureRawRecords();
   };
 
   if (fileHub) {
@@ -81,10 +99,15 @@
     loadingVersion = -1;
     adjustedRecords = [];
     environment = null;
+    rawLoadedVersion = -1;
+    rawLoadingVersion = -1;
+    rawRecords = [];
 
     try {
       localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(RAW_CACHE_KEY);
       cachedPayload = null;
+      cachedRawPayload = null;
     } catch (error) {
       console.warn('Could not clear adjusted scoring records.', error);
     }
@@ -113,6 +136,189 @@
       subtitle.textContent = adjusted
         ? 'Top 50 single-game scoring totals translated to the current in-game scoring environment.'
         : 'Top 50 single-game scoring totals by any player in the loaded league file.';
+    }
+  }
+
+  // Large-file boot deliberately loads only teams to protect mobile memory.
+  // Raw records need their own bounded, on-demand stream of games and feats.
+  // Never derive the raw Top 50 from the adjusted Top 50: the rankings differ.
+  function normalizeRawRecords(value) {
+    return (Array.isArray(value) ? value : [])
+      .filter(row => row && Number.isFinite(Number(row.points)) && Number(row.points) >= 0)
+      .map(row => ({...row, points: Number(row.points),
+        imgURL: normalizeImageUrl(row.imgURL)}))
+      .sort(compareScoringRecords).slice(0, RECORD_LIMIT);
+  }
+
+  function loadRawCache() {
+    try {
+      const raw = localStorage.getItem(RAW_CACHE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (_) { return null; }
+  }
+
+  function saveRawCache(payload) {
+    try { localStorage.setItem(RAW_CACHE_KEY, JSON.stringify(payload)); }
+    catch (error) { console.warn('Could not cache raw scoring records.', error); }
+  }
+
+  function renderRawMessage(message) {
+    rawWrap.className = 'records-wrap empty-state';
+    rawWrap.replaceChildren();
+    const box = document.createElement('div');
+    box.className = 'empty-copy';
+    const paragraph = document.createElement('p');
+    paragraph.textContent = message;
+    paragraph.setAttribute('aria-live', 'polite');
+    box.appendChild(paragraph);
+    rawWrap.appendChild(box);
+  }
+
+  function showRawRecords(records) {
+    if (!fullTimeline || !records.length) return false;
+    fullTimeline.scoringRecords = normalizeRawRecords(records);
+    // Use the existing raw list renderer, including player portrait handling.
+    renderRecords(fullTimeline);
+    return true;
+  }
+
+  function addRawRecord(records, record) {
+    if (!Number.isFinite(record.points) || record.points < 0) return;
+    if (records.length >= RECORD_LIMIT &&
+        compareScoringRecords(record, records[records.length - 1]) >= 0) return;
+    const index = records.findIndex(row => compareScoringRecords(record, row) < 0);
+    if (index < 0) records.push(record);
+    else records.splice(index, 0, record);
+    if (records.length > RECORD_LIMIT) records.length = RECORD_LIMIT;
+  }
+
+  async function ensureRawRecords() {
+    const file = activeFile
+      || fileHub?.getCurrentFile?.()
+      || fileInput?.files?.[0]
+      || window.__dblLargeLeagueFile
+      || null;
+    if (!file) return; // Keep the original no-file message.
+
+    const version = fileVersion;
+    if (rawLoadingVersion === version) return;
+    await waitForMainLeagueLoad(version);
+    if (!isCurrent(file, version) || !fullTimeline) return;
+
+    // A normal, fully parsed export already has the authoritative raw Top 50.
+    if (Array.isArray(fullTimeline.scoringRecords) && fullTimeline.scoringRecords.length) return;
+    if (rawLoadedVersion === version && rawRecords.length) {
+      showRawRecords(rawRecords);
+      return;
+    }
+    if (rawLoadingVersion === version) return;
+    rawLoadingVersion = version;
+    renderRawMessage('Reading original single-game scoring records…');
+
+    try {
+      const teams = buildTeamNameMapFromTimeline();
+      const records = [];
+
+      // Retain at most 50 entries, even if the archive has millions of games.
+      await stream.forEachTopLevelArrayItem(file, 'games', game => {
+        if (!isCurrent(file, version)) return;
+        const season = readGameSeasonSafe(game);
+        const teamEntries = getTeamEntries(game);
+        for (const teamEntry of teamEntries) {
+          const players = Array.isArray(teamEntry?.players) ? teamEntry.players : [];
+          for (const player of players) {
+            const points = readPlayerPointsSafe(player);
+            if (!Number.isFinite(points)) continue;
+            const pid = readNumber(player?.pid);
+            addRawRecord(records, {
+              points,
+              pid,
+              tid: readNumber(teamEntry?.tid) ?? readNumber(player?.tid),
+              playerName: getPlayerName(player),
+              imgURL: normalizeImageUrl(player?.imgURL),
+              teamName: getTeamName(teamEntry, season, teams),
+              opponentName: getOpponentName(teamEntry, teamEntries, season, teams),
+              season,
+              gameType: game?.playoffs ? 'Playoffs' : 'Regular season',
+              gid: readGameIdSafe(game),
+            });
+          }
+        }
+      });
+      if (!isCurrent(file, version)) return;
+
+      // Historical high-score feats can exist without retained box scores.
+      // Keep those alongside games without counting a retained game twice.
+      for (const key of ['playerFeats', 'statisticalFeats', 'statFeats', 'playerStatFeats']) {
+        await stream.forEachTopLevelArrayItem(file, key, feat => {
+          if (!isCurrent(file, version)) return;
+          const points = readFeatPoints(feat);
+          if (!Number.isFinite(points)) return;
+          const pid = readNumber(feat?.pid);
+          const season = readGameSeasonSafe(feat);
+          const tid = readNumber(feat?.tid);
+          const gid = readGameIdSafe(feat);
+          const candidate = {
+            points, pid, tid,
+            playerName: getPlayerName(feat),
+            imgURL: normalizeImageUrl(feat?.imgURL),
+            teamName: getTimelineTeamName(teams, tid, season),
+            opponentName: getTimelineTeamName(teams,
+              readNumber(feat?.oppTid ?? feat?.opponentTid), season, ''),
+            season,
+            gameType: feat?.playoffs ? 'Playoffs' : 'Regular season',
+            gid,
+          };
+          if (!isDuplicateOfRetainedRecord(records, candidate)) addRawRecord(records, candidate);
+        });
+        if (!isCurrent(file, version)) return;
+      }
+
+      // Photos and names often live in separate player records. Look up only
+      // the final Top 50 PIDs, never hold entire player archives in memory.
+      const wanted = new Set(records.map(row => row.pid).filter(pid => pid !== null));
+      const playerDetails = new Map();
+      if (wanted.size) {
+        for (const key of ['players', 'retiredPlayers', 'releasedPlayers', 'freeAgents']) {
+          await stream.forEachTopLevelArrayItem(file, key, player => {
+            if (!isCurrent(file, version)) return;
+            const pid = readNumber(player?.pid);
+            if (!wanted.has(pid)) return;
+            const before = playerDetails.get(pid) || {};
+            const name = getPlayerName(player);
+            playerDetails.set(pid, {
+              playerName: name === 'Unknown Player' ? before.playerName : name,
+              imgURL: normalizeImageUrl(player?.imgURL) || before.imgURL || '',
+            });
+          });
+          if (!isCurrent(file, version)) return;
+          if (wanted.size === playerDetails.size &&
+              [...playerDetails.values()].every(info => info.imgURL && info.playerName))
+            break;
+        }
+      }
+      for (const record of records) {
+        const detail = playerDetails.get(record.pid);
+        if (!detail) continue;
+        if (!record.imgURL) record.imgURL = detail.imgURL || '';
+        if (record.playerName === 'Unknown Player' && detail.playerName)
+          record.playerName = detail.playerName;
+      }
+      if (!isCurrent(file, version)) return;
+
+      rawRecords = normalizeRawRecords(records);
+      rawLoadedVersion = version;
+      cachedRawPayload = {signature: fileSignature(file), records: rawRecords};
+      saveRawCache(cachedRawPayload);
+      if (!showRawRecords(rawRecords))
+        renderRawMessage('No single-game scoring performances were found in this league file.');
+    } catch (error) {
+      if (!isCurrent(file, version)) return;
+      console.error('Could not read original scoring records.', error);
+      renderRawMessage('Could not load original scoring records from this file.');
+    } finally {
+      if (rawLoadingVersion === version) rawLoadingVersion = -1;
     }
   }
 
