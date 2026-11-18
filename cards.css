@@ -2899,8 +2899,9 @@
 .dbl-cards-card[data-rarity="team-season"] .dbl-cards-back {
   background: linear-gradient(155deg,#f6ecd5 0%,#e9d2a6 48%,#c5a276 100%);
   color: #392617;
-  border: 3px double #a77b47;
-  box-shadow: 0 8px 18px rgba(28,14,9,.32),inset 0 0 0 3px rgba(250,236,203,.45);
+  /* Match the clean Base-card edge: no decorative double frame or inset piping. */
+  border: 0;
+  box-shadow: 0 8px 18px rgba(28,14,9,.32);
 }
 .dbl-cards-team-season-front {
   display: flex !important;
@@ -2917,11 +2918,15 @@
 .dbl-cards-team-season-front::before {
   content: "";
   position: absolute;
-  inset: 4%;
-  background: none;
-  border: 1px solid rgba(100,63,32,.45);
-  border-radius: 12px;
-  box-shadow: inset 0 0 0 2px rgba(255,248,223,.35);
+  /* Same softly filled, borderless inset panel as regular Base cards. */
+  top: 3%;
+  left: 3.2%;
+  right: 3.2%;
+  bottom: 2.6%;
+  background: rgba(255,247,225,.16);
+  border: 0;
+  border-radius: 14% / 10%;
+  box-shadow: none;
   pointer-events: none;
   z-index: 0;
 }
@@ -3257,7 +3262,7 @@
 }
 
 
-/* Keep the historical team masthead below its inset rounded frame:
+/* Keep the historical team masthead inside its softly filled Base-style panel:
    percentage top padding scales with card width on both phone and desktop. */
 .dbl-cards-team-season-front {
   padding-top: 9%;
@@ -3830,17 +3835,16 @@
     linear-gradient(148deg,#f1cf9c 0%,#bb8054 16%,#e6b886 29%,
       #ad704b 43%,#e9bd8b 56%,#b37a51 75%,#ddb087 88%,#f4d2a0 100%);
   color: #2b190f;
-  /* The bronze finish no longer adds two outer rectangular piping lines.
-     Keep the one inner rounded archival frame drawn by ::before below. */
+  /* Bronze keeps its existing finish, without decorative outer edge lines. */
   border: 0;
   box-shadow: 0 9px 19px rgba(62,30,17,.42),
     0 0 12px rgba(183,106,61,.19);
 }
-/* Embossed copper/bronze inner frame remains distinct behind team logos. */
+/* Bronze also uses the borderless Base-style inset, with a warmer tint. */
 .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-team-season-front::before {
-  border-color: rgba(95,49,26,.72);
-  box-shadow: inset 0 0 0 2px rgba(255,233,189,.40),
-    0 0 0 1px rgba(255,219,169,.17);
+  background: rgba(255,233,189,.14);
+  border: 0;
+  box-shadow: none;
 }
 /* All verified championship crests get the same dark silhouette stroke.
    Light-logo pixel sampling may classify two-tone cream/black artwork (like
