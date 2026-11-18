@@ -39,7 +39,7 @@
     <link rel="stylesheet" href="./ratings.css?v=20261012-ratings" />
     <link rel="stylesheet" href="./draft-class-strength.css?v=20261103-top-bottom-five" />
     <link rel="stylesheet" href="./players-of-month.css?v=20261112-ordinal-count-color" />
-    <link rel="stylesheet" href="./player-stocks.css?v=20261118-player-stocks-v1" />
+    <link rel="stylesheet" href="./player-stocks.css?v=20261118-sortable-table-v3" />
     <link rel="stylesheet" href="./records-player-images.css?v=20260926-mobile-records" />
     <link rel="stylesheet" href="./records-adjusted.css?v=20261004-adjusted-points" />
     <link rel="stylesheet" href="./shootout-records.css?v=20261109-sortable-table" />
@@ -765,7 +765,7 @@
         <section id="playerStocksPanel" class="panel player-stocks-panel" aria-label="Player Stocks" hidden>
           <h2>Player Stocks</h2>
           <p class="subtle">Who is heating up, and who is cooling off? Performance momentum from the current league season.</p>
-          <p class="player-stocks-explainer">Shows players averaging at least 10 minutes per game over their last 5 appearances (with recorded minutes in each). Compares those 5 games with their preceding 3–10 games. The percentage measures change in a combined production index (points, rebounds, assists, steals, blocks and turnovers), not card value or official player ratings. Hot is +15% or more; Cold is −15% or worse. PPG, RPG and APG show recent / earlier averages; MPG shows recent playing time.</p>
+          <p class="player-stocks-explainer">Shows players averaging at least 10 minutes per game over their last 5 appearances (with recorded minutes in each). Compares those 5 games with their preceding 3–10 games. The percentage measures change in a combined production index (points, rebounds, assists, steals, blocks and turnovers), not card value or official player ratings. Hot is +15% or more; Cold is −15% or worse. PPG, RPG, APG and Index show recent / earlier averages; MPG shows recent playing time. Tap any table heading to sort by that column.</p>
           <div class="player-stocks-controls">
             <label class="stocks-search">Find a player or team
               <input id="playerStocksSearch" type="search" placeholder="Search players, teams, or PID…" autocomplete="off" />
@@ -1275,7 +1275,7 @@
     <script src="./ratings.js?v=20261012-ratings"></script>
     <script src="./draft-class-strength.js?v=20261103-top-bottom-five"></script>
     <script src="./players-of-month.js?v=20261112-ordinal-count-color"></script>
-    <script src="./player-stocks.js?v=20261118-minimum-10-mpg-v2"></script>
+    <script src="./player-stocks.js?v=20261118-sortable-table-v3"></script>
     <script src="./records-player-images.js"></script>
     <script src="./records-adjusted.js?v=20261118-raw-scoring-stream-fix"></script>
     <script src="./shootout-records.js?v=20261109-sortable-table"></script>
