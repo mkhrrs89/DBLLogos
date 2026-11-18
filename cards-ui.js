@@ -2486,7 +2486,7 @@
         rarityFilter.value = 'all';
         teamFilter.value = 'all';
         favoritesFilter.value = 'all';
-        order.value = 'rarity';
+        order.value = 'value';
         transferMessage('');
         repaint();
       } else {
