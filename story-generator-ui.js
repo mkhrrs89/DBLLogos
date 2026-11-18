@@ -17,10 +17,9 @@
   const resultText = document.getElementById('storiesResultText');
   const participants = document.getElementById('storiesParticipants');
   const teams = document.getElementById('storiesTeams');
-  const notes = document.getElementById('storiesNotes');
   const resultCopy = document.getElementById('storiesCopyButton');
   if ([yearTabs,availableList,availableCount,rollButton,status,result,
-    resultNumber,resultTitle,resultText,participants,teams,notes,resultCopy]
+    resultNumber,resultTitle,resultText,participants,teams,resultCopy]
     .some(x=>!x)) return;
 
   let year = 1968;
@@ -49,7 +48,6 @@
     resultText.textContent = '';
     participants.replaceChildren();
     teams.replaceChildren();
-    notes.replaceChildren();
   }
   function renderYears() {
     yearTabs.replaceChildren();
@@ -114,7 +112,6 @@
     resultText.textContent = story.text;
     participants.replaceChildren();
     teams.replaceChildren();
-    notes.replaceChildren();
 
     if (assignment.participants.length) {
       participants.appendChild(element('h4', 'story-gen-group-title',
@@ -137,8 +134,6 @@
         list.appendChild(element('span','story-gen-team-pill',team.name));
       teams.appendChild(list);
     }
-    for (const caution of assignment.notes)
-      notes.appendChild(element('p','story-gen-verification',caution));
     result.hidden = false;
     result.scrollIntoView?.({behavior: 'smooth', block: 'nearest'});
   }
@@ -153,11 +148,6 @@
       lines.push(p.label + ': ' + p.name + ' (' + p.team + ')');
     lines.push('Clubs involved: ' +
       (lastStory.teams.map(t=>t.name).join('; ') || '(none)'));
-    if (lastStory.notes.length) {
-      lines.push('', 'Details to verify:');
-      lines.push(...lastStory.notes);
-    }
-    lines.push('', 'Fictional DBL storyline; not a factual news report.');
     return lines.join('\n');
   }
   resultCopy.addEventListener('click', async () => {
