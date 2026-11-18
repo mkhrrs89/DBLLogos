@@ -25,7 +25,7 @@
   outline: 2px solid var(--accent); outline-offset: 3px;
 }
 .player-stocks-table {
-  width: 100%; min-width: 870px;
+  width: 100%; min-width: 1450px;
   border-collapse: separate; border-spacing: 0; color: var(--text);
   font-variant-numeric: tabular-nums; font-size: .79rem;
 }
@@ -81,12 +81,22 @@
 .player-stocks-row.is-steady .player-stocks-trend,
 .player-stocks-row.is-steady .player-stocks-row-status { color: #d7bb87; }
 .player-stocks-cell-pair { min-width: 84px; }
+.player-stocks-table thead th:nth-child(12),
+.player-stocks-table tbody td:nth-child(12) {
+  border-left: 2px solid var(--line-strong);
+}
+.player-stocks-season-value {
+  min-width: 68px;
+  font-weight: 650;
+}
+.player-stocks-season-value:last-child { padding-right: 18px; }
+
 .player-stocks-recent { font-weight: 750; color: var(--text); }
 .player-stocks-previous { color: var(--muted); font-weight: 500; }
 .player-stocks-more { display: block; min-height: 40px; margin: 16px auto 0; }
 @media (max-width: 540px) {
   .player-stocks-panel { padding: 13px; }
-  .player-stocks-table { min-width: 805px; font-size: .75rem; }
+  .player-stocks-table { min-width: 1340px; font-size: .75rem; }
   .player-stocks-table thead th:first-child,
   .player-stocks-row-name { min-width: 126px; width: 126px; }
   .player-stocks-table tbody th, .player-stocks-table tbody td { padding: 9px 8px; }
