@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="./styles.css?v=20261117-random-page-button" />
     <link rel="stylesheet" href="./home.css?v=20261103-home-file-upload" />
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
+    <link rel="stylesheet" href="./home-notes.css?v=20261118-home-notes-v1" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
     <link rel="stylesheet" href="./home-season-preview.css?v=20261106-season-preview" />
     <!-- A single vintage display face, used only for 1968 Topps player names. -->
@@ -38,6 +39,7 @@
     <link rel="stylesheet" href="./ratings.css?v=20261012-ratings" />
     <link rel="stylesheet" href="./draft-class-strength.css?v=20261103-top-bottom-five" />
     <link rel="stylesheet" href="./players-of-month.css?v=20261112-ordinal-count-color" />
+    <link rel="stylesheet" href="./player-stocks.css?v=20261118-player-stocks-v1" />
     <link rel="stylesheet" href="./records-player-images.css?v=20260926-mobile-records" />
     <link rel="stylesheet" href="./records-adjusted.css?v=20261004-adjusted-points" />
     <link rel="stylesheet" href="./shootout-records.css?v=20261109-sortable-table" />
@@ -175,6 +177,7 @@
             <summary class="tab-group-toggle">Players &amp; Scouting</summary>
             <div class="tab-group-menu" data-tab-group="players">
               <button id="ratingsTabBtn" class="tab-btn" type="button" aria-selected="false">Ratings</button>
+              <button id="playerStocksTabBtn" class="tab-btn" type="button" aria-selected="false">Player Stocks</button>
               <button id="draftClassStrengthTabBtn" class="tab-btn" type="button" aria-selected="false">Draft Class Strength</button>
               <button id="familiesTabBtn" class="tab-btn" type="button" aria-selected="false">Families</button>
               <button id="collegesTabBtn" class="tab-btn" type="button" aria-selected="false">Colleges</button>
@@ -210,6 +213,21 @@
               <span id="homeStage" class="home-stage-name">No league file loaded</span>
             </div>
           </header>
+          <section class="panel home-notes" aria-labelledby="homeNotesTitle">
+            <div class="home-notes-header">
+              <h3 id="homeNotesTitle">Notes</h3>
+              <p>Personal notes · saved separately from your league file</p>
+            </div>
+            <label for="homeNotesText" class="sr-only">Your league notes</label>
+            <textarea id="homeNotesText" placeholder="Write anything here — league stories, trades, plans, reminders…" rows="5" maxlength="120000"></textarea>
+            <div class="home-notes-actions">
+              <button id="homeNotesSave" class="action-btn" type="button">Save notes</button>
+              <button id="homeNotesExport" class="action-btn" type="button">Export notes</button>
+              <button id="homeNotesImport" class="action-btn" type="button">Import notes</button>
+              <input id="homeNotesImportFile" class="visually-hidden-file-input" type="file" accept=".json,.txt,application/json,text/plain" />
+            </div>
+            <p id="homeNotesStatus" class="home-notes-status" role="status" aria-live="polite"></p>
+          </section>
           <section class="panel home-file-upload" aria-label="Upload a league file">
             <div class="upload-block">
               <input id="homeLeagueFile" class="file-input" type="file"
@@ -744,6 +762,37 @@
           </div>
         </section>
 
+        <section id="playerStocksPanel" class="panel player-stocks-panel" aria-label="Player Stocks" hidden>
+          <h2>Player Stocks</h2>
+          <p class="subtle">Who is heating up, and who is cooling off? Performance momentum from the current league season.</p>
+          <p class="player-stocks-explainer">Compares each player's last 5 games with their preceding 3–10 games. The percentage measures change in a combined production index (points, rebounds, assists, steals, blocks and turnovers), not card value or official player ratings. Hot is +15% or more; Cold is −15% or worse. PPG, RPG and APG show recent / earlier averages.</p>
+          <div class="player-stocks-controls">
+            <label class="stocks-search">Find a player or team
+              <input id="playerStocksSearch" type="search" placeholder="Search players, teams, or PID…" autocomplete="off" />
+            </label>
+            <label class="stocks-filter">Status
+              <select id="playerStocksFilter">
+                <option value="all">All players</option>
+                <option value="hot">Hot</option>
+                <option value="steady">Steady</option>
+                <option value="cold">Cold</option>
+              </select>
+            </label>
+            <label class="stocks-sort">Sort
+              <select id="playerStocksOrder">
+                <option value="rising">Hottest first</option>
+                <option value="falling">Coldest first</option>
+                <option value="name">Player name</option>
+              </select>
+            </label>
+          </div>
+          <p id="playerStocksStatus" class="player-stocks-status" role="status" aria-live="polite">Load a league file to calculate Player Stocks.</p>
+          <div id="playerStocksWrap">
+            <p class="player-stocks-empty">Load a league file to compare recent performances.</p>
+          </div>
+          <button id="playerStocksMore" class="action-btn player-stocks-more" type="button" hidden>Show more players</button>
+        </section>
+
         <section id="ratingsPanel" class="panel ratings-panel" hidden>
           <div class="ratings-header">
             <h2>Ratings</h2>
@@ -1163,7 +1212,7 @@
           <div class="settings-section saved-links-section">
             <div class="settings-section-heading">
               <h3>Saved links backup</h3>
-              <p>Export or import banners, uniforms, headshot-background links, and their border ratings together. League files are not included or affected.</p>
+              <p>Export or import banners, uniforms, headshot-background links, border ratings, and your Home notes together. League files are not included or affected. Older backups without notes leave your current notes untouched.</p>
             </div>
             <div class="banner-actions">
               <input id="savedLinksImportFile" class="visually-hidden-file-input" type="file" accept=".json,application/json" />
@@ -1202,6 +1251,7 @@
     <script src="./large-file-loader.js?v=20261027-direct-team-import"></script>
     <script src="./home-team-logos.js?v=20261106-home-team-badges"></script>
     <script src="./home.js?v=20261106-home-team-badges"></script>
+    <script src="./home-notes.js?v=20261118-home-notes-v1"></script>
     <script src="./home-draft.js?v=20261106-home-team-badges"></script>
     <script src="./home-season-preview.js?v=20261106-home-team-badges"></script>
     <script src="./home-updates.js?v=20261106-home-team-badges"></script>
@@ -1225,6 +1275,7 @@
     <script src="./ratings.js?v=20261012-ratings"></script>
     <script src="./draft-class-strength.js?v=20261103-top-bottom-five"></script>
     <script src="./players-of-month.js?v=20261112-ordinal-count-color"></script>
+    <script src="./player-stocks.js?v=20261118-player-stocks-v1"></script>
     <script src="./records-player-images.js"></script>
     <script src="./records-adjusted.js?v=20261118-raw-scoring-stream-fix"></script>
     <script src="./shootout-records.js?v=20261109-sortable-table"></script>
@@ -1239,7 +1290,7 @@
     <script src="./college-auto-locations.js?v=20261027-expanded-geography"></script>
     <script src="./colleges.js?v=20261027-hide-assigned-filter"></script>
     <script src="./settings.js?v=20261117-multiplier-delete-confirm"></script>
-    <script src="./saved-links-backup.js?v=20261021-border-ratings"></script>
+    <script src="./saved-links-backup.js?v=20261118-home-notes-backup-v3"></script>
     <script src="./tab-router.js?v=20261117-random-page-button"></script>
   </body>
 </html>
