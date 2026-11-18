@@ -21,6 +21,19 @@
   const MIN_RECENT_MPG = 10;
   let activeFile = null, version = 0, loadedVersion = -1, loadingVersion = -1;
   let rows = [], season = null, shown = 100;
+  // Header clicks and the existing sort dropdown share one sort state.
+  let sortKey = 'trend', sortDirection = 'desc';
+  const TABLE_COLUMNS = [
+    {key:'name', label:'Player', kind:'text'},
+    {key:'team', label:'Team', kind:'text'},
+    {key:'trend', label:'Change', kind:'number'},
+    {key:'status', label:'Status', kind:'status'},
+    {key:'recentMpg', label:'MPG', kind:'number'},
+    {key:'ppg', label:'PPG', kind:'pair'},
+    {key:'rpg', label:'RPG', kind:'pair'},
+    {key:'apg', label:'APG', kind:'pair'},
+    {key:'index', label:'Index', kind:'pair'},
+  ];
   const asNumber = value => value == null || value === '' ? null :
     Number.isFinite(Number(value)) ? Number(value) : null;
   const asName = player => String(player?.name || [
@@ -91,7 +104,13 @@
   });
   search?.addEventListener('input', () => { shown = 100; render(); });
   filter?.addEventListener('change', () => { shown = 100; render(); });
-  order?.addEventListener('change', () => { shown = 100; render(); });
+  order?.addEventListener('change', () => {
+    if (order.value === 'rising') { sortKey = 'trend'; sortDirection = 'desc'; }
+    else if (order.value === 'falling') { sortKey = 'trend'; sortDirection = 'asc'; }
+    else if (order.value === 'name') { sortKey = 'name'; sortDirection = 'asc'; }
+    shown = 100;
+    render();
+  });
   more?.addEventListener('click', () => { shown += 100; render(); });
 
   function production(gamePlayer) {
@@ -250,8 +269,75 @@
     if (text !== undefined) el.textContent = text;
     return el;
   }
+  function sortValue(row, key) {
+    if (key === 'name' || key === 'team') return row[key] || '';
+    if (key === 'status') return ({hot:2,steady:1,cold:0})[row.status] ?? 1;
+    if (key === 'trend') return row.trend;
+    if (key === 'recentMpg') return row.recentMpg;
+    if (key === 'index') return row.recentStats.index;
+    if (key === 'ppg') return row.recentStats.pts;
+    if (key === 'rpg') return row.recentStats.reb;
+    if (key === 'apg') return row.recentStats.ast;
+    return null;
+  }
+  function compareStocks(a, b) {
+    const left = sortValue(a, sortKey);
+    const right = sortValue(b, sortKey);
+    const sign = sortDirection === 'asc' ? 1 : -1;
+    let result = 0;
+    if (typeof left === 'string' || typeof right === 'string') {
+      result = String(left).localeCompare(String(right));
+    } else {
+      const ln = Number(left), rn = Number(right);
+      result = (Number.isFinite(ln) ? ln : -Infinity) -
+        (Number.isFinite(rn) ? rn : -Infinity);
+    }
+    return result ? sign * Math.sign(result) : a.name.localeCompare(b.name);
+  }
+  function syncSortDropdown() {
+    if (!order) return;
+    const custom = order.querySelector('option[data-stocks-custom]');
+    if (custom) custom.remove();
+    const preset = sortKey === 'trend'
+      ? (sortDirection === 'desc' ? 'rising' : 'falling')
+      : (sortKey === 'name' && sortDirection === 'asc' ? 'name' : '');
+    if (preset) {
+      order.value = preset;
+    } else {
+      const column = TABLE_COLUMNS.find(item => item.key === sortKey);
+      const option = document.createElement('option');
+      option.value = 'custom';
+      option.dataset.stocksCustom = 'true';
+      option.textContent = 'Sorted: ' + (column?.label || sortKey) +
+        (sortDirection === 'asc' ? ' ↑' : ' ↓');
+      order.appendChild(option);
+      order.value = 'custom';
+    }
+  }
+  function sortByColumn(key) {
+    if (sortKey === key) {
+      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey = key;
+      sortDirection = key === 'name' || key === 'team' ? 'asc' : 'desc';
+    }
+    shown = 100;
+    syncSortDropdown();
+    render();
+  }
+  function pairCell(row, key) {
+    const field = ({ppg:'pts', rpg:'reb', apg:'ast', index:'index'})[key];
+    const cell = rowElement('td', 'player-stocks-cell-pair player-stocks-numeric');
+    const recent = rowElement('strong', 'player-stocks-recent', format(row.recentStats[field]));
+    const previous = rowElement('span', 'player-stocks-previous',
+      ' / ' + format(row.priorStats[field]));
+    cell.append(recent, previous);
+    cell.title = 'Last 5 games: ' + format(row.recentStats[field]) +
+      '; previous ' + row.previousCount + ' games: ' + format(row.priorStats[field]);
+    return cell;
+  }
   function render() {
-    if (!panel || !rows.length) {
+    if (!rows.length) {
       report(season === null ? 'No league file loaded.' :
         'Season ' + season + ' · insufficient recent-game history');
       empty('Player Stocks needs at least 8 games per player this season and 10+ minutes per game over the last 5 appearances.');
@@ -260,15 +346,10 @@
     }
     const query = (search?.value || '').trim().toLocaleLowerCase();
     const wanted = filter?.value || 'all';
-    let filtered = rows.filter(row =>
+    const filtered = rows.filter(row =>
       (wanted === 'all' || row.status === wanted) &&
       (!query || (row.name + ' ' + row.team + ' ' + row.pid).toLocaleLowerCase().includes(query)));
-    const sorting = order?.value || 'rising';
-    filtered.sort((a,b) => {
-      if (sorting === 'falling') return a.trend - b.trend || a.name.localeCompare(b.name);
-      if (sorting === 'name') return a.name.localeCompare(b.name);
-      return b.trend - a.trend || a.name.localeCompare(b.name);
-    });
+    filtered.sort(compareStocks);
     wrap.replaceChildren();
     report('Season ' + season + ' · ' + filtered.length + ' players · 10+ recent MPG · last 5 vs previous 3–10 games');
     if (!filtered.length) {
@@ -276,53 +357,60 @@
       if (more) more.hidden = true;
       return;
     }
-    const table = rowElement('div','player-stocks-list');
-    for (const player of filtered.slice(0,shown)) {
-      const card = rowElement('article','player-stocks-item is-' + player.status);
-      const top = rowElement('div','player-stocks-item-head');
-      if (player.photo && /^https?:\/\//i.test(player.photo)) {
-        const photo = rowElement('img','player-stocks-photo');
-        photo.src = player.photo; photo.alt = ''; photo.loading = 'lazy';
-        photo.addEventListener('error',()=>photo.remove(),{once:true});
-        top.appendChild(photo);
-      }
-      const person = rowElement('div','player-stocks-person');
-      person.appendChild(rowElement('strong','player-stocks-name',player.name));
-      person.appendChild(rowElement('span','player-stocks-team',player.team ||
-        'Team unavailable'));
-      top.appendChild(person);
-      const change = rowElement('div','player-stocks-change');
-      change.appendChild(rowElement('strong','',
-        (player.trend > 0 ? '+' : '') + format(player.trend) + '%'));
-      change.appendChild(rowElement('span','',player.status === 'hot' ? 'HOT' :
-        player.status === 'cold' ? 'COLD' : 'STEADY'));
-      top.appendChild(change);
-      card.appendChild(top);
-      const metrics = rowElement('div','player-stocks-metrics');
-      metrics.appendChild(rowElement('span','',
-        'PPG ' + format(player.recentStats.pts) + ' / ' + format(player.priorStats.pts)));
-      metrics.appendChild(rowElement('span','',
-        'RPG ' + format(player.recentStats.reb) + ' / ' + format(player.priorStats.reb)));
-      metrics.appendChild(rowElement('span','',
-        'APG ' + format(player.recentStats.ast) + ' / ' + format(player.priorStats.ast)));
-      metrics.appendChild(rowElement('span','', 'MPG ' + format(player.recentMpg)));
-      card.appendChild(metrics);
-      const meter = rowElement('div','player-stocks-meter');
-      const bar = rowElement('span','player-stocks-meter-fill');
-      bar.style.width = Math.min(50, Math.abs(player.trend) * .35) + '%';
-      if (player.trend >= 0) bar.style.left = '50%';
-      else bar.style.right = '50%';
-      meter.appendChild(bar);
-      card.appendChild(meter);
-      card.appendChild(rowElement('p','player-stocks-foot',
-        'Production index ' + format(player.recentStats.index) + ' vs ' +
-        format(player.priorStats.index) + ' · baseline ' + player.previousCount + ' games'));
-      table.appendChild(card);
+
+    const scroll = rowElement('div', 'player-stocks-table-scroll');
+    scroll.setAttribute('role', 'region');
+    scroll.setAttribute('aria-label', 'Sortable Player Stocks results');
+    scroll.tabIndex = 0;
+    const table = rowElement('table', 'player-stocks-table');
+    const caption = rowElement('caption', 'player-stocks-visually-hidden',
+      'Player momentum. PPG, RPG, APG and Index display the recent five-game average followed by the earlier average. Click column headers to sort.');
+    table.appendChild(caption);
+    const head = rowElement('thead');
+    const heading = rowElement('tr');
+    for (const column of TABLE_COLUMNS) {
+      const th = rowElement('th');
+      th.scope = 'col';
+      th.setAttribute('aria-sort',
+        sortKey === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none');
+      const button = rowElement('button', 'player-stocks-sort-button');
+      button.type = 'button';
+      button.title = 'Sort by ' + column.label;
+      button.appendChild(rowElement('span', '', column.label));
+      if (column.kind === 'pair')
+        button.appendChild(rowElement('small', 'player-stocks-head-detail', '5 / prev'));
+      if (sortKey === column.key)
+        button.appendChild(rowElement('span', 'player-stocks-sort-arrow',
+          sortDirection === 'asc' ? '↑' : '↓'));
+      button.addEventListener('click', () => sortByColumn(column.key));
+      th.appendChild(button);
+      heading.appendChild(th);
     }
-    wrap.appendChild(table);
+    head.appendChild(heading);
+    table.appendChild(head);
+
+    const body = rowElement('tbody');
+    for (const player of filtered.slice(0, shown)) {
+      const tr = rowElement('tr', 'player-stocks-row is-' + player.status);
+      const playerName = rowElement('th', 'player-stocks-row-name', player.name);
+      playerName.scope = 'row';
+      tr.appendChild(playerName);
+      tr.appendChild(rowElement('td', 'player-stocks-row-team', player.team || 'Team unavailable'));
+      tr.appendChild(rowElement('td', 'player-stocks-trend player-stocks-numeric',
+        (player.trend > 0 ? '+' : '') + format(player.trend) + '%'));
+      tr.appendChild(rowElement('td', 'player-stocks-row-status',
+        player.status.toUpperCase()));
+      tr.appendChild(rowElement('td', 'player-stocks-numeric', format(player.recentMpg)));
+      for (const key of ['ppg', 'rpg', 'apg', 'index'])
+        tr.appendChild(pairCell(player, key));
+      body.appendChild(tr);
+    }
+    table.appendChild(body);
+    scroll.appendChild(table);
+    wrap.appendChild(scroll);
     if (more) {
       more.hidden = shown >= filtered.length;
-      more.textContent = 'Show more players (' + Math.min(100,filtered.length-shown) + ')';
+      more.textContent = 'Show more players (' + Math.min(100, filtered.length - shown) + ')';
     }
   }
   // Initial navigation works without a league export; fileHub restoration
