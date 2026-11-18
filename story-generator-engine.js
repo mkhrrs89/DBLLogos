@@ -189,8 +189,8 @@
       team.players.some(rookie => rookie.pid !== veteran.pid && rookie.experience === 0)));
   const veteranYoungTeams = roster => roster.teams.filter(team =>
     team.players.length >= 3 &&
-    team.players.some(isVeteran) &&
-    team.players.some(isYoung));
+    team.players.some(veteran => isVeteran(veteran) &&
+      team.players.some(young => young.pid !== veteran.pid && isYoung(young))));
 
   // Only teams participating in 1968 appear. For older league exports, use
   // 1968 season stats; for an in-progress 1968 export, include live roster
@@ -475,7 +475,12 @@
       }
       case 38: {
         const team=pick(veteranYoungTeams(roster),rng);
-        const p=chooseUnique(team.players,['veteran','young','any'],rng);
+        const veterans=team.players.filter(veteran => isVeteran(veteran) &&
+          team.players.some(young => young.pid !== veteran.pid && isYoung(young)));
+        const veteran=pick(veterans,rng);
+        const young=rankPick(team.players.filter(p=>p.pid!==veteran.pid),'young',rng);
+        const other=rankPick(team.players.filter(p=>p.pid!==veteran.pid&&p.pid!==young.pid),'any',rng);
+        const p=[veteran,young,other];
         ['Veteran questioning team bus passengers','Younger teammate accused','Another player aboard bus']
           .forEach((label,i)=>add(p[i],label,team));
         break;
@@ -489,7 +494,12 @@
       }
       case 41: {
         const team=pick(veteranYoungTeams(roster),rng);
-        const p=chooseUnique(team.players,['veteran','young','any'],rng);
+        const veterans=team.players.filter(veteran => isVeteran(veteran) &&
+          team.players.some(young => young.pid !== veteran.pid && isYoung(young)));
+        const veteran=pick(veterans,rng);
+        const young=rankPick(team.players.filter(p=>p.pid!==veteran.pid),'young',rng);
+        const other=rankPick(team.players.filter(p=>p.pid!==veteran.pid&&p.pid!==young.pid),'any',rng);
+        const p=[veteran,young,other];
         ['Veteran making public accusations','Younger teammate confronting veteran','Another teammate in dispute']
           .forEach((label,i)=>add(p[i],label,team));
         break;
