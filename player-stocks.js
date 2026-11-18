@@ -15,8 +15,9 @@
   const clear = document.getElementById('clearLeagueFileBtn');
   if (!panel || !wrap || !status || !tab || !stream) return;
 
-  // v2 recalculates results with the minimum recent playing-time requirement.
-  const CACHE_KEY = 'dbl-player-stocks:v2';
+  // v3 adds separate season advanced stats and game-window efficiency data.
+  // Old caches cannot supply these new fields, so recompute once per file.
+  const CACHE_KEY = 'dbl-player-stocks:v3';
   const RECENT = 5, BASELINE = 10, MIN_BASELINE = 3;
   const MIN_RECENT_MPG = 10;
   let activeFile = null, version = 0, loadedVersion = -1, loadingVersion = -1;
@@ -33,6 +34,12 @@
     {key:'rpg', label:'RPG', kind:'pair'},
     {key:'apg', label:'APG', kind:'pair'},
     {key:'index', label:'Index', kind:'pair'},
+    {key:'ts', label:'TS%', kind:'pair', description:'True shooting percentage · last 5 / earlier games'},
+    {key:'gmsc', label:'GmSc', kind:'pair', description:'Game Score average · last 5 / earlier games'},
+    {key:'ws48', label:'WS/48', kind:'season', description:'Current-season win shares per 48 minutes'},
+    {key:'per', label:'PER', kind:'season', description:'Current-season player efficiency rating'},
+    {key:'vorp', label:'VORP', kind:'season', description:'Current-season value over replacement'},
+    {key:'bpm', label:'BPM', kind:'season', description:'Current-season box plus/minus'},
   ];
   const asNumber = value => value == null || value === '' ? null :
     Number.isFinite(Number(value)) ? Number(value) : null;
@@ -113,6 +120,73 @@
   });
   more?.addEventListener('click', () => { shown += 100; render(); });
 
+  // These are official season aggregates from BBGM player.stats, NOT
+  // game-level estimates. Trades may split one season across team rows.
+  function seasonAdvancedFor(player, year) {
+    const stats = Array.isArray(player?.stats) ? player.stats : [];
+    const regular = stats.filter(row =>
+      !row?.playoffs && asNumber(row?.season) === year &&
+      (asNumber(row?.tid) === null || asNumber(row?.tid) >= 0));
+    function weighted(key, fallback) {
+      let weightedTotal = 0, minutes = 0;
+      for (const row of regular) {
+        const value = key === 'bpm'
+          ? (asNumber(row.bpm) ??
+            (asNumber(row.obpm) !== null && asNumber(row.dbpm) !== null
+              ? asNumber(row.obpm) + asNumber(row.dbpm) : null))
+          : (asNumber(row[key]) ?? (fallback ? fallback(row) : null));
+        const min = asNumber(row.min);
+        if (value !== null && min !== null && min > 0) {
+          weightedTotal += value * min;
+          minutes += min;
+        }
+      }
+      return minutes ? weightedTotal / minutes : null;
+    }
+    let totalWs = 0, wsMinutes = 0, totalVorp = 0, foundVorp = false;
+    for (const row of regular) {
+      const minutes = asNumber(row.min);
+      const ws = asNumber(row.ws) ??
+        (asNumber(row.ows) !== null && asNumber(row.dws) !== null
+          ? asNumber(row.ows) + asNumber(row.dws) : null);
+      if (minutes !== null && minutes > 0 && ws !== null) {
+        totalWs += ws;
+        wsMinutes += minutes;
+      }
+      const vorp = asNumber(row.vorp);
+      if (vorp !== null) { totalVorp += vorp; foundVorp = true; }
+    }
+    return {
+      ws48: wsMinutes > 0 ? totalWs * 48 / wsMinutes : weighted('ws48'),
+      per: weighted('per'),
+      vorp: foundVorp ? totalVorp : null,
+      bpm: weighted('bpm'),
+    };
+  }
+
+  // These CAN describe short-term form because game box scores include
+  // shot attempts and other individual plays. Suppress a window's metric
+  // if required fields are missing, rather than displaying guessed values.
+  function gameScoreFor(player) {
+    const fields = ['fg','fga','ft','fta','orb','drb','stl','ast','blk','pf','tov'];
+    const values = fields.map(key => asNumber(player?.[key]));
+    const points = asNumber(player?.pts ?? player?.points);
+    if (points === null || values.some(value => value === null)) return null;
+    const [fg,fga,ft,fta,orb,drb,stl,ast,blk,pf,tov] = values;
+    return points + .4*fg - .7*fga - .4*(fta-ft) +
+      .7*orb + .3*drb + stl + .7*ast + .7*blk - .4*pf - tov;
+  }
+  function advancedWindow(games) {
+    const validShots = games.every(g => g.fga !== null && g.fta !== null);
+    const attempts = games.reduce((sum,g) => sum + (g.fga || 0) + .44*(g.fta || 0),0);
+    const points = games.reduce((sum,g) => sum + g.pts,0);
+    return {
+      ts: validShots && attempts > 0 ? 100 * points / (2 * attempts) : null,
+      gmsc: games.every(g => g.gmsc !== null)
+        ? games.reduce((sum,g) => sum + g.gmsc,0) / games.length : null,
+    };
+  }
+
   function production(gamePlayer) {
     const pts = asNumber(gamePlayer?.pts ?? gamePlayer?.points);
     const reb = asNumber(gamePlayer?.trb) ??
@@ -125,6 +199,8 @@
     const minutes = asNumber(gamePlayer?.min ?? gamePlayer?.minutes);
     if (minutes !== null && minutes <= 0) return null; // DNP
     return {pts, reb, ast, stl, blk, tov, minutes,
+      fga: asNumber(gamePlayer?.fga), fta: asNumber(gamePlayer?.fta),
+      gmsc: gameScoreFor(gamePlayer),
       index: Math.max(0, pts + 1.2 * reb + 1.5 * ast + 2 * stl + 2 * blk - 1.5 * tov)};
   }
   function averaged(games) {
@@ -164,6 +240,9 @@
         photo: info.photo || '', team: teamNames.get(latest.tid) || latest.team || '',
         recent, recentMpg, previousCount: previous.length, trend,
         status:classify(trend), recentStats:current, priorStats:prior,
+        recentAdvanced:advancedWindow(recent),
+        priorAdvanced:advancedWindow(previous),
+        seasonAdvanced:info.advanced || {ws48:null,per:null,vorp:null,bpm:null},
       });
     }
     return result.sort((a,b) => b.trend - a.trend || a.name.localeCompare(b.name));
@@ -203,7 +282,8 @@
       await stream.forEachTopLevelArrayItem(file, 'players', player => {
         const pid = asNumber(player?.pid);
         if (pid === null) return;
-        players.set(pid, {name:asName(player),photo:asPhoto(player?.imgURL)});
+        players.set(pid, {name:asName(player),photo:asPhoto(player?.imgURL),
+          advanced:seasonAdvancedFor(player, targetSeason)});
       });
       if (!isCurrent(file, token)) return;
       await stream.forEachTopLevelArrayItem(file, 'teams', team => {
@@ -275,6 +355,9 @@
     if (key === 'trend') return row.trend;
     if (key === 'recentMpg') return row.recentMpg;
     if (key === 'index') return row.recentStats.index;
+    if (key === 'ts' || key === 'gmsc') return row.recentAdvanced?.[key] ?? null;
+    if (['ws48','per','vorp','bpm'].includes(key))
+      return row.seasonAdvanced?.[key] ?? null;
     if (key === 'ppg') return row.recentStats.pts;
     if (key === 'rpg') return row.recentStats.reb;
     if (key === 'apg') return row.recentStats.ast;
@@ -284,6 +367,10 @@
     const left = sortValue(a, sortKey);
     const right = sortValue(b, sortKey);
     const sign = sortDirection === 'asc' ? 1 : -1;
+    // Unknown advanced stats always sort last, even in ascending order.
+    const missing = value => value === null || value === undefined ||
+      (typeof value === 'number' && !Number.isFinite(value));
+    if (missing(left) !== missing(right)) return missing(left) ? 1 : -1;
     let result = 0;
     if (typeof left === 'string' || typeof right === 'string') {
       result = String(left).localeCompare(String(right));
@@ -325,15 +412,26 @@
     syncSortDropdown();
     render();
   }
+  function advancedText(value, key) {
+    if (value === null || value === undefined || !Number.isFinite(Number(value)))
+      return 'N/A';
+    if (key === 'ws48') return Number(value).toFixed(3);
+    if (key === 'vorp') return Number(value).toFixed(2);
+    if (key === 'ts') return Number(value).toFixed(1) + '%';
+    return Number(value).toFixed(1);
+  }
   function pairCell(row, key) {
     const field = ({ppg:'pts', rpg:'reb', apg:'ast', index:'index'})[key];
+    const isAdvanced = key === 'ts' || key === 'gmsc';
+    const recentValue = isAdvanced ? row.recentAdvanced?.[key] : row.recentStats[field];
+    const earlierValue = isAdvanced ? row.priorAdvanced?.[key] : row.priorStats[field];
+    const recentText = advancedText(recentValue, key);
+    const previousText = advancedText(earlierValue, key);
     const cell = rowElement('td', 'player-stocks-cell-pair player-stocks-numeric');
-    const recent = rowElement('strong', 'player-stocks-recent', format(row.recentStats[field]));
-    const previous = rowElement('span', 'player-stocks-previous',
-      ' / ' + format(row.priorStats[field]));
-    cell.append(recent, previous);
-    cell.title = 'Last 5 games: ' + format(row.recentStats[field]) +
-      '; previous ' + row.previousCount + ' games: ' + format(row.priorStats[field]);
+    cell.append(rowElement('strong', 'player-stocks-recent', recentText),
+      rowElement('span', 'player-stocks-previous', ' / ' + previousText));
+    cell.title = 'Last 5 games: ' + recentText +
+      '; previous ' + row.previousCount + ' games: ' + previousText;
     return cell;
   }
   function render() {
@@ -364,7 +462,7 @@
     scroll.tabIndex = 0;
     const table = rowElement('table', 'player-stocks-table');
     const caption = rowElement('caption', 'player-stocks-visually-hidden',
-      'Player momentum. PPG, RPG, APG and Index display the recent five-game average followed by the earlier average. Click column headers to sort.');
+      'Player momentum. PPG, RPG, APG, Index, TS% and Game Score compare the latest five games against earlier games. WS/48, PER, VORP and BPM are current-season aggregates. Click column headers to sort.');
     table.appendChild(caption);
     const head = rowElement('thead');
     const heading = rowElement('tr');
@@ -375,10 +473,13 @@
         sortKey === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none');
       const button = rowElement('button', 'player-stocks-sort-button');
       button.type = 'button';
-      button.title = 'Sort by ' + column.label;
+      button.title = 'Sort by ' + column.label +
+        (column.description ? ' · ' + column.description : '');
       button.appendChild(rowElement('span', '', column.label));
       if (column.kind === 'pair')
         button.appendChild(rowElement('small', 'player-stocks-head-detail', '5 / prev'));
+      else if (column.kind === 'season')
+        button.appendChild(rowElement('small', 'player-stocks-head-detail', 'season'));
       if (sortKey === column.key)
         button.appendChild(rowElement('span', 'player-stocks-sort-arrow',
           sortDirection === 'asc' ? '↑' : '↓'));
@@ -401,8 +502,15 @@
       tr.appendChild(rowElement('td', 'player-stocks-row-status',
         player.status.toUpperCase()));
       tr.appendChild(rowElement('td', 'player-stocks-numeric', format(player.recentMpg)));
-      for (const key of ['ppg', 'rpg', 'apg', 'index'])
+      for (const key of ['ppg', 'rpg', 'apg', 'index', 'ts', 'gmsc'])
         tr.appendChild(pairCell(player, key));
+      for (const key of ['ws48','per','vorp','bpm']) {
+        const value = player.seasonAdvanced?.[key];
+        const cell = rowElement('td', 'player-stocks-numeric player-stocks-season-value',
+          advancedText(value,key));
+        cell.title = 'Current-season ' + key.toUpperCase() + ' (not a five-game estimate)';
+        tr.appendChild(cell);
+      }
       body.appendChild(tr);
     }
     table.appendChild(body);
