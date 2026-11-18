@@ -75,6 +75,8 @@
       if (adjustedRecords.length && environment) {
         loadedVersion = fileVersion;
         if (activeView === 'adjusted') renderAdjustedRecords();
+        else if (!document.getElementById('recordsPanel')?.hidden)
+          void ensureRawRecords();
         return;
       }
     }
