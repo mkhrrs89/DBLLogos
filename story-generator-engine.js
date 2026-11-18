@@ -187,6 +187,10 @@
   const veteranRookieTeams = roster => roster.teams.filter(team =>
     team.players.some(veteran => isVeteran(veteran) &&
       team.players.some(rookie => rookie.pid !== veteran.pid && rookie.experience === 0)));
+  const veteranYoungTeams = roster => roster.teams.filter(team =>
+    team.players.length >= 3 &&
+    team.players.some(isVeteran) &&
+    team.players.some(isYoung));
 
   // Only teams participating in 1968 appear. For older league exports, use
   // 1968 season stats; for an in-progress 1968 export, include live roster
@@ -296,6 +300,7 @@
       case 'team3': return teamCandidates(roster,3).length > 0;
       case 'team3veteran': return teamCandidates(roster,3,true).length > 0;
       case 'veteranRookieTeam': return veteranRookieTeams(roster).length > 0;
+      case 'veteranYoungTeam': return veteranYoungTeams(roster).length > 0;
       case 'former2': return teamCandidates(roster,2,false,true).length > 0;
       case 'different2': return teams.filter(t=>t.players.length>0).length >= 2;
       case 'league3': return people.length >= 3;
@@ -443,11 +448,66 @@
       }
       case 28: add(rankPick(roster.players,'veteranStar',rng),'Veteran involved in collision'); break;
       case 29: add(rankPick(roster.players,'young',rng),'Player ordered to report for Army induction'); break;
+      case 30: add(rankPick(roster.players,'star',rng),'Player hallucinating during the game'); break;
+      case 31: add(rankPick(roster.players,'any',rng),'Player refusing to leave the court'); break;
+      case 32: add(rankPick(roster.players,'any',rng),'Player unknowingly given LSD'); break;
+      case 33: add(rankPick(roster.players,'star',rng),'Star announcing retirement'); break;
+      case 34: add(rankPick(roster.players,'star',rng),'Player joining civil-rights organizing'); break;
+      case 35: {
+        const team=pick(teamCandidates(roster,3),rng);
+        const p=chooseUnique(team.players,['star','any','any'],rng);
+        ['Player wearing black armband','Teammate joining demonstration','Another protesting teammate']
+          .forEach((label,i)=>add(p[i],label,team));
+        break;
+      }
+      case 36: add(rankPick(roster.players,'star',rng),'Player condemning racial insults'); break;
+      case 37: {
+        const veterans=roster.players.filter(isVeteran);
+        const teamIds=distinct(veterans.map(p=>p.tid));
+        const firstTid=pick(teamIds,rng);
+        const secondTid=pick(teamIds.filter(tid=>tid!==firstTid),rng);
+        const first=rankPick(veterans.filter(p=>p.tid===firstTid),'star',rng);
+        const second=rankPick(veterans.filter(p=>p.tid===secondTid),'star',rng);
+        const third=rankPick(veterans.filter(p=>p.pid!==first.pid&&p.pid!==second.pid),'veteran',rng);
+        [first,second,third].forEach((p,i)=>add(p,
+          ['Player urging league-wide mourning','Player from opposing club','Third player organizing walkout'][i]));
+        break;
+      }
+      case 38: {
+        const team=pick(veteranYoungTeams(roster),rng);
+        const p=chooseUnique(team.players,['veteran','young','any'],rng);
+        ['Veteran questioning team bus passengers','Younger teammate accused','Another player aboard bus']
+          .forEach((label,i)=>add(p[i],label,team));
+        break;
+      }
+      case 39: add(rankPick(roster.players,'youngStar',rng),'Young star defending marijuana'); break;
+      case 40: {
+        const p=chooseUnique(roster.players,['any','any','any'],rng);
+        ['Player questioned after party raid','Second player attending party','Third player attending party']
+          .forEach((label,i)=>add(p[i],label));
+        break;
+      }
+      case 41: {
+        const team=pick(veteranYoungTeams(roster),rng);
+        const p=chooseUnique(team.players,['veteran','young','any'],rng);
+        ['Veteran making public accusations','Younger teammate confronting veteran','Another teammate in dispute']
+          .forEach((label,i)=>add(p[i],label,team));
+        break;
+      }
+      case 42: add(rankPick(roster.players,'youngStar',rng),'Young star defying grooming rules'); break;
+      case 43: {
+        const p=chooseUnique(roster.players,['any','any','any'],rng);
+        ['Player arrested at antiwar demonstration','Player photographed with placard','Third player attending protest']
+          .forEach((label,i)=>add(p[i],label));
+        break;
+      }
+      case 44: add(rankPick(roster.players,'youngStar',rng),'Star joining hippie commune'); break;
+      case 45: addTeam(pick(roster.teams,rng)); break;
       default: return null;
     }
     // Owners, coaches, physicians, spouses and reporters are not invented:
     // they remain unnamed because the export lacks their verified identities.
-    if ([6,11].includes(story.id))
+    if ([6,11,36,45].includes(story.id))
       out.notes.push('The owner is unnamed because the league export does not include a verified owner identity.');
     if (story.id===7) out.notes.push('The coach is unnamed because no verified coach identity is available.');
     if (story.id===12) out.notes.push('The reporter is unnamed because the export does not include journalists.');
