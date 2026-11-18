@@ -342,7 +342,7 @@
       if (loadingVersion === token) loadingVersion = -1;
     }
   }
-  const format = value => Number(value).toFixed(1);
+  function format(value) { return Number(value).toFixed(1); }
   function rowElement(tag, className, text) {
     const el = document.createElement(tag);
     if (className) el.className = className;
