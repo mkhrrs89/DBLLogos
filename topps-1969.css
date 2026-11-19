@@ -1,0 +1,195 @@
+/*
+ * 1969 Topps PRELAUNCH design. Isolated from all active series.
+ * Based on the supplied white 1969 reference: brick script name,
+ * four outline stars, black position/rookie labels, tall black-and-white
+ * oval portrait, team-colored oval stroke, brick outlined region wordmark.
+ * No selectors affect 1968 Topps, Series 0, or Background Test.
+ */
+.dbl-topps69-front,
+.dbl-topps69-back {
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  color: #111 !important;
+  font-family: Georgia,"Times New Roman",serif;
+}
+.dbl-topps69-front::before,
+.dbl-topps69-front::after,
+.dbl-topps69-back::before,
+.dbl-topps69-back::after {
+  content: none !important;
+}
+.dbl-topps69-front {
+  --topps69-brick: #B63911;
+  --topps69-team: #222;
+  isolation: isolate;
+}
+.dbl-topps69-player-name {
+  position: absolute;
+  z-index: 4;
+  top: .5%;
+  left: -3%;
+  width: 106%;
+  display: block;
+  white-space: nowrap;
+  text-align: center;
+  font-family: "Shrikhand","Lobster","Cooper Black",Georgia,serif;
+  font-size: clamp(15px,10.6cqw,46px);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -.023em;
+  color: var(--topps69-brick) !important;
+  transform: scaleX(var(--topps69-name-stretch,1));
+  transform-origin: center top;
+  -webkit-text-stroke: 0 transparent;
+}
+.dbl-topps69-position,
+.dbl-topps69-rookie {
+  position: absolute;
+  top: 11%;
+  z-index: 5;
+  display: block;
+  font-family: Georgia,"Times New Roman",serif;
+  font-size: clamp(9px,6.3cqw,24px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.03em;
+  color: #080808 !important;
+}
+.dbl-topps69-position { left: 6%; }
+.dbl-topps69-rookie { right: 5%; }
+.dbl-topps69-photo-oval {
+  position: absolute;
+  z-index: 2;
+  top: 12.3%;
+  left: 12%;
+  width: 76%;
+  height: 74.7%;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: clamp(4px,3.05cqw,13px) solid var(--topps69-team);
+  border-radius: 50%;
+  background: #c9c9c9;
+  /* Subtle ink contour keeps a pale team-color oval visible on white stock. */
+  box-shadow: 0 0 0 .35cqw rgba(14,14,14,.23);
+}
+.dbl-topps69-photo {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100%;
+  min-height: 100%;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover;
+  object-position: center 30%;
+  filter: grayscale(1) contrast(1.08);
+}
+.dbl-topps69-photo-missing {
+  font: 900 clamp(28px,22cqw,76px)/1 Georgia,serif;
+  color: #555;
+  opacity: .48;
+}
+.dbl-topps69-star {
+  position: absolute;
+  z-index: 3;
+  display: block;
+  width: 15.5%;
+  height: 10%;
+  pointer-events: none;
+}
+.dbl-topps69-star svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.dbl-topps69-star.is-top-left {left: 3.1%;top: 17.8%;transform: rotate(-8deg);}
+.dbl-topps69-star.is-top-right {right: 3.1%;top: 17.8%;transform: rotate(7deg);}
+.dbl-topps69-star.is-bottom-left {left: 3.2%;bottom: 12%;transform: rotate(12deg);}
+.dbl-topps69-star.is-bottom-right {right: 3.2%;bottom: 12%;transform: rotate(-9deg);}
+.dbl-topps69-team-wordmark {
+  position: absolute;
+  z-index: 5;
+  bottom: 1.6%;
+  left: 2%;
+  width: 96%;
+  display: block;
+  text-align: center;
+  font-family: "Arial Black",Impact,Arial,sans-serif;
+  font-size: clamp(17px,12.2cqw,52px);
+  font-weight: 950;
+  line-height: 1.11;
+  letter-spacing: .065em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--topps69-brick) !important;
+  -webkit-text-stroke: clamp(.55px,.73cqw,2.7px) #111;
+  paint-order: stroke fill;
+}
+/* The supplied mockup shows the front only. The restrained reverse is
+   prepared for a later launch without introducing a public collection. */
+.dbl-topps69-back {
+  padding: 9% 8% !important;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 3%;
+  text-align: center;
+  transform: rotateY(180deg);
+}
+.dbl-topps69-back-heading {
+  display: block;
+  width: 100%;
+  padding-bottom: 4%;
+  border-bottom: 2px solid #111;
+  font: 900 clamp(15px,11cqw,43px)/1.1 Georgia,serif;
+  color: #B63911;
+}
+.dbl-topps69-back-player {
+  font: 900 clamp(13px,8.5cqw,34px)/1.1 Georgia,serif;
+  color: #111;
+}
+.dbl-topps69-back-team {
+  font: 800 clamp(10px,6.4cqw,26px)/1.2 Arial,sans-serif;
+  text-transform: uppercase;
+  color: #B63911;
+}
+.dbl-topps69-back-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 3%;
+}
+.dbl-topps69-back-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7% 0;
+  border-top: 2px solid #111;
+  font: 800 clamp(8px,5cqw,20px)/1.1 Arial,sans-serif;
+}
+.dbl-topps69-back-stat > span {
+  font-size: .65em;
+  color: #444;
+}
+.dbl-topps69-back-foot {
+  width: 100%;
+  padding-top: 3%;
+  border-top: 2px solid #111;
+  font: 800 clamp(8px,5cqw,20px)/1 Arial,sans-serif;
+  letter-spacing: .05em;
+  color: #222;
+}
+@supports not (font-size: 1cqw) {
+  .dbl-topps69-player-name {font-size: 25px;}
+  .dbl-topps69-position,.dbl-topps69-rookie {font-size: 14px;}
+  .dbl-topps69-team-wordmark {font-size: 27px;}
+  .dbl-topps69-photo-oval {border-width: 7px;}
+}
