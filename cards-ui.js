@@ -213,15 +213,22 @@
     name.appendChild(make('span', 'dbl-topps-uniform-name-glyphs', text));
     return name;
   }
+  function fitCardNames(root) {
+    if (!root) return;
+    for (const name of root.querySelectorAll?.('.dbl-cards-name') || [])
+      fitName(name);
+    for (const name of root.querySelectorAll?.('.dbl-topps-uniform-fit-name') || [])
+      fitUniformName(name);
+  }
+  function fitLightboxNames() {
+    fitCardNames(cardLightbox?.container);
+  }
   function fitVisibleNames() {
-    for (const root of [gallery, packStage, cardLightbox?.container].filter(Boolean)) {
-      for (const name of root.querySelectorAll?.('.dbl-cards-name') || []) {
-        fitName(name);
-      }
-      for (const name of root.querySelectorAll?.('.dbl-topps-uniform-fit-name') || []) {
-        fitUniformName(name);
-      }
-    }
+    // A pack/collection can have dozens of costly photo-backed cards.
+    // Never measure all of them in an animation frame while a card zooms.
+    const focused = cardLightbox?.container;
+    if (focused) fitCardNames(focused);
+    else for (const root of [gallery, packStage]) fitCardNames(root);
   }
   function scheduleNameFit() {
     if (nameFitScheduled) return;
@@ -2365,9 +2372,12 @@
     window.addEventListener('resize', scheduleNameFit);
   }
   document.fonts?.ready?.then(scheduleNameFit);
-  window.addEventListener('dbl:card-lightbox-open', scheduleNameFit);
+  // Synchronously fit only the enlarged card before its zoom begins.
+  // The rest of the binder is measured after closing, off the animation path.
+  window.addEventListener('dbl:card-lightbox-open', fitLightboxNames);
+  window.addEventListener('dbl:card-lightbox-close', scheduleNameFit);
   window.addEventListener('resize', () => {
-    if (cardLightbox?.container) scheduleNameFit();
+    if (cardLightbox?.container) fitLightboxNames();
   });
   tabs.forEach(([tab], index) => {
     tab.addEventListener('click', () => openCardsSubtab(index));
