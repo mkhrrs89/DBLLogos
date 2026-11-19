@@ -1042,7 +1042,9 @@
     notify();
     // Persist the normalized editions, including a collection restored from
     // a previous release, even if no new pack is opened.
-    if (state?.items?.length && state.version !== STATE_VERSION) void save();
+    if (state?.items?.length && (state.version !== STATE_VERSION ||
+        state.items.some(row => row?.type === 'team-season' &&
+          !TEAM_VARIANTS.includes(row.teamVariant)))) void save();
   }).catch(error => {
     console.warn('Card collection restore failed.', error);
     collectionLoaded = true;
