@@ -74,7 +74,7 @@
     return button;
   }
   function makeId() {
-    if(typeof crypto?.randomUUID==='function')return crypto.randomUUID();
+    if(typeof window.crypto?.randomUUID==='function')return window.crypto.randomUUID();
     return 'sl-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,13);
   }
   function moveBy(id,delta) {
