@@ -58,7 +58,6 @@
   border-radius: 9px;
   background: var(--panel-2);
   color: var(--text);
-  font: 400 16px/1.55 inherit;
   font-family: inherit;
   font-size: 16px;
   line-height: 1.55;
@@ -203,7 +202,6 @@
 .storylines-action.is-save {border-color: var(--accent);color: var(--text);}
 .storylines-card.is-dragging {
   z-index: 10;
-  pointer-events: none;
   opacity: .91;
   box-shadow: 0 15px 35px rgba(0,0,0,.5);
   border-color: var(--accent);
