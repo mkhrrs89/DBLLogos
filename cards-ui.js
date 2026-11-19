@@ -1637,12 +1637,13 @@
           playCardRevealEffect(button, card);
       }
     };
-    // First click enlarges the original card. Once enlarged, clicking the
-    // card flips it using the unchanged reveal/statistics interaction.
-    // Reveal All calls _dblFlip directly so it still works in one action.
+    // Pack Room pulls flip/reveal immediately on tap; never move them into
+    // the zoom lightbox. Binder/collection cards keep their existing zoom,
+    // with flip interaction inside the enlarged view. Reveal All still
+    // calls _dblFlip directly and is unchanged.
     button._dblFlip = flipCard;
     const activateCard = () => {
-      if (cardLightbox?.isOpen(button)) flipCard();
+      if (packStage.contains(button) || cardLightbox?.isOpen(button)) flipCard();
       else cardLightbox?.open(button);
     };
     button.addEventListener('click', activateCard);
