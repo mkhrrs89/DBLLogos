@@ -7,7 +7,13 @@
   };
   const FORMAT = 'dbl-saved-links';
   const NOTES_KEY = 'dbl-home-notes:v1';
+  const STORYLINES_KEY = 'dbl-storylines:v1';
   const NOTES_MAX_LENGTH = 120000;
+  function validateStorylines(value) {
+    if (!window.DBLStorylines?.validateSnapshot)
+      throw new Error('Storylines could not be validated for the backup.');
+    return window.DBLStorylines.validateSnapshot(value);
+  }
   const exportButton = document.getElementById('exportSavedLinksBtn');
   const importButton = document.getElementById('importSavedLinksBtn');
   const fileInput = document.getElementById('savedLinksImportFile');
@@ -56,7 +62,10 @@
       const links = Object.fromEntries(Object.entries(KEYS).map(([name, key]) => [name, readMap(key, name)]));
       const notes = localStorage.getItem(NOTES_KEY) || '';
       if (notes.length > NOTES_MAX_LENGTH) throw new Error('Saved notes exceed the backup limit.');
-      const payload = { format: FORMAT, version: 3, exportedAt: new Date().toISOString(), links, notes };
+      const storylines=validateStorylines(JSON.parse(localStorage.getItem(STORYLINES_KEY) ||
+        '{"version":1,"items":[]}'));
+      const payload = { format: FORMAT, version: 4, exportedAt: new Date().toISOString(),
+        links, notes, storylines };
       const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
       const anchor = document.createElement('a');
       anchor.href = url;
@@ -65,7 +74,7 @@
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      report('Exported banners, uniforms, headshot background links, border selections, and Home notes.');
+      report('Exported banners, uniforms, headshot backgrounds, Home notes, and Storylines.');
     } catch (error) {
       report(error?.message || 'Export failed.');
     }
@@ -93,6 +102,10 @@
           throw new Error('The backup contains invalid Home notes.');
         incoming.notes = data.notes;
       }
+      // v1-v3 backups predate Storylines. Omission MUST preserve any entries
+      // the user already created on this device.
+      if (Object.hasOwn(data, 'storylines'))
+        incoming.storylines=validateStorylines(data.storylines);
       if (!Object.keys(incoming).length) throw new Error('The backup does not contain supported saved data.');
 
       // An import changes only collections provided by the backup. Never
@@ -101,7 +114,8 @@
       const updated = [];
       try {
         for (const [category, values] of Object.entries(incoming)) {
-          const key = category === 'notes' ? NOTES_KEY : KEYS[category];
+          const key = category === 'notes' ? NOTES_KEY :
+            category === 'storylines' ? STORYLINES_KEY : KEYS[category];
           previous[category] = localStorage.getItem(key);
           localStorage.setItem(key, category === 'notes' ? values : JSON.stringify(values));
           updated.push(category);
@@ -109,7 +123,8 @@
       } catch (error) {
         for (const category of updated) {
           try {
-            const key = category === 'notes' ? NOTES_KEY : KEYS[category];
+            const key = category === 'notes' ? NOTES_KEY :
+            category === 'storylines' ? STORYLINES_KEY : KEYS[category];
             if (previous[category] === null) localStorage.removeItem(key);
             else localStorage.setItem(key, previous[category]);
           } catch (ignored) {
@@ -125,6 +140,7 @@
           headshotBackgrounds: 'headshotBackgrounds' in incoming,
           headshotBackgroundStatuses: 'headshotBackgroundStatuses' in incoming,
           notes: 'notes' in incoming,
+          storylines: 'storylines' in incoming,
         },
       }));
       report('Imported saved links: ' + Object.keys(incoming).join(', ') + '.');
