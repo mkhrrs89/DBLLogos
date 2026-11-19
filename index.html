@@ -27,6 +27,7 @@
     <!-- Dormant 1969 Topps template only: no live Cards collection or pack UI. -->
     <link rel="stylesheet" href="./topps-1969.css?v=20261119-prelaunch-v1" />
     <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
+    <link rel="stylesheet" href="./storylines.css?v=20261119-storylines-v1" />
     <link rel="stylesheet" href="./notes-timeline.css?v=20261118-notes-history-v1" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
@@ -145,7 +146,13 @@
         <nav class="tab-bar panel" aria-label="Main views">
           <button id="homeTabBtn" class="tab-btn active" type="button" aria-selected="true">Home</button>
           <button id="cardsTabBtn" class="tab-btn" type="button" aria-selected="false">Cards</button>
-          <button id="storiesTabBtn" class="tab-btn" type="button" aria-selected="false" data-panel-id="storiesPanel">Stories</button>
+          <details class="tab-group">
+            <summary class="tab-group-toggle">Stories</summary>
+            <div class="tab-group-menu" data-tab-group="stories">
+              <button id="storiesTabBtn" class="tab-btn" type="button" aria-selected="false" data-panel-id="storiesPanel">Stories</button>
+              <button id="storylinesTabBtn" class="tab-btn" type="button" aria-selected="false">Storylines</button>
+            </div>
+          </details>
           <details class="tab-group">
             <summary class="tab-group-toggle">Franchise &amp; Design</summary>
             <div class="tab-group-menu" data-tab-group="design">
@@ -552,6 +559,31 @@
             <p class="story-gen-library-note">Browse all prompts below. Tap a headline to read the premise; the Roll button draws randomly from stories that can be cast using the loaded 1968 players and teams.</p>
             <div id="storiesAvailableList" class="story-gen-available-list" aria-label="1968 numbered story list"></div>
           </div>
+        </section>
+
+        <section id="storylinesPanel" class="panel storylines-panel" aria-label="Ongoing DBL storylines" hidden>
+          <header class="storylines-heading">
+            <div>
+              <p class="storylines-kicker">The Delta Basketball League · Continuing narratives</p>
+              <h2>Storylines</h2>
+              <p class="storylines-intro">Keep track of the ongoing plots unfolding around your league. Add a brief storyline, then drag its card by the handle to change the order. Everything saves in this browser, separately from your league file.</p>
+            </div>
+          </header>
+          <form id="storylinesForm" class="storylines-form">
+            <label for="storylinesInput" class="storylines-label">New storyline</label>
+            <textarea id="storylinesInput" class="storylines-input" rows="3" maxlength="1200" placeholder="e.g., A star player's contract dispute is dividing the locker room…" required></textarea>
+            <button id="storylinesAdd" class="storylines-add" type="submit">Add Storyline</button>
+          </form>
+          <p id="storylinesStatus" class="storylines-feedback" role="status" aria-live="polite"></p>
+          <section class="storylines-collection" aria-label="Your ongoing storylines">
+            <div class="storylines-collection-head">
+              <h3>League storylines</h3>
+              <span id="storylinesCount" class="storylines-count">0 ongoing storylines</span>
+            </div>
+            <div id="storylinesList" class="storylines-list" aria-label="Reorderable storyline cards">
+              <p class="storylines-empty">No ongoing storylines yet.</p>
+            </div>
+          </section>
         </section>
 
         <section id="notesTimelinePanel" class="panel notes-timeline-panel" aria-label="Player and team notes timeline" hidden>
@@ -1306,6 +1338,7 @@
     <script src="./cards-background-test.js?v=20261117-white-uniform-guard"></script>
     <script src="./story-generator-engine.js?v=20261118-1968-16-new-stories"></script>
     <script src="./story-generator-ui.js?v=20261118-hide-stories-disclaimers"></script>
+    <script src="./storylines.js?v=20261119-storylines-v1"></script>
     <script src="./notes-timeline.js?v=20261118-notes-history-v1"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
@@ -1336,6 +1369,6 @@
     <script src="./colleges.js?v=20261027-hide-assigned-filter"></script>
     <script src="./settings.js?v=20261117-multiplier-delete-confirm"></script>
     <script src="./saved-links-backup.js?v=20261118-home-notes-backup-v3"></script>
-    <script src="./tab-router.js?v=20261118-notes-history-nav-v1"></script>
+    <script src="./tab-router.js?v=20261119-stories-folder-storylines-v1"></script>
   </body>
 </html>
