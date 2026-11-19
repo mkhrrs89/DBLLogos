@@ -28,6 +28,7 @@
     deadPlayersTabBtn: 'deadPlayersPanel',
     retiredNumbersTabBtn: 'retiredNumbersPanel',
     recordsTabBtn: 'recordsPanel',
+    notesTimelineTabBtn: 'notesTimelinePanel',
     shootoutRecordsTabBtn: 'shootoutRecordsPanel',
     teamsTabBtn: 'teamsPanel',
     familiesTabBtn: 'familiesPanel',
