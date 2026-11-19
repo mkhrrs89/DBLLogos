@@ -113,9 +113,18 @@
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Autographs sort between Black Label and Refractor, regardless of
   // their underlying card edition. This changes display order only.
-  const raritySortRank = card => card.autograph === true &&
-    !tierMap[card.rarity]?.mythical && card.rarity !== 'black-label'
-    ? 2.5 : (tierIndex[card.rarity] ?? -1);
+  const TEAM_VARIANT_SORT = Object.freeze({base:.75,bronze:1.2,silver:1.8,gold:2.4});
+  const teamVariant = card => ['base','bronze','silver','gold'].includes(card?.teamVariant)
+    ? card.teamVariant : 'base';
+  const teamVariantName = card => {
+    const value=teamVariant(card);
+    return value[0].toUpperCase()+value.slice(1);
+  };
+  const raritySortRank = card => card?.type==='team-season'
+    ? TEAM_VARIANT_SORT[teamVariant(card)]
+    : card.autograph === true &&
+      !tierMap[card.rarity]?.mythical && card.rarity !== 'black-label'
+      ? 2.5 : (tierIndex[card.rarity] ?? -1);
 
   // Undiscovered editions must never appear in the checklist or public
   // progress totals, even for players who meet their hidden requirements.
@@ -127,9 +136,9 @@
   const activeCompletionTiers = () => activeChecklistSeries === 1
     ? toppsCompletionTiers : completionTiers;
   const isTeamSeason = card => card?.type === 'team-season';
-  // The distinct bronze finish is reserved for verified champion
-  // team-seasons: visual only, not a new rarity or sealed-card clue.
-  const isChampionTeam = card => isTeamSeason(card) && card.finishKind === 'champion';
+  // Finish (champion, finalist, playoffs) describes team performance;
+  // edition (Base/Bronze/Silver/Gold) controls the collectible artwork.
+  const isMetalTeam = card => isTeamSeason(card) && teamVariant(card)!=='base';
   const isToppsPlayer = card => card?.type === 'topps-player';
   const isToppsUniform = card => card?.type === 'topps-uniform';
   const isBackgroundTest = card => card?.type === 'background-test';
@@ -818,6 +827,7 @@
   function teamSeasonFront(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-cards-team-season-front');
     front.appendChild(make('span', 'dbl-cards-team-season-masthead', 'HISTORIC TEAMS OF THE DBL'));
+    front.appendChild(make('span','dbl-cards-team-season-edition',teamVariantName(card).toUpperCase()+' EDITION'));
     front.appendChild(make('strong', 'dbl-cards-team-season-year', card.era ?? '—'));
     const emblem = make('span', 'dbl-cards-team-season-emblem');
     emblem.appendChild(teamCrest(card, true));
@@ -841,7 +851,7 @@
       card.finish || 'SEASON FINISH UNAVAILABLE');
     finish.dataset.finish = card.finishKind || 'unknown';
     front.appendChild(finish);
-    if (isChampionTeam(card))
+    if (isMetalTeam(card))
       front.appendChild(make('span', 'dbl-cards-foil'));
     return front;
   }
@@ -849,7 +859,8 @@
   function teamSeasonBack(card, back) {
     const heading = make('span', 'dbl-cards-back-heading');
     heading.appendChild(make('strong', 'dbl-cards-back-flagship', 'TEAM SEASON'));
-    heading.appendChild(make('span', 'dbl-cards-back-profile', 'FRANCHISE ARCHIVE'));
+    heading.appendChild(make('span', 'dbl-cards-back-profile',
+      teamVariantName(card).toUpperCase()+' · FRANCHISE ARCHIVE'));
     back.appendChild(heading);
     back.appendChild(make('strong', 'dbl-cards-back-name', String(card.era) + ' ' + card.teamName));
     back.appendChild(make('span', 'dbl-cards-back-team', card.team));
@@ -876,7 +887,7 @@
     back.appendChild(make('span', 'dbl-cards-back-foot',
       'SERIES ' + (card.series ?? api.currentSeries) + ' · HISTORIC TEAM · ' + card.era));
     back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
-    if (isChampionTeam(card))
+    if (isMetalTeam(card))
       back.appendChild(make('span', 'dbl-cards-foil'));
     back.appendChild(marketTag(card));
     back.appendChild(favoriteAction(card));
@@ -1296,9 +1307,11 @@
   const REVEAL_EFFECTS = Object.freeze({
     crome: {duration: 1100, sparks: 5, spread: .43, glyph: '✦'},
     refractor: {duration: 1580, sparks: 10, spread: .62, glyph: '✧'},
-    // Historical champions receive bronze/copper engraving glints instead
-    // of the prismatic Refractor spectacle; regular Refractors are unchanged.
+    // Metallic Team Season variants have finish-specific reveals, not
+    // the player-card Chrome/Refractor art.
     'bronze-champion': {duration: 1660, sparks: 8, spread: .46, glyph: '◆'},
+    'silver-team': {duration: 1780, sparks: 10, spread: .53, glyph: '✦'},
+    'gold-team': {duration: 1950, sparks: 12, spread: .60, glyph: '✧'},
     // Retain the Black Label reveal's flash, halo, ring and foil sweep.
     // Remove star-shaped particles and the star sigil per the finish redesign.
     'black-label': {duration: 2100, sparks: 0, spread: 0, glyph: ''},
@@ -1308,9 +1321,11 @@
   });
 
   function playCardRevealEffect(button, card) {
-    // Only verified league champions get the bronze reveal; normal Team
-    // Seasons keep their ordinary flip and player Refractors stay prismatic.
-    const effect = isChampionTeam(card) ? 'bronze-champion' : card.rarity;
+    // Old champion Base cards retain a normal flip: only the actual metal
+    // edition determines its one-time reveal treatment.
+    const effect = isTeamSeason(card) ? ({
+      bronze:'bronze-champion',silver:'silver-team',gold:'gold-team'
+    })[teamVariant(card)] : card.rarity;
     const config = REVEAL_EFFECTS[effect];
     // Base cards have no extra effect. Respect OS reduced-motion preferences.
     if (!config || reduced()) return;
@@ -1323,7 +1338,8 @@
     // Confine just the one-time glint to the card surface for reflective
     // editions; the bronze spark/ring may extend outside the silhouette.
     if (effect === 'crome' || effect === 'refractor' ||
-        effect === 'black-label' || effect === 'bronze-champion') {
+        effect === 'black-label' || effect === 'bronze-champion' ||
+        effect === 'silver-team' || effect === 'gold-team') {
       fx.appendChild(make('span', 'dbl-cards-reveal-sweep-window'));
     }
     fx.appendChild(make('span', 'dbl-cards-reveal-halo'));
@@ -1434,10 +1450,10 @@
     if (!sealed) {
       button.dataset.rarity = card.rarity;
       if (card.autograph === true) button.dataset.autograph = 'true';
-      if (isChampionTeam(card)) button.dataset.teamChampion = 'true';
+      if (isTeamSeason(card)) button.dataset.teamVariant = teamVariant(card);
     }
     const cardLabel = isTeamSeason(card)
-      ? String(card.era) + ' ' + card.name : card.name;
+      ? String(card.era)+' '+card.name+' · '+teamVariantName(card) : card.name;
     button.setAttribute('aria-label', sealed ? 'Reveal mystery DBL card' :
       'View statistics for ' + cardLabel + ', ' + tierMap[card.rarity]?.label +
       (card.autograph ? ', autographed' : ''));
@@ -1534,7 +1550,7 @@
         button.classList.remove('is-sealed');
         button.dataset.rarity = card.rarity;
         if (card.autograph === true) button.dataset.autograph = 'true';
-        if (isChampionTeam(card)) button.dataset.teamChampion = 'true';
+        if (isTeamSeason(card)) button.dataset.teamVariant = teamVariant(card);
         playCardRevealEffect(button, card);
         activateBackgroundPhoto(button, card);
         if (isToppsUniform(card)) {
