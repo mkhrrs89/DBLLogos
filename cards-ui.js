@@ -1096,15 +1096,16 @@
       }, {rootMargin: '100px 0px'})
     : null;
 
-  // Black Label print-number styling. Stable for each card identity across
-  // pack pulls, device reloads and collection imports; this is a visual
-  // serial, not a change to collection counts or Black Label pull limits.
-  function blackLabelSerial(card) {
+  // Stable visual print serials by card identity. Preserve the existing
+  // Black Label hash and /500 number exactly; Mythicals use the same
+  // placement, finish, and hash with a /100 edition size. This does not
+  // change collection copies, card IDs, pull odds, or pack limits.
+  function numberedCardSerial(card, editionSize) {
     const identity = String(card.id || card.pid || card.name || 'black-label');
     let hash = 2166136261;
     for (let i = 0; i < identity.length; i++)
       hash = Math.imul(hash ^ identity.charCodeAt(i), 16777619) >>> 0;
-    return String(hash % 500 + 1).padStart(3, '0') + '/500';
+    return String(hash % editionSize + 1).padStart(3, '0') + '/' + editionSize;
   }
 
   function frontOf(card) {
@@ -1151,13 +1152,15 @@
 
     const details = make('span', 'dbl-cards-identity-details');
     const names = nameParts(card);
-    if (card.rarity === 'black-label') {
-      // Keep the first name in its existing row. Line up the gold serial
-      // with the right edge of the portrait immediately above that row.
+    if (card.rarity === 'black-label' || edition?.mythical) {
+      // Place Black Label and Mythical print numbers on the same baseline,
+      // aligned with the portrait edge, without moving player names.
       const firstLine = make('span', 'dbl-cards-black-first-line');
       if (names.first)
         firstLine.appendChild(make('span', 'dbl-cards-first-name', names.first));
-      const serial = make('span', 'dbl-cards-black-serial', blackLabelSerial(card));
+      const editionSize = edition?.mythical ? 100 : 500;
+      const serial = make('span', 'dbl-cards-black-serial',
+        numberedCardSerial(card, editionSize));
       serial.setAttribute('aria-label', 'Card serial ' + serial.textContent);
       firstLine.appendChild(serial);
       details.appendChild(firstLine);
