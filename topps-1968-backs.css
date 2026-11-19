@@ -1,0 +1,270 @@
+/*
+ * 1968 Topps test issue — printed card reverses only.
+ * A two-ink, late-sixties basketball-card treatment: warm uncoated stock,
+ * brick-red masthead, dark slate type and ruled statistical grid.
+ * The active 1968 fronts, 1970 prelaunch, and all other backs are untouched.
+ */
+.dbl-cards-back.dbl-topps-back.dbl-topps-vintage-back {
+  --vintage-ink: #283b3d;
+  --vintage-rust: #a64b32;
+  --vintage-rule: #a77956;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 11% 22% 26% 31% 10%;
+  gap: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px solid #b98a63;
+  border-radius: 0;
+  text-align: center;
+  color: var(--vintage-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  background:
+    repeating-linear-gradient(0deg,rgba(93,57,34,.022) 0 1px,transparent 1px 4px),
+    linear-gradient(155deg,#f4e4bf,#e8d4a9 65%,#f1deb6);
+}
+.dbl-cards-card[data-rarity="topps-1968"] .dbl-topps-vintage-back::before,
+.dbl-cards-card[data-rarity="topps-1968-uniform"] .dbl-topps-vintage-back::before {
+  content: none;
+}
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-masthead,
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-nameplate,
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-profile,
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-panel,
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-footer {
+  position: relative;
+  inset: auto;
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-masthead {
+  grid-row: 1;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 6%;
+  background: var(--vintage-rust);
+  color: #fceac6;
+  border-bottom: max(1px,.7cqw) solid #6e3428;
+}
+.dbl-topps-vintage-brand {
+  font: 900 clamp(10px,9cqw,34px)/1 Georgia,serif;
+  letter-spacing: -.055em;
+}
+.dbl-topps-vintage-issue {
+  font: 800 clamp(6px,4.2cqw,15px)/1.12 Arial,Helvetica,sans-serif;
+  letter-spacing: .03em;
+}
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-nameplate {
+  grid-row: 2;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2%;
+  padding: 1% 5%;
+  border-bottom: max(1px,.65cqw) solid var(--vintage-ink);
+}
+.dbl-topps-vintage-nameplate > .dbl-topps-vintage-name {
+  display: block;
+  max-width: 100%;
+  color: var(--vintage-ink);
+  text-align: center;
+  font: 900 clamp(11px,8.8cqw,33px)/1.06 "Bookman Old Style",Georgia,serif;
+  letter-spacing: -.045em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.dbl-topps-vintage-nameplate > .dbl-topps-vintage-name.dbl-topps-uniform-fit-name {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  overflow: hidden;
+  font-family: "Bookman Old Style",Georgia,serif;
+}
+.dbl-topps-vintage-teamline {
+  max-width: 94%;
+  color: var(--vintage-rust);
+  font: 800 clamp(6px,4.5cqw,15px)/1.12 Arial,Helvetica,sans-serif;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-profile {
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 32% minmax(0,1fr);
+  align-items: center;
+  padding: 2% 6%;
+  column-gap: 3%;
+}
+.dbl-topps-vintage-emblem {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.dbl-topps-vintage-emblem .dbl-cards-team-crest {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 85%;
+  max-width: 100%;
+  height: 85%;
+  aspect-ratio: 1;
+  border-radius: 0;
+}
+.dbl-topps-vintage-emblem .dbl-cards-team-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.dbl-topps-vintage-emblem .dbl-cards-team-initials {
+  font: 900 clamp(9px,8cqw,25px)/1 Georgia,serif;
+}
+.dbl-topps-vintage-facts {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(2px,1.6cqw,6px);
+  text-align: left;
+}
+.dbl-topps-vintage-fact {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 41% minmax(0,1fr);
+  align-items: baseline;
+  gap: 3%;
+  border-bottom: 1px solid rgba(96,71,51,.26);
+  padding-bottom: 1px;
+}
+.dbl-topps-vintage-fact-label {
+  color: #774e3f;
+  font: 800 clamp(5px,3.75cqw,13px)/1.1 Arial,Helvetica,sans-serif;
+  letter-spacing: .05em;
+}
+.dbl-topps-vintage-fact-value {
+  min-width: 0;
+  color: var(--vintage-ink);
+  font: 900 clamp(7px,6.4cqw,22px)/1.05 Georgia,serif;
+  overflow-wrap: anywhere;
+}
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-panel {
+  grid-row: 4;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0 5% 1%;
+}
+.dbl-topps-vintage-panel-heading {
+  display: grid;
+  place-items: center;
+  flex: 0 0 31%;
+  background: var(--vintage-ink);
+  color: #fae8c1;
+  font: 800 clamp(7px,5.2cqw,18px)/1.1 Arial,Helvetica,sans-serif;
+  letter-spacing: .065em;
+}
+.dbl-topps-vintage-table {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: 1.18fr repeat(4,minmax(0,1fr));
+  grid-template-rows: 40% 60%;
+  align-items: stretch;
+  border: 1px solid var(--vintage-rule);
+  border-top: 0;
+}
+.dbl-topps-vintage-table > span,
+.dbl-topps-vintage-table > strong {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  border-right: 1px solid rgba(125,88,61,.55);
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+}
+.dbl-topps-vintage-table > :nth-child(5n) { border-right: 0; }
+.dbl-topps-vintage-table-label {
+  background: rgba(164,75,50,.13);
+  color: #6d4435;
+  font: 800 clamp(6px,4.6cqw,14px)/1 Arial,Helvetica,sans-serif;
+  border-bottom: 1px solid var(--vintage-rule);
+}
+.dbl-topps-vintage-table-value {
+  color: var(--vintage-ink);
+  font: 900 clamp(8px,7.1cqw,23px)/1 Georgia,serif;
+}
+.dbl-topps-vintage-uniform-edition {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5%;
+  border: 1px solid var(--vintage-rule);
+  border-top: 0;
+  background: rgba(164,75,50,.09);
+}
+.dbl-topps-vintage-uniform-side {
+  font: 900 clamp(17px,15cqw,52px)/1 Georgia,serif;
+  letter-spacing: .08em;
+  color: var(--vintage-rust);
+}
+.dbl-topps-vintage-uniform-desc {
+  font: 800 clamp(6px,4.6cqw,14px)/1 Arial,Helvetica,sans-serif;
+  letter-spacing: .07em;
+}
+.dbl-cards-back.dbl-topps-vintage-back > .dbl-topps-vintage-footer {
+  grid-row: 5;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3%;
+  padding: 0 22% 0 6%;
+  color: #fceac6;
+  background: var(--vintage-rust);
+  border-top: max(1px,.65cqw) solid #6e3428;
+}
+.dbl-topps-vintage-footer-mark {
+  white-space: nowrap;
+  font: 900 clamp(6px,5.2cqw,18px)/1 Georgia,serif;
+  letter-spacing: .005em;
+}
+.dbl-topps-vintage-footer-type {
+  white-space: nowrap;
+  font: 800 clamp(5px,3.7cqw,13px)/1 Arial,Helvetica,sans-serif;
+  letter-spacing: .04em;
+}
+/* Keep the interactive favorite action, tucked inside the footer rather than
+   covering printed information. The shared valuation pill is not rendered. */
+.dbl-cards-back.dbl-topps-back.dbl-topps-vintage-back > .dbl-cards-favorite-action {
+  position: absolute;
+  top: auto;
+  bottom: 1%;
+  right: 2.5%;
+  width: clamp(20px,17cqw,40px);
+  height: clamp(20px,17cqw,40px);
+  padding: 0;
+  border: 1px solid #7d3b2b;
+  background: #f7e4bf;
+  color: #8d493a;
+  font-size: clamp(15px,12cqw,30px);
+  box-shadow: none;
+}
+.dbl-cards-back.dbl-topps-back.dbl-topps-vintage-back > .dbl-cards-favorite-action.is-favorite {
+  background: #fff1d3;
+  border-color: #8f332f;
+  color: #a83235;
+}

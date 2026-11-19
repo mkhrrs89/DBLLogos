@@ -787,48 +787,95 @@
     sync();
     return button;
   }
+  // A two-ink, late-1960s-style printed reverse. Values remain in the
+  // collection UI, never on the collectible's physical-looking face.
   function toppsBack(card) {
-    const back = make('span', 'dbl-cards-face dbl-cards-back dbl-topps-back');
     const uniform = isToppsUniform(card);
-    // The uniform team name uses the same upright groovy print as the player
-    // name; long names are fit horizontally on the front and reverse.
+    const back = make('span', 'dbl-cards-face dbl-cards-back dbl-topps-back ' +
+      'dbl-topps-vintage-back ' +
+      (uniform ? 'dbl-topps-vintage-uniform' : 'dbl-topps-vintage-player'));
+
+    const masthead = make('span', 'dbl-topps-vintage-masthead');
+    masthead.appendChild(make('strong', 'dbl-topps-vintage-brand', 'TOPPS'));
+    masthead.appendChild(make('span', 'dbl-topps-vintage-issue', '1968 · DBL BASKETBALL'));
+    back.appendChild(masthead);
+
+    const nameplate = make('span', 'dbl-topps-vintage-nameplate');
     if (uniform) {
-      back.appendChild(uniformName(card.teamName,
-        'dbl-topps-back-name dbl-topps-back-uniform-name'));
+      // Preserve fitting for unusually long team wordmarks.
+      nameplate.appendChild(uniformName(card.teamName || card.team || 'DBL',
+        'dbl-topps-vintage-name dbl-topps-uniform-fit-name'));
     } else {
-      back.appendChild(make('strong',
-        'dbl-topps-back-name dbl-topps-back-player-name', card.name));
+      nameplate.appendChild(make('strong', 'dbl-topps-vintage-name',
+        card.name || 'Unknown player'));
     }
-    back.appendChild(make('span', 'dbl-topps-back-identity',
-      uniform ? ((card.uniform || 'home').toUpperCase() + ' UNIFORM') :
-        (card.pos || '—') + ' | ' + (card.teamName || card.team) +
-        (api.findJersey?.(card) ? ' | #' + api.findJersey(card) : '')));
-    const circle = make('span', 'dbl-topps-back-logo-circle');
-    circle.appendChild(teamCrest(card));
-    back.appendChild(circle);
-    const stats = make('span', 'dbl-topps-back-stats');
+    nameplate.appendChild(make('span', 'dbl-topps-vintage-teamline',
+      uniform ? '1968 TEAM UNIFORM ISSUE' : (card.teamName || card.team || 'DBL')));
+    back.appendChild(nameplate);
+
+    const profile = make('span', 'dbl-topps-vintage-profile');
+    const emblem = make('span', 'dbl-topps-vintage-emblem');
+    emblem.appendChild(teamCrest(card));
+    profile.appendChild(emblem);
+    const facts = make('span', 'dbl-topps-vintage-facts');
+    const addFact = (label, value) => {
+      const row = make('span', 'dbl-topps-vintage-fact');
+      row.appendChild(make('span', 'dbl-topps-vintage-fact-label', label));
+      row.appendChild(make('strong', 'dbl-topps-vintage-fact-value', value));
+      facts.appendChild(row);
+    };
     if (uniform) {
-      stats.appendChild(make('strong', 'dbl-topps-back-stats-title', 'TEAM UNIFORM'));
-      stats.appendChild(make('span', 'dbl-topps-uniform-note',
-        '1968 ' + (card.uniform || 'home').toUpperCase() +
-        ' · HISTORIC UNIFORM EDITION'));
+      addFact('CLUB', card.team || 'DBL');
+      addFact('UNIFORM', (card.uniform || 'home').toUpperCase());
+      addFact('SEASON', '1968');
     } else {
-      stats.appendChild(make('strong', 'dbl-topps-back-stats-title', '1968 SEASON'));
-      for (const [value, label] of [
-        [format(card.gp), 'GAMES'],
-        [format(card.ppg, 1), 'PTS / GAME'],
-        [format(card.rpg, 1), 'REB / GAME'],
-        [format(card.apg, 1), 'AST / GAME']
-      ]) {
-        const entry = make('span', 'dbl-topps-back-stat');
-        entry.appendChild(make('strong', '', value));
-        entry.appendChild(make('span', '', label));
-        stats.appendChild(entry);
-      }
+      const jersey = api.findJersey?.(card) ?? card.jersey;
+      addFact('POSITION', card.pos || '—');
+      addFact('NUMBER', jersey !== null && jersey !== undefined &&
+        String(jersey).trim() ? '#' + String(jersey).trim() : '—');
+      addFact('STATUS', card.rookie === true ? 'ROOKIE' : 'PLAYER');
     }
-    back.appendChild(stats);
-    back.appendChild(make('span', 'dbl-topps-back-footer', '1968 TOPPS'));
-    back.appendChild(marketTag(card));
+    profile.appendChild(facts);
+    back.appendChild(profile);
+
+    const panel = make('span', 'dbl-topps-vintage-panel');
+    if (uniform) {
+      panel.appendChild(make('strong', 'dbl-topps-vintage-panel-heading',
+        '1968 UNIFORM REFERENCE'));
+      const edition = make('span', 'dbl-topps-vintage-uniform-edition');
+      edition.appendChild(make('strong', 'dbl-topps-vintage-uniform-side',
+        (card.uniform || 'home').toUpperCase()));
+      edition.appendChild(make('span', 'dbl-topps-vintage-uniform-desc',
+        'HISTORIC TEAM ISSUE'));
+      panel.appendChild(edition);
+    } else {
+      panel.appendChild(make('strong', 'dbl-topps-vintage-panel-heading',
+        '1968 REGULAR SEASON'));
+      const played = Number(card.gp) > 0;
+      const columns = [
+        ['YEAR', '1968'],
+        ['GP', format(card.gp)],
+        ['PPG', played ? format(card.ppg, 1) : '—'],
+        ['RPG', played ? format(card.rpg, 1) : '—'],
+        ['APG', played ? format(card.apg, 1) : '—']
+      ];
+      const table = make('span', 'dbl-topps-vintage-table');
+      for (const [label] of columns)
+        table.appendChild(make('span', 'dbl-topps-vintage-table-label', label));
+      for (const [, value] of columns)
+        table.appendChild(make('strong', 'dbl-topps-vintage-table-value', value));
+      panel.appendChild(table);
+    }
+    back.appendChild(panel);
+
+    const footer = make('span', 'dbl-topps-vintage-footer');
+    footer.appendChild(make('strong', 'dbl-topps-vintage-footer-mark',
+      '1968 TOPPS · DBL'));
+    footer.appendChild(make('span', 'dbl-topps-vintage-footer-type',
+      uniform ? 'UNIFORM CARD' : 'PLAYER CARD'));
+    back.appendChild(footer);
+    // Favorites remain interactive; unlike market values they belong to
+    // collection controls, not the printed historical player information.
     back.appendChild(favoriteAction(card));
     return back;
   }
