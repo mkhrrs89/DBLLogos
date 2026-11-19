@@ -4914,6 +4914,12 @@
 .dbl-cards-lightbox-frame > .dbl-cards-card:hover {
   filter: none;
 }
+/* Stop the constantly moving metallic shimmer only while zooming.
+   It resumes automatically once the card reaches full size, and all
+   existing flip/reveal effects remain available. */
+.dbl-cards-lightbox.is-zooming .dbl-cards-card .dbl-cards-foil {
+  animation-play-state: paused !important;
+}
 .dbl-cards-lightbox-hint {
   position: absolute;
   z-index: 2;
