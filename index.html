@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Kavoon&family=Lobster&family=Shrikhand&display=swap" />
     <link rel="stylesheet" href="./cards.css?v=20261118-team-season-borderless" />
     <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
+    <link rel="stylesheet" href="./notes-timeline.css?v=20261118-notes-history-v1" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
     <link rel="stylesheet" href="./logos-by-year.css?v=20261012-fallbacks" />
     <link rel="stylesheet" href="./champion-grid.css?v=20261015-v1" />
@@ -169,6 +170,7 @@
               <button id="deadPlayersTabBtn" class="tab-btn" type="button" aria-selected="false">The Dead</button>
               <button id="retiredNumbersTabBtn" class="tab-btn" type="button" aria-selected="false">Retired Numbers</button>
               <button id="recordsTabBtn" class="tab-btn" type="button" aria-selected="false">Records</button>
+              <button id="notesTimelineTabBtn" class="tab-btn" type="button" aria-selected="false">Notes Timeline</button>
               <button id="shootoutRecordsTabBtn" class="tab-btn" type="button" aria-selected="false">Shootout Records</button>
             </div>
           </details>
@@ -547,6 +549,43 @@
             <p class="story-gen-library-note">Browse all prompts below. Tap a headline to read the premise; the Roll button draws randomly from stories that can be cast using the loaded 1968 players and teams.</p>
             <div id="storiesAvailableList" class="story-gen-available-list" aria-label="1968 numbered story list"></div>
           </div>
+        </section>
+
+        <section id="notesTimelinePanel" class="panel notes-timeline-panel" aria-label="Player and team notes timeline" hidden>
+          <header class="notes-timeline-header">
+            <div>
+              <h2>Notes Timeline</h2>
+              <p class="notes-timeline-intro">Your Basketball GM player notes and historical team-season notes, arranged by the dates and seasons recorded in the league export. Notes without clear dates are grouped separately. This page only reads your game file; it never changes your notes.</p>
+            </div>
+          </header>
+          <div class="notes-timeline-controls">
+            <label class="notes-timeline-search-field">Search notes and names
+              <input id="notesTimelineSearch" type="search" autocomplete="off" placeholder="Search players, teams, or note text…" />
+            </label>
+            <label>Notes from
+              <select id="notesTimelineType">
+                <option value="all">Players &amp; teams</option>
+                <option value="player">Players only</option>
+                <option value="team">Teams only</option>
+              </select>
+            </label>
+            <label>Year
+              <select id="notesTimelineYear">
+                <option value="all">All years</option>
+              </select>
+            </label>
+            <label>Order
+              <select id="notesTimelineOrder">
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </label>
+          </div>
+          <p id="notesTimelineSummary" class="notes-timeline-summary" role="status" aria-live="polite">Load a league file to explore notes.</p>
+          <div id="notesTimelineEntries">
+            <p class="notes-timeline-empty">Load a league file to view its timeline of player and team notes.</p>
+          </div>
+          <button id="notesTimelineMore" class="action-btn notes-timeline-more" type="button" hidden>Show more notes</button>
         </section>
 
         <section id="leagueControlsPanel" class="panel controls-panel" hidden>
@@ -1260,6 +1299,7 @@
     <script src="./cards-background-test.js?v=20261117-white-uniform-guard"></script>
     <script src="./story-generator-engine.js?v=20261118-1968-16-new-stories"></script>
     <script src="./story-generator-ui.js?v=20261118-hide-stories-disclaimers"></script>
+    <script src="./notes-timeline.js?v=20261118-notes-history-v1"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>
     <script src="./logos-by-team.js"></script>
     <script src="./headshot-backgrounds.js?v=20261021-vivid-red"></script>
@@ -1289,6 +1329,6 @@
     <script src="./colleges.js?v=20261027-hide-assigned-filter"></script>
     <script src="./settings.js?v=20261117-multiplier-delete-confirm"></script>
     <script src="./saved-links-backup.js?v=20261118-home-notes-backup-v3"></script>
-    <script src="./tab-router.js?v=20261117-random-page-button"></script>
+    <script src="./tab-router.js?v=20261118-notes-history-nav-v1"></script>
   </body>
 </html>
