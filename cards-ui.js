@@ -1143,11 +1143,14 @@
       const aura = make('span', 'dbl-cards-mythical-aura');
       aura.setAttribute('aria-hidden', 'true');
       front.appendChild(aura);
-      const symbol = make('span', 'dbl-cards-mythical-symbol',
-        card.rarity === 'mythic-eclipse' ? '◉' :
-        card.rarity === 'mythic-aurora' ? '◇' : '✦');
-      symbol.setAttribute('aria-hidden', 'true');
-      front.appendChild(symbol);
+      // Aurora's upper-right decoration is intentionally absent.
+      // Preserve all other card designs without revealing or changing them.
+      if (card.rarity !== 'mythic-aurora') {
+        const symbol = make('span', 'dbl-cards-mythical-symbol',
+          card.rarity === 'mythic-eclipse' ? '◉' : '✦');
+        symbol.setAttribute('aria-hidden', 'true');
+        front.appendChild(symbol);
+      }
       front.appendChild(make('span', 'dbl-cards-mythical-plaque',
         '✦  LEGENDS ETERNAL  ✦'));
     }
