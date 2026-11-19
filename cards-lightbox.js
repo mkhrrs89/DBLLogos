@@ -69,6 +69,7 @@
     if(!session||session.closing)return;
     session.closing=true;
     session.overlay.classList.remove('is-open');
+    session.overlay.classList.add('is-zooming');
     if(immediate||reducedMotion()||!session.placeholder.isConnected) {
       restore(session,!immediate);
       return;
@@ -116,7 +117,7 @@
     placeholder.dataset.cardId=card.dataset.cardId;
     placeholder.dataset.cardName=card.dataset.cardName;
 
-    const overlay=node('div','dbl-cards-lightbox');
+    const overlay=node('div','dbl-cards-lightbox is-zooming');
     overlay.setAttribute('role','dialog');
     overlay.setAttribute('aria-modal','true');
     overlay.setAttribute('aria-label','Enlarged basketball card. Tap the card to flip; tap outside or press Escape to close.');
@@ -144,7 +145,9 @@
     window.dispatchEvent?.(new Event('dbl:card-lightbox-open'));
     const frameRect=position(frame.getBoundingClientRect());
     const duration=reducedMotion()?0:300;
-    session.openingAnimation=motion(frame,rect,frameRect,duration);
+    session.openingAnimation=motion(frame,rect,frameRect,duration,()=>{
+      if(active===session&&!session.closing)overlay.classList.remove('is-zooming');
+    });
     window.requestAnimationFrame?.(()=>{
       if(active===session&&!session.closing)overlay.classList.add('is-open');
     });
