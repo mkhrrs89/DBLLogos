@@ -193,7 +193,7 @@
   more?.addEventListener('click',()=>{
     document.querySelector('.home-updates-container')?.scrollIntoView({
       behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-        ?'instant':'smooth',block:'start'
+        ?'auto':'smooth',block:'start'
     });
   });
   window.DBLHomeMajorEvents=Object.freeze({build,render,isMidseason,fromExistingReport});
