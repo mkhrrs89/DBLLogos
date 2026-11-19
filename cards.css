@@ -81,6 +81,14 @@
   letter-spacing: .04em;
 }
 .dbl-cards-ritual-header p { color: #bfb1a4; font-size: .76rem; margin: 0; }
+.dbl-cards-pack-limit-status {
+  position: relative; z-index: 1; margin: 13px auto 0;
+  max-width: 650px; padding: 9px 12px;
+  border: 1px solid rgba(234,184,113,.23); border-radius: 9px;
+  background: rgba(247,203,140,.06);
+  color: #edd1ac; font-size: .78rem; line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
 .dbl-cards-pack-stage {
   min-height: 385px;
   display: flex;
