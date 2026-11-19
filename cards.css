@@ -1307,9 +1307,9 @@
   font-weight: 400;
   line-height: 1.03;
 }
-/* Only Black Label cards: serial shares the first-name baseline below
+/* Black Label and all three Mythical cards: serial shares the first-name baseline below
    the portrait and ends at the portrait's 87% right-hand edge. */
-.dbl-cards-card[data-rarity="black-label"] .dbl-cards-black-first-line {
+.dbl-cards-card:is([data-rarity="black-label"],[data-rarity^="mythic-"]) .dbl-cards-black-first-line {
   display: flex;
   box-sizing: border-box;
   align-items: baseline;
@@ -1319,13 +1319,13 @@
   min-width: 0;
   padding-right: 11.6%;
 }
-.dbl-cards-card[data-rarity="black-label"] .dbl-cards-black-first-line > .dbl-cards-first-name {
+.dbl-cards-card:is([data-rarity="black-label"],[data-rarity^="mythic-"]) .dbl-cards-black-first-line > .dbl-cards-first-name {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.dbl-cards-card[data-rarity="black-label"] .dbl-cards-black-serial {
+.dbl-cards-card:is([data-rarity="black-label"],[data-rarity^="mythic-"]) .dbl-cards-black-serial {
   flex: 0 0 auto;
   display: inline-block;
   color: #e4bd65;
@@ -1343,7 +1343,7 @@
   white-space: nowrap;
 }
 @supports not (font-size: 1cqw) {
-  .dbl-cards-card[data-rarity="black-label"] .dbl-cards-black-serial {
+  .dbl-cards-card:is([data-rarity="black-label"],[data-rarity^="mythic-"]) .dbl-cards-black-serial {
     font-size: 10px;
   }
 }
