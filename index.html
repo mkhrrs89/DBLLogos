@@ -15,6 +15,7 @@
     </script>
     <link rel="stylesheet" href="./styles.css?v=20261117-random-page-button" />
     <link rel="stylesheet" href="./home.css?v=20261103-home-file-upload" />
+    <link rel="stylesheet" href="./home-major-events.css?v=20261119-midseason-major-v1" />
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
     <link rel="stylesheet" href="./home-notes.css?v=20261118-home-notes-v1" />
     <link rel="stylesheet" href="./home-draft.css?v=20261103-home-draft-board" />
@@ -247,6 +248,23 @@
               <button id="homeClearLeagueFileBtn" class="action-btn" type="button">Clear loaded file</button>
             </div>
             <p id="homeLeagueFileStatus" class="home-file-upload-status" aria-live="polite">No league file loaded.</p>
+          </section>
+          <section id="homeMajorEvents" class="panel home-major-events"
+            aria-label="Major events since the previous league file" hidden>
+            <header class="home-major-events-head">
+              <div>
+                <p class="home-major-eyebrow">Regular season · Since your previous league file</p>
+                <h3>Major Events</h3>
+                <p id="homeMajorEventsContext" class="home-major-events-context"></p>
+              </div>
+              <span id="homeMajorEventsCount" class="home-major-events-count"></span>
+            </header>
+            <div id="homeMajorEventsList" class="home-major-events-list" aria-live="polite"></div>
+            <div class="home-major-events-footer">
+              <button id="homeMajorEventsMore" class="home-major-events-more" type="button">
+                View full update
+              </button>
+            </div>
           </section>
           <section id="homeSeasonPreview" class="panel home-season-preview"
             aria-label="Season preview for upcoming regular season" hidden>
@@ -1326,7 +1344,8 @@
     <script src="./home-notes.js?v=20261118-home-notes-v1"></script>
     <script src="./home-draft.js?v=20261106-home-team-badges"></script>
     <script src="./home-season-preview.js?v=20261106-home-team-badges"></script>
-    <script src="./home-updates.js?v=20261106-home-team-badges"></script>
+    <script src="./home-major-events.js?v=20261119-midseason-major-v1"></script>
+    <script src="./home-updates.js?v=20261119-midseason-major-v1"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./cards-market.js?v=20261118-team-four-finishes-v1"></script>
     <script src="./cards-engine.js?v=20261118-team-four-finishes-v1"></script>
