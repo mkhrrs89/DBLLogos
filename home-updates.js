@@ -187,7 +187,9 @@
       number(stats.stl) * 2 + (number(stats.orb) + number(stats.drb));
     return { gid: integer(feat.gid),
       text: (feat.name || 'Player') + (pieces.length ? ': ' + pieces.join(', ') : ' had a notable game'),
-      score };
+      score,
+      pts: number(stats.pts), reb: number(stats.orb) + number(stats.drb),
+      ast: number(stats.ast), blk: number(stats.blk), stl: number(stats.stl) };
   }
 
   // Streaming each top-level array avoids parsing the 50MB+ compressed league
@@ -411,7 +413,11 @@
         events: Object.values(delta.counts).reduce((a, b) => a + b, 0),
         feats: delta.featCount,
         trades: delta.counts.trades || 0 },
-      sections
+      sections,
+      phase: latest.phase,
+      // Shares the SAME delta and file scan as the detailed update digest.
+      majors: window.DBLHomeMajorEvents?.build(previous, latest, delta, names,
+        titleForEvent) || []
     };
   }
   function brandedUpdateLine(value, teams) {
@@ -442,7 +448,7 @@
     if (!found) li.textContent = line;
     return li;
   }
-  function renderReport(report, teams = {}) {
+  function renderReport(report, teams = {}, snapshot = null) {
     const summary = node('div', 'home-updates-summary');
     summary.appendChild(node('p', 'home-updates-source',
       'Comparing ' + report.olderName + ' → ' + report.newerName));
@@ -486,10 +492,14 @@
         'No new games, transactions, playoff results, or notable league events were found.'));
     }
     mount.replaceChildren(summary, grid);
+    window.DBLHomeMajorEvents?.render(report, snapshot ||
+      {phase:report.phase,teams});
   }
   async function loadChange({ file, previousFile, source }) {
     const id = ++generation;
     const current = () => id === generation;
+    // Don't show headlines from the old file while the new one is loading.
+    window.DBLHomeMajorEvents?.render(null,null);
     if (!file) {
       showStatus('Upload a league file to begin tracking future changes.');
       await resetSaved(current);
@@ -500,12 +510,14 @@
       if (!current()) return;
       const fileId = fingerprint(file);
       if (source !== 'upload' && stored?.snapshot?.signature === fileId) {
-        if (stored.report) renderReport(stored.report, stored.snapshot?.teams);
+        if (stored.report) renderReport(stored.report, stored.snapshot?.teams,
+          stored.snapshot);
         else showStatus('Baseline saved. Upload a newer league file to see what changed.');
         return;
       }
       if (source === 'upload' && stored?.snapshot?.signature === fileId) {
-        if (stored.report) renderReport(stored.report, stored.snapshot?.teams);
+        if (stored.report) renderReport(stored.report, stored.snapshot?.teams,
+          stored.snapshot);
         else showStatus('This is the saved baseline. Upload a newer file to compare.');
         return;
       }
@@ -537,7 +549,7 @@
       await storeSaved({ key: KEY, snapshot: latest, report }, current);
       if (!current()) return;
       if (report) {
-        renderReport(report, latest.teams);
+        renderReport(report, latest.teams, latest);
       } else {
         showStatus(before
           ? 'This save is older or from a different league. It is now the baseline; upload a newer save to compare.'
