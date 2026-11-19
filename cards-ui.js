@@ -1994,6 +1994,7 @@
         }
         all.push({
           id: season.id, type: 'team-season', tid: season.tid,
+          teamVariant:teamVariant(season),
           won: season.won, lost: season.lost, tied: season.tied,
           finishKind: season.finishKind, playoffRoundsWon: season.playoffRoundsWon,
           name: season.name + ' (' + season.era + ')',
@@ -2001,7 +2002,7 @@
           franchiseKey: Number.isInteger(season.tid) && season.tid >= 0
             ? 'tid:' + season.tid : 'unknown',
           franchiseName: season.franchiseName || season.teamName,
-          rarity: insertTier.id, label: insertTier.label,
+          rarity: insertTier.id, label: insertTier.label+' · '+teamVariantName(season),
           owned: isOwned, copies: item?.count || 0
         });
       }
@@ -2171,13 +2172,13 @@
       ? '1968 Topps · Test Issue' : 'Series 0 · Original FLAGSHIP set';
     checklistDescription.textContent = topps
       ? 'Every 1968-active player, including rookies, and home/away uniform inserts from the uploaded league archive.'
-      : 'Every obtainable player edition and historical team-season insert in your uploaded league archive. Cards check off automatically when collected.';
+      : 'Every obtainable player edition and every eligible Base, Bronze, Silver and Gold Team Season insert. Editions check off when collected.';
     checklistFranchiseDescription.textContent = topps
       ? '1968 Topps player and uniform completion, grouped by 1968 franchise. Duplicates count once.'
       : 'Completion by franchise, including peak-season player editions and historical Team Season inserts. Name changes stay grouped; duplicates count once.';
     checklistNote.textContent = topps
       ? 'One plain-paper 1968 Topps card per eligible player, with rookie styling for first-season players, plus one home and one away uniform placeholder per 1968 team. No Chrome or Refractor tiers; rare autograph variations can appear but are not required for standard set completion. The checklist comes from the uploaded league export; owned cards remain saved even when that file is unloaded.'
-      : 'One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR, plus one Team Season insert per recorded team-season. Autograph variations are separately collectible and do not change standard set completion. Duplicates count once. Owned cards missing from a newer export stay in My Collection.';
+      : 'One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR. Team Season Base is available for every season; Bronze for playoff teams, Silver for finalists, Gold for champions. Each finish is a separate collectible edition. Autographs remain separate; duplicates count once. Owned cards missing from a newer export stay in My Collection.';
     const s = api.status;
     checklistStats.replaceChildren();
     checklistFranchises.replaceChildren();
@@ -2245,7 +2246,7 @@
         a.name.localeCompare(b.name));
     } else {
       result.sort((a, b) => a.name.localeCompare(b.name) ||
-        tierIndex[a.rarity] - tierIndex[b.rarity]);
+        raritySortRank(b) - raritySortRank(a));
     }
     checklistCaption.textContent =
       format(collected) + ' of ' + format(all.length) + ' editions collected (' +
