@@ -3821,10 +3821,9 @@
 }
 
 
-/* Verified league champions get an exclusive burnished BRONZE edition,
-   never Refractor rainbow foil. Keep the original historical layout,
-   text, season, team crest and exact rarity/ownership identity. */
-.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] {
+/* Bronze team-season edition, available to any verified playoff team.
+   Former champion bronze cards now use the standard Base design. */
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"] {
   --card-metal: #ac683d;
   --card-edge: #874a29;
   --card-ink: #efd0a4;
@@ -3834,8 +3833,8 @@
   --card-rule: rgba(105,53,29,.56);
   --flagship-panel: rgba(252,228,182,.24);
 }
-.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-team-season-front,
-.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-back {
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"] .dbl-cards-team-season-front,
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"] .dbl-cards-back {
   background:
     linear-gradient(116deg,rgba(255,244,219,.48) 0%,transparent 24%,
       rgba(101,46,25,.13) 39%,rgba(255,235,194,.34) 53%,transparent 68%,
@@ -3849,17 +3848,17 @@
     0 0 12px rgba(183,106,61,.19);
 }
 /* Bronze also uses the borderless Base-style inset, with a warmer tint. */
-.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-team-season-front::before {
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"] .dbl-cards-team-season-front::before {
   background: rgba(255,233,189,.14);
   border: 0;
   box-shadow: none;
 }
-/* All verified championship crests get the same dark silhouette stroke.
+/* Bronze-edition team crests get the same dark silhouette stroke.
    Light-logo pixel sampling may classify two-tone cream/black artwork (like
    Providence Royals) as dark or be CORS-blocked; neither should make the
    logo disappear against metallic bronze. This applies only to champion
    Team Season fronts, not to normal cards or player portraits. */
-.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"]
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"]
   .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
   -webkit-filter:
     drop-shadow(.65px 0 0 #16110b)
@@ -3875,7 +3874,7 @@
 @media (max-width: 800px) {
   /* Maintain the crisp one-pixel edge already used by light-logo cards
      on mobile WebKit, regardless of the champion crest's measured tone. */
-  .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"]
+  .dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"]
     .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
     -webkit-filter:
       drop-shadow(1px 0 0 #16110b)
@@ -3891,12 +3890,12 @@
 }
 /* Subtle copper-print title instead of the former golden champion badge.
    Preserve the existing unboxed 1960s footer layout on the front. */
-.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"]
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"]
   .dbl-cards-team-season-finish[data-finish="champion"] {
   color: #45230f;
   text-shadow: 0 1px 0 rgba(255,227,182,.58);
 }
-.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"]
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"]
   .dbl-cards-team-season-back-finish[data-finish="champion"] {
   color: #3e200f;
   background: linear-gradient(95deg,#b87748,#f1c999 52%,#b9794f);
@@ -3904,7 +3903,7 @@
   box-shadow: 0 0 9px rgba(166,89,42,.26);
 }
 /* Slow rose-copper foil glint on both sides, not multicolored prismatic foil. */
-.dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-foil {
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"] .dbl-cards-foil {
   background: linear-gradient(110deg,transparent 20%,
     rgba(251,211,155,.09) 34%,rgba(255,242,206,.69) 44%,
     rgba(196,109,59,.23) 52%,rgba(239,181,124,.15) 58%,transparent 69%);
@@ -3912,7 +3911,7 @@
 }
 /* Respect the same reduced-motion preference as other animated foils. */
 @media (prefers-reduced-motion: reduce) {
-  .dbl-cards-card[data-rarity="team-season"][data-team-champion="true"] .dbl-cards-foil {
+  .dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"] .dbl-cards-foil {
     animation: none !important;
   }
 }
@@ -4728,6 +4727,120 @@
   .dbl-cards-pull-grid .dbl-cards-pull-value.is-revealed,
   .dbl-cards-pull-grid .dbl-cards-pull-status.is-new,
   .dbl-cards-pull-grid .dbl-cards-pull-status.is-new::after {
+    animation: none !important;
+  }
+}
+
+
+/* Identifies the selected collectible finish without changing team history. */
+.dbl-cards-team-season-edition {
+  position: relative; z-index: 3; display: block; width: 100%;
+  margin: -1.5% 0 -2%; text-align: center;
+  font: 850 clamp(7px,3.2cqw,11px)/1.05 "Trebuchet MS",Arial,sans-serif;
+  letter-spacing: .15em; color: #76502e;
+  text-transform: uppercase;
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"]
+  .dbl-cards-team-season-edition { color: #613720; }
+/* Finalists' silver finishes: a cool brushed alloy, distinct from Bronze
+   and from the monochrome player-card Chrome artwork. */
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"] {
+  --card-metal: #a6b4bf; --card-edge: #a5afb8;
+  --card-ink: #ecf3fa; --card-text: #28323b;
+  --card-muted: #4c5c6a; --card-aura: rgba(164,187,206,.42);
+  --card-rule: rgba(68,89,112,.45);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"] .dbl-cards-team-season-front,
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"] .dbl-cards-back {
+  background: linear-gradient(112deg,rgba(255,255,255,.51),transparent 27%,
+    rgba(66,83,105,.12) 43%,rgba(255,255,255,.38) 54%,transparent 74%),
+    linear-gradient(146deg,#e8edf1 0%,#a8b7c5 19%,#f4f7f7 36%,
+    #9caebd 52%,#dce4ec 72%,#9eadbb 87%,#e8edf0 100%);
+  color: #24323d; border: 0;
+  box-shadow: 0 9px 19px rgba(37,50,63,.43), 0 0 12px rgba(185,209,235,.2);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"] .dbl-cards-team-season-front::before {
+  background: rgba(245,250,255,.17); border: 0; box-shadow: none;
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"]
+  :is(.dbl-cards-team-season-year,.dbl-cards-team-season-name,.dbl-cards-team-season-edition,
+  .dbl-cards-team-season-record,.dbl-cards-team-season-finish) {
+  color: #334859; text-shadow: 0 1px 0 rgba(255,255,255,.44);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"] .dbl-cards-team-season-finish {
+  border-color: rgba(72,95,119,.38);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"]
+  .dbl-cards-team-season-back-finish {
+  color: #263846; border-color: #72889d;
+  background: linear-gradient(100deg,#a7bbc9,#e8eff3 50%,#aebecb);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"] .dbl-cards-foil {
+  background: linear-gradient(112deg,transparent 20%,rgba(241,251,255,.1) 32%,
+    rgba(255,255,255,.79) 46%,rgba(153,196,222,.30) 55%,transparent 70%);
+  animation: dbl-card-foil 5.1s ease-in-out infinite;
+}
+/* Championship Gold: a richer metallic finish reserved for title winners.
+   The team's season details, franchise identity and crest are unchanged. */
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"] {
+  --card-metal: #cb9a36; --card-edge: #9b711e;
+  --card-ink: #fff1bd; --card-text: #30200b;
+  --card-muted: #63471a; --card-aura: rgba(243,190,61,.47);
+  --card-rule: rgba(122,79,20,.5);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"] .dbl-cards-team-season-front,
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"] .dbl-cards-back {
+  background: linear-gradient(112deg,rgba(255,255,230,.4),transparent 27%,
+    rgba(110,61,11,.15) 43%,rgba(255,249,197,.48) 54%,transparent 74%),
+    linear-gradient(147deg,#f6e4a5 0%,#c69832 18%,#fff1bf 34%,
+      #be8a25 49%,#edcb6d 69%,#a8751e 86%,#f8e7a9 100%);
+  color: #35230b; border: 0;
+  box-shadow: 0 9px 21px rgba(66,44,11,.48), 0 0 13px rgba(241,188,57,.26);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"] .dbl-cards-team-season-front::before {
+  background: rgba(255,251,205,.17); border: 0; box-shadow: none;
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"]
+  :is(.dbl-cards-team-season-year,.dbl-cards-team-season-name,.dbl-cards-team-season-edition,
+  .dbl-cards-team-season-record,.dbl-cards-team-season-finish) {
+  color: #5d3b0e; text-shadow: 0 1px 0 rgba(255,250,218,.6);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"]
+  .dbl-cards-team-season-back-finish {
+  color: #4c3008; border-color: #a77b25;
+  background: linear-gradient(100deg,#d9aa45,#fff0ab 52%,#cf9b35);
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"] .dbl-cards-foil {
+  background: linear-gradient(112deg,transparent 20%,rgba(255,239,180,.10) 32%,
+    rgba(255,255,226,.84) 45%,rgba(255,204,85,.29) 54%,transparent 72%);
+  animation: dbl-card-foil 4.7s ease-in-out infinite;
+}
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"]
+ .dbl-cards-team-season-emblem img.dbl-cards-team-logo,
+.dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"]
+ .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
+  filter: drop-shadow(.65px 0 0 #241b0f)
+    drop-shadow(-.65px 0 0 #241b0f)
+    drop-shadow(0 .65px 0 #241b0f)
+    drop-shadow(0 -.65px 0 #241b0f);
+}
+.dbl-cards-reveal-fx[data-effect="silver-team"] {
+  --fx-ink: #f8fbff; --fx-glow: rgba(187,217,239,.79);
+  --fx-haze: rgba(106,138,175,.3);
+}
+.dbl-cards-reveal-fx[data-effect="gold-team"] {
+  --fx-ink: #fff3be; --fx-glow: rgba(247,195,79,.84);
+  --fx-haze: rgba(176,110,35,.37);
+}
+.dbl-cards-reveal-fx[data-effect="silver-team"] .dbl-cards-reveal-ring {
+  border-color: #e9f4ff; box-shadow: 0 0 17px rgba(190,220,250,.69);
+}
+.dbl-cards-reveal-fx[data-effect="gold-team"] .dbl-cards-reveal-ring {
+  border-color: #ffe5a0; box-shadow: 0 0 18px rgba(255,198,71,.75);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"] .dbl-cards-foil,
+  .dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"] .dbl-cards-foil {
     animation: none !important;
   }
 }
