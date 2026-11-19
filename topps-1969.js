@@ -32,31 +32,38 @@
     if (/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex)) return hex.toUpperCase();
     return null;
   };
-  function palette(row, team, fallback) {
-    // 1969 historical colors always win over latest franchise colors.
-    const candidates = [row?.colors?.[0], fallback?.colors?.[0],
-      team?.colors?.[0]];
+  function palette(row, team, fallback, current1969) {
+    // Never borrow a future franchise rebrand for the 1969 border.
+    const candidates=current1969
+      ? [row?.colors?.[0],team?.colors?.[0],fallback?.colors?.[0]]
+      : [row?.colors?.[0],fallback?.colors?.[0]];
     return candidates.map(hexColor).find(Boolean) || NEUTRAL_INK;
   }
-  function historicalTeam(team,year=YEAR) {
+  function historicalTeam(team,year=YEAR,fileSeason=year) {
     const rows = (Array.isArray(team?.seasons)?team.seasons:[])
       .filter(r=>integer(r?.season)!==null && integer(r.season)<=year)
       .sort((a,b)=>integer(a.season)-integer(b.season));
     const yearRow=rows.findLast?.(r=>integer(r.season)===year) ||
       [...rows].reverse().find(r=>integer(r.season)===year) || null;
     const nearest=rows.at(-1)||null;
-    // For a 1969 preseason export without a 1969 season row, use the last
-    // *earlier* season, not a future franchise rebrand.
-    const row=yearRow||nearest;
-    if (!row && !team) return null;
-    const region=text(row?.region)||text(nearest?.region)||text(team?.region);
-    const nickname=text(row?.name)||text(nearest?.name)||text(team?.name);
+    const current1969=fileSeason===year;
+    // Current 1969 preseason exports may not yet have a 1969 seasons row.
+    // In that case the franchise's live identity is the 1969 identity.
+    // In later exports, never take current team names/colors from the future.
+    if(!nearest && !current1969)return null;
+    const row=yearRow||(current1969?null:nearest);
+    const previousColorRow=[...rows].reverse().find(r=>hexColor(r?.colors?.[0]))||null;
+    const region=text(row?.region)||
+      (current1969?text(team?.region):text(nearest?.region));
+    const nickname=text(row?.name)||
+      (current1969?text(team?.name):text(nearest?.name));
     return {
       region, nickname,
       name:[region,nickname].filter(Boolean).join(' ')||'Unknown team',
       wordmark:(region||nickname||'DBL').toLocaleUpperCase(),
-      abbrev:text(row?.abbrev)||text(nearest?.abbrev)||text(team?.abbrev)||'DBL',
-      primaryColor:palette(yearRow,team,nearest),
+      abbrev:text(row?.abbrev)||
+        (current1969?text(team?.abbrev):text(nearest?.abbrev))||'DBL',
+      primaryColor:palette(yearRow,team,previousColorRow,current1969),
       season:year, tid:integer(team?.tid),
     };
   }
@@ -95,7 +102,8 @@
     if(tid===null && current1969) tid=integer(player.tid);
     const rawTeam=teams.get(tid);
     if(!rawTeam) return null;
-    const team=historicalTeam(rawTeam,YEAR);
+    const team=historicalTeam(rawTeam,YEAR,fileSeason);
+    if(!team)return null;
     const rating=mostRecent1969Rating(player);
     const firstName=text(player.firstName);
     const lastName=text(player.lastName);
