@@ -1,4 +1,4 @@
-/* Animated, non-destructive card zoom.
+/* Compositor-friendly, non-destructive card zoom.
    Moves the original card DOM node instead of duplicating images, signatures,
    foil, flip state, or Background Test processing. */
 (() => {
@@ -68,10 +68,17 @@
     const session=active;
     if(!session||session.closing)return;
     session.closing=true;
-    session.openingAnimation?.cancel();
     session.overlay.classList.remove('is-open');
     if(immediate||reducedMotion()||!session.placeholder.isConnected) {
       restore(session,!immediate);
+      return;
+    }
+    // Reuse the GPU-composited opening transform in reverse rather than
+    // cancelling it and forcing a new layout/animation. This also avoids
+    // jumping to full size when someone taps outside mid-zoom.
+    if(session.openingAnimation?.reverse) {
+      session.openingAnimation.onfinish=()=>restore(session);
+      session.openingAnimation.reverse();
       return;
     }
     const source=position(session.frame.getBoundingClientRect());
@@ -132,15 +139,17 @@
     overlay.addEventListener('click',event=>{
       if(active===session&&!card.contains(event.target))close();
     });
+    // Fit only this enlarged card before the first animation frame. The
+    // full 36+ card binder must not be measured while the zoom is moving.
+    window.dispatchEvent?.(new Event('dbl:card-lightbox-open'));
     const frameRect=position(frame.getBoundingClientRect());
-    const duration=reducedMotion()?0:340;
+    const duration=reducedMotion()?0:300;
     session.openingAnimation=motion(frame,rect,frameRect,duration);
     window.requestAnimationFrame?.(()=>{
       if(active===session&&!session.closing)overlay.classList.add('is-open');
     });
     if(duration===0)overlay.classList.add('is-open');
     card.focus({preventScroll:true});
-    window.dispatchEvent?.(new Event('dbl:card-lightbox-open'));
     return true;
   }
   // Escape dismisses the lightbox. Tab stays within the active card, so
