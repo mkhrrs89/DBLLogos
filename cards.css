@@ -4844,3 +4844,87 @@
     animation: none !important;
   }
 }
+
+
+/* Interactive card lightbox: the actual existing card is temporarily
+   reparented here, preserving flip state, media, signatures, and favorites.
+   The hidden source-size placeholder prevents the pack/binder grid shifting.
+   Overlay styles are intentionally separate from the original card art. */
+.dbl-cards-card.dbl-cards-lightbox-placeholder {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  user-select: none;
+  flex: none;
+  width: 100%;
+  aspect-ratio: .70;
+  animation: none !important;
+}
+.dbl-cards-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  padding: max(12px, env(safe-area-inset-top)) 12px
+    max(12px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.dbl-cards-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(6, 9, 17, .88);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  opacity: 0;
+  transition: opacity .34s ease;
+  cursor: zoom-out;
+}
+.dbl-cards-lightbox.is-open .dbl-cards-lightbox-backdrop {
+  opacity: 1;
+}
+.dbl-cards-lightbox-frame {
+  --card-lightbox-max: 420px;
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: min(88vw, var(--card-lightbox-max), calc(78vh * .70));
+  width: min(88vw, var(--card-lightbox-max), calc(78dvh * .70));
+  aspect-ratio: .70;
+  transform-origin: top left;
+  will-change: transform;
+}
+.dbl-cards-lightbox-frame > .dbl-cards-card {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  animation: none;
+  cursor: pointer;
+}
+.dbl-cards-lightbox-frame > .dbl-cards-card:hover {
+  filter: none;
+}
+.dbl-cards-lightbox-hint {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  right: 12px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  margin: 0;
+  color: rgba(255,255,255,.7);
+  font: 600 12px/1.4 system-ui,sans-serif;
+  letter-spacing: .02em;
+  text-align: center;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dbl-cards-lightbox-backdrop {
+    transition: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
