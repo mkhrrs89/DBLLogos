@@ -4878,10 +4878,13 @@
   inset: 0;
   z-index: 0;
   background: rgba(6, 9, 17, .88);
-  -webkit-backdrop-filter: blur(9px);
-  backdrop-filter: blur(9px);
+  /* Retain the frosted backdrop with fewer full-screen blur samples,
+     especially on iPhone where a large blur is expensive to composite. */
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
   opacity: 0;
-  transition: opacity .34s ease;
+  will-change: opacity;
+  transition: opacity .3s ease;
   cursor: zoom-out;
 }
 .dbl-cards-lightbox.is-open .dbl-cards-lightbox-backdrop {
@@ -4896,6 +4899,9 @@
   width: min(88vw, var(--card-lightbox-max), calc(78dvh * .70));
   aspect-ratio: .70;
   transform-origin: top left;
+  transform: translate3d(0,0,0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   will-change: transform;
 }
 .dbl-cards-lightbox-frame > .dbl-cards-card {
@@ -4920,6 +4926,12 @@
   letter-spacing: .02em;
   text-align: center;
   pointer-events: none;
+}
+@media (max-width: 800px) {
+  .dbl-cards-lightbox-backdrop {
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .dbl-cards-lightbox-backdrop {
