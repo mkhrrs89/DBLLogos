@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const api = window.DBLCardEngine;
+  const cardLightbox = window.DBLCardLightbox;
   const CARDS_SUBTAB_KEY = 'dbl-cards-active-subtab:v1';
   const panel = document.getElementById('cardsPanel');
   const status = document.getElementById('cardsStatus');
@@ -160,6 +161,7 @@
   const selectedCardIds = new Set();
   let packToken = 0;
   let packCards = [];
+  const closeCardLightbox = immediate => cardLightbox?.close(immediate);
   let packType = 'mixed';
   let packResetTimer = null;
   let limit = 36;
@@ -212,7 +214,7 @@
     return name;
   }
   function fitVisibleNames() {
-    for (const root of [gallery, packStage]) {
+    for (const root of [gallery, packStage, cardLightbox?.container].filter(Boolean)) {
       for (const name of root.querySelectorAll?.('.dbl-cards-name') || []) {
         fitName(name);
       }
@@ -1578,7 +1580,15 @@
           playCardRevealEffect(button, card);
       }
     };
-    button.addEventListener('click', flipCard);
+    // First click enlarges the original card. Once enlarged, clicking the
+    // card flips it using the unchanged reveal/statistics interaction.
+    // Reveal All calls _dblFlip directly so it still works in one action.
+    button._dblFlip = flipCard;
+    const activateCard = () => {
+      if (cardLightbox?.isOpen(button)) flipCard();
+      else cardLightbox?.open(button);
+    };
+    button.addEventListener('click', activateCard);
     if (!sealed && isBackgroundTest(card)) {
       button._backgroundTestCard = card;
       if (backgroundPhotoObserver) backgroundPhotoObserver.observe(button);
@@ -1586,7 +1596,7 @@
     button.addEventListener('keydown', event => {
       if (event.target !== button || (event.key !== 'Enter' && event.key !== ' ')) return;
       event.preventDefault();
-      flipCard();
+      activateCard();
     });
     return button;
   }
@@ -1612,6 +1622,7 @@
     return pack;
   }
   function readyStage() {
+    closeCardLightbox(true);
     packToken++;
     busy = false;
     packCards = [];
@@ -1622,12 +1633,13 @@
   }
   function revealAll() {
     for (const card of packCards) {
-      if (card.classList.contains('is-sealed')) card.click();
+      if (card.classList.contains('is-sealed')) card._dblFlip?.();
     }
     revealBtn.disabled = true;
   }
   function showPulls(picks, token, ownedBeforePack) {
     if (token !== packToken) return;
+    closeCardLightbox(true);
     busy = false;
     packStage.replaceChildren();
     packStage.appendChild(make('p', 'dbl-cards-stage-note',
@@ -1851,6 +1863,7 @@
     updateSelectionControls();
   }
   function showGallery() {
+    closeCardLightbox(true);
     syncTeamFilter();
     // Full redraws are still appropriate for genuine collection changes,
     // changing filters, or loading additional cards.
@@ -2294,6 +2307,7 @@
       format(Math.min(80, result.length - checklistLimit)) + ' more editions';
   }
   function openCardsSubtab(index, focus = false) {
+    closeCardLightbox(true);
     activeCardsSubtab = index;
     try {
       // Store a stable tab ID rather than an index: adding another card set
@@ -2351,6 +2365,10 @@
     window.addEventListener('resize', scheduleNameFit);
   }
   document.fonts?.ready?.then(scheduleNameFit);
+  window.addEventListener('dbl:card-lightbox-open', scheduleNameFit);
+  window.addEventListener('resize', () => {
+    if (cardLightbox?.container) scheduleNameFit();
+  });
   tabs.forEach(([tab], index) => {
     tab.addEventListener('click', () => openCardsSubtab(index));
     tab.addEventListener('keydown', event => {
@@ -2612,6 +2630,7 @@
     if (activeCardsSubtab === CHECKLIST_TAB_INDEX && !panel.hidden) showChecklist();
   });
   window.addEventListener('dbl:tab-change', event => {
+    if (event.detail?.panelId !== 'cardsPanel') closeCardLightbox(true);
     if (event.detail?.panelId === 'cardsPanel') {
       api.ensurePool();
       if (activeCardsSubtab === CHECKLIST_TAB_INDEX) showChecklist();
