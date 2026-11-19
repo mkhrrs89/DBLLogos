@@ -21,8 +21,11 @@
     ? null:Number(v);
   const cleanNote=v=>typeof v==='string'?v.trim():'';
   const fullName=(...parts)=>parts.map(v=>String(v??'').trim()).filter(Boolean).join(' ');
-  const currentFile=()=>file||hub?.getCurrentFile?.()||
-    document.getElementById('leagueFile')?.files?.[0]||null;
+  // When a file hub exists, its explicit Clear action is authoritative.
+  // Never fall back to a stale file-input selection after clearing.
+  const currentFile=()=>hub?.getCurrentFile
+    ? (file||hub.getCurrentFile()||null)
+    : (file||document.getElementById('leagueFile')?.files?.[0]||null);
   const isCurrent=(f,rev)=>currentFile()===f&&revision===rev;
   function make(tag,cls,value) {
     const el=document.createElement(tag);
