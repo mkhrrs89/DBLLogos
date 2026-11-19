@@ -51,6 +51,11 @@
   // One independent Team Season insert roll per eligible pack slot.
   // Its roll never changes the standard player-card rarity weights.
   const TEAM_INSERT_RATE = .03;
+  // Per-edition relative draw weights inside the unchanged 3% Team Season roll.
+  // For the SAME historical team-season: Base > Bronze > Silver > Gold.
+  const TEAM_VARIANT_WEIGHTS = Object.freeze({
+    base: 1, bronze: .32, silver: .10, gold: .03
+  });
   // A separate, plain-paper 1968 Topps test issue. Odds apply per eligible
   // slot; all five slots now follow the published odds without guarantees.
   const TOPPS_YEAR = 1968, TOPPS_SERIES = 1, TOPPS_INSERT_RATE = .15;
@@ -155,6 +160,22 @@
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
   const integer = x => Number.isInteger(number(x)) ? number(x) : null;
   const str = x => typeof x === 'string' ? x.trim() : '';
+  // The original team:<tid>:<year> ID becomes the Base edition, including
+  // all formerly bronze-looking champion cards. New finishes use suffixes.
+  const TEAM_VARIANTS = ['base','bronze','silver','gold'];
+  const teamVariant = row => row?.teamVariant === undefined || row?.teamVariant === null
+    ? 'base' : str(row.teamVariant);
+  const teamId = (tid,year,variant='base') =>
+    'team:' + tid + ':' + year + (variant==='base' ? '' : ':' + variant);
+  function eligibleTeamVariant(card, variant) {
+    if (variant==='base') return true;
+    const playoff = Number.isInteger(card.playoffRoundsWon) && card.playoffRoundsWon>=0;
+    const finalist = ['champion','finalist'].includes(card.finishKind);
+    if (variant==='bronze') return playoff || finalist;
+    if (variant==='silver') return finalist;
+    if (variant==='gold') return card.finishKind==='champion';
+    return false;
+  }
   // Autographs are a separate edition sharing a player's normal rarity,
   // with a canonical :auto suffix. Team cards, uniforms, Black Label and
   // Mythicals may never be autographed.
@@ -630,9 +651,13 @@
         const tid = integer(row.tid), year = integer(row.era ?? row.season);
         if (tid === null || tid < 0 || year === null || qty === null ||
             qty < 1 || qty > 1000000) continue;
-        const id = 'team:' + tid + ':' + year;
+        const variant = teamVariant(row);
+        if (!TEAM_VARIANTS.includes(variant) ||
+            !eligibleTeamVariant(row,variant)) continue;
+        const id = teamId(tid,year,variant);
         const item = {
           id, type: 'team-season', rarity: TEAM_INSERT.id, series: CARD_SERIES,
+          teamVariant:variant,
           count: qty, favorite: row.favorite === true, tid, era: year,
           name: str(row.name) || str(row.teamName) || 'Unknown team',
           teamName: str(row.teamName) || str(row.name) || 'Unknown team',
@@ -754,9 +779,13 @@
         if (row.rarity !== TEAM_INSERT.id || tid === null || tid < 0 ||
             era === null || era < 0)
           throw Error('The backup contains an invalid Team Season insert.');
-        const id = 'team:' + tid + ':' + era;
+        const variant = teamVariant(row);
+        if (!TEAM_VARIANTS.includes(variant) || !eligibleTeamVariant(row,variant))
+          throw Error('The backup contains an invalid Team Season finish variant.');
+        const id = teamId(tid,era,variant);
         item = {
           id, type: 'team-season', rarity: TEAM_INSERT.id, series: CARD_SERIES,
+          teamVariant:variant,
           count: qty, sourceCounts: origins, favorite: row.favorite === true, tid, era,
           name: str(row.name) || str(row.teamName) || 'Unknown team',
           teamName: str(row.teamName) || str(row.name) || 'Unknown team',
@@ -1146,7 +1175,15 @@
     if (!teamSeasonPool.length) return null;
     const unused = teamSeasonPool.filter(card => !takenTeamIds.has(card.id));
     const draw = unused.length ? unused : teamSeasonPool;
-    return draw[Math.floor(Math.random() * draw.length)];
+    const total = draw.reduce((sum,card) =>
+      sum + (TEAM_VARIANT_WEIGHTS[card.teamVariant] || 0),0);
+    if (!(total>0)) return null;
+    let roll = Math.random()*total;
+    for (const card of draw) {
+      roll -= TEAM_VARIANT_WEIGHTS[card.teamVariant] || 0;
+      if (roll < 0) return card;
+    }
+    return draw[draw.length-1];
   }
   function chooseToppsInsert(takenIds) {
     const wantUniform = Math.random() < TOPPS_UNIFORM_SHARE;
@@ -1428,8 +1465,19 @@
         }
       }
       assignTeamSeasonFinishes(teamSeasons, season, integer(attrs.phase));
-      teamSeasons.sort((a, b) => a.era - b.era ||
-        a.teamName.localeCompare(b.teamName) || a.tid - b.tid);
+      // Base remains collectible for EVERY team-season, including winners.
+      // Additional finishes require verified postseason achievement.
+      const teamEditions = [];
+      for (const original of teamSeasons) {
+        for (const variant of TEAM_VARIANTS) {
+          if (!eligibleTeamVariant(original,variant)) continue;
+          teamEditions.push({...original, teamVariant:variant,
+            id:teamId(original.tid,original.era,variant)});
+        }
+      }
+      teamEditions.sort((a,b)=>a.era-b.era ||
+        a.teamName.localeCompare(b.teamName)||a.tid-b.tid ||
+        TEAM_VARIANTS.indexOf(a.teamVariant)-TEAM_VARIANTS.indexOf(b.teamVariant));
       if (!current()) return;
       const players = [], seen = new Set();
       const toppsPlayers = [], seenTopps = new Set();
@@ -1510,8 +1558,8 @@
       marketProfiles = nextMarketProfiles;
       backgroundTestPool = nextBackgroundPlayers;
       backgroundTestByPid = new Map(nextBackgroundPlayers.map(p => [p.pid, p]));
-      teamSeasonPool = teamSeasons;
-      teamSeasonById = new Map(teamSeasons.map(team => [team.id, team]));
+      teamSeasonPool = teamEditions;
+      teamSeasonById = new Map(teamEditions.map(team => [team.id, team]));
       toppsPlayerPool = toppsPlayers;
       toppsUniformPool = toppsUniforms;
       toppsById = new Map([...toppsPlayers, ...toppsUniforms].map(card => [card.id, card]));
@@ -1612,7 +1660,7 @@
         id: card.id, tid: card.tid, era: card.era, name: card.name,
         teamName: card.teamName, team: card.team,
         franchiseName: card.franchiseName, rarity: TEAM_INSERT.id,
-        finish: card.finish, finishKind: card.finishKind,
+        teamVariant:card.teamVariant, finish: card.finish, finishKind: card.finishKind,
         won: card.won, lost: card.lost, tied: card.tied,
         playoffRoundsWon: card.playoffRoundsWon
       }));
