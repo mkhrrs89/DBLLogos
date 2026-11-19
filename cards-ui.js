@@ -8,6 +8,8 @@
   const packStage = document.getElementById('cardsPackStage');
   const packsOpenedTotal = document.getElementById('cardsPacksOpenedTotal');
   const openBtn = document.getElementById('cardsOpenPackBtn');
+  const packLimitStatus = document.getElementById('cardsPackLimitStatus');
+  const packLimits = window.DBLCardPackLimits;
   const actions = document.getElementById('cardsPackActions');
   const revealBtn = document.getElementById('cardsRevealAllBtn');
   const againBtn = document.getElementById('cardsNextPackBtn');
@@ -58,7 +60,7 @@
   const checklistList = document.getElementById('cardsChecklistList');
   const checklistMore = document.getElementById('cardsChecklistMore');
   if (!api || !panel || !status || !saveStatus || !packStage || !packsOpenedTotal || !openBtn ||
-      !actions || !revealBtn || !againBtn || !counter || !gallery ||
+      !actions || !revealBtn || !againBtn || !packLimitStatus || !counter || !gallery ||
       !galleryCount || !selectToggle || !selectionActions || !selectionCount ||
       !selectVisibleBtn || !deselectAllBtn || !deleteSelectedBtn ||
       !cancelSelectionBtn || !selectionFeedback ||
@@ -150,6 +152,7 @@
   let packToken = 0;
   let packCards = [];
   let packType = 'mixed';
+  let packResetTimer = null;
   let limit = 36;
   let lastFileState = '';
   let nameFitScheduled = false;
@@ -293,6 +296,46 @@
         'Browser storage is unavailable. Collection may be lost after a refresh.'
       : 'Restoring your saved collection…';
   }
+  const PACK_WINDOW_HOURS = 6;
+  const packQuota = () => packLimits?.describe(packType) ||
+    (packType === 'background-test'
+      ? {available:true,unlimited:true}
+      : {available:false,error:'Pack limit storage is unavailable.'});
+  function packResetTime(milliseconds) {
+    const when = new Date(milliseconds);
+    const clock = when.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    const today = new Date();
+    const sameDay = when.getFullYear()===today.getFullYear() &&
+      when.getMonth()===today.getMonth()&&when.getDate()===today.getDate();
+    return sameDay ? clock : when.toLocaleDateString(undefined,
+      {month:'short',day:'numeric'})+' at '+clock;
+  }
+  function showPackQuota(quota) {
+    const label = packType === 'topps-1968' ? '1968 Topps' :
+      packType === 'background-test' ? 'Background Test' : 'Legacy Mixed';
+    if (packResetTimer !== null) {
+      window.clearTimeout(packResetTimer);
+      packResetTimer = null;
+    }
+    if (quota.error) {
+      packLimitStatus.textContent = quota.error +
+        ' Regular packs are paused to protect your existing allowance.';
+    } else if (quota.unlimited) {
+      packLimitStatus.textContent = 'Background Test: unlimited packs · no cooldown.';
+    } else if (quota.resetAt) {
+      packLimitStatus.textContent = label + ': ' + quota.remaining + ' of ' +
+        quota.max + ' packs remaining · resets at ' + packResetTime(quota.resetAt) +
+        '. Each variety has its own ' + PACK_WINDOW_HOURS + '-hour window.';
+      const delay = quota.resetAt - Date.now();
+      if (delay > 0) {
+        packResetTimer = window.setTimeout(showStatus, Math.min(delay + 25,2147483647));
+      }
+    } else {
+      packLimitStatus.textContent = label + ': ' + quota.max +
+        ' of ' + quota.max + ' packs remaining · the ' +
+        PACK_WINDOW_HOURS + '-hour window begins with the first opened pack.';
+    }
+  }
   function showStatus() {
     const s = api.status;
     const fileKey = [s.hasFile, s.poolSize, s.toppsPoolSize,
@@ -321,10 +364,13 @@
     const canOpenSelected = packType === 'topps-1968'
       ? s.toppsPoolSize > 0 : packType === 'background-test'
         ? s.backgroundTestPoolSize > 0 : s.poolSize > 0;
+    const quota = packQuota();
+    showPackQuota(quota);
     openBtn.disabled = busy || clearing || transferBusy || deletingSelected ||
       s.merging || s.deletingCards ||
-      !s.ready || !canOpenSelected || s.loading;
+      !s.ready || !canOpenSelected || s.loading || !quota.available;
     openBtn.textContent = busy ? 'Opening pack…' :
+      !quota.available && !quota.error ? 'Pack limit reached · check reset time' :
       packType === 'topps-1968' ? 'Open 1968 Topps pack' :
       packType === 'background-test' ? 'Open Background Test pack' : 'Open five-card pack';
     mixedPackType.classList.toggle('is-selected', packType === 'mixed');
@@ -1612,15 +1658,37 @@
     showStatus();
   }
   function openPack() {
-    if (busy || clearing) return;
+    if (busy || clearing || transferBusy || deletingSelected ||
+        api.status.merging || api.status.deletingCards ||
+        !api.status.ready || api.status.loading) return;
+    // Recheck when actually clicked: a stale or concurrently-opened tab
+    // must not rely on the previously enabled button.
+    const quota = packQuota();
+    if (!quota.available) { showStatus(); return; }
     const pulled = api.getPack(packType);
     if (pulled.length !== 5) return;
     // Count copies of each player/rarity edition BEFORE collecting this pack.
     // The just-opened cards must not inflate the 'already owned' labels.
     const ownedBeforePack = new Map(api.items.map(card => [card.id, card.count]));
-    // Save the pulls immediately. Closing the tab mid-animation cannot
-    // discard a pack that was successfully opened.
-    if (!api.collectPack(pulled)) return;
+    // Reserve only after drawing a valid five-card pack. A failed collection
+    // gets its slot back; successful openings keep their timer through
+    // league-file changes, refreshes, and even clearing the collection.
+    const reservation = packLimits?.reserve(packType) ||
+      (packType === 'background-test'
+        ? {ok:true,unlimited:true} : {ok:false});
+    if (!reservation.ok) { showStatus(); return; }
+    let collected = false;
+    try { collected = api.collectPack(pulled); }
+    catch (error) {
+      packLimits?.release(reservation);
+      showStatus();
+      throw error;
+    }
+    if (!collected) {
+      packLimits?.release(reservation);
+      showStatus();
+      return;
+    }
     busy = true;
     const token = ++packToken;
     actions.hidden = true;
@@ -2295,6 +2363,15 @@
   toppsPackType.addEventListener('click', () => choosePackType('topps-1968'));
   backgroundPackType.addEventListener('click', () => choosePackType('background-test'));
   openBtn.addEventListener('click', openPack);
+  // A second browser tab can use packs; refresh the displayed count when
+  // shared browser storage changes, or the device wakes from sleep.
+  window.addEventListener('storage', event => {
+    if (event.key === packLimits?.key) showStatus();
+  });
+  window.addEventListener('focus', showStatus);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) showStatus();
+  });
   revealBtn.addEventListener('click', revealAll);
   againBtn.addEventListener('click', readyStage);
   for (const control of [rarityFilter, teamFilter, favoritesFilter, order, search]) {
