@@ -42,6 +42,10 @@
   font: 800 clamp(6px,4.3cqw,15px)/1.16 Arial,Helvetica,sans-serif;
   color: var(--card-muted); text-wrap: balance; overflow-wrap: anywhere;
 }
+.dbl-cards-back.dbl-series0-player-back {
+  /* Accommodate five facts while preserving stats, rarity and footer. */
+  grid-template-rows: 11% 17% 35% 18% 10% 9%;
+}
 .dbl-series0-player-profile {
   grid-row: 3; display: grid; min-width: 0;
   grid-template-columns: 40% minmax(0,1fr); align-items: center;
@@ -63,18 +67,20 @@
 }
 .dbl-series0-facts {
   display: flex; min-width: 0; flex-direction: column; justify-content: center;
-  gap: clamp(2px,1.5cqw,7px); text-align: left;
+  gap: clamp(1px,1.15cqw,5px); text-align: left;
 }
 .dbl-series0-fact {
   display: flex; justify-content: space-between; align-items: baseline;
   gap: 2%; min-width: 0; border-bottom: 1px solid var(--card-rule);
 }
 .dbl-series0-fact-label {
-  font: 800 clamp(5px,3.5cqw,13px)/1.12 Arial,sans-serif;
-  color: var(--card-muted);
+  flex: 0 0 auto;
+  font: 800 clamp(5px,3.25cqw,12px)/1.12 Arial,sans-serif;
+  color: var(--card-muted); white-space: nowrap;
 }
 .dbl-series0-fact-value {
-  font: 900 clamp(7px,5.5cqw,19px)/1.05 Georgia,serif;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  font: 900 clamp(7px,5cqw,18px)/1.05 Georgia,serif;
   color: var(--card-text); white-space: nowrap; text-align: right;
 }
 .dbl-series0-stats {

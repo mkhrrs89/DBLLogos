@@ -1311,7 +1311,9 @@
     const fact = (label, value) => {
       const row = make('span', 'dbl-series0-fact');
       row.appendChild(make('span', 'dbl-series0-fact-label', label));
-      row.appendChild(make('strong', 'dbl-series0-fact-value', value));
+      const printed = make('strong', 'dbl-series0-fact-value', value);
+      if (label === 'COLLEGE' && value !== '—') printed.title = String(value);
+      row.appendChild(printed);
       facts.appendChild(row);
     };
     fact('PEAK YEAR', card.peakVerified === false ? '—' : card.era ?? '—');
@@ -1320,6 +1322,9 @@
       '#' + String(jersey).trim() : '—');
     fact('DRAFT PICK', Number.isSafeInteger(card.draftPick) &&
       card.draftPick > 0 ? '#' + format(card.draftPick) : '—');
+    fact('DRAFT YEAR', Number.isSafeInteger(card.draftYear) &&
+      card.draftYear > 0 ? format(card.draftYear) : '—');
+    fact('COLLEGE', card.college || '—');
     profile.appendChild(facts);
     back.appendChild(profile);
     const stats = make('span', 'dbl-series0-stats dbl-series0-player-stats');

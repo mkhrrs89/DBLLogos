@@ -560,6 +560,8 @@
       pos: str(rating.pos) || str(player.pos) || '—',
       era: peakYear, peakVerified: peakYear !== null, rookie, ovr, pot,
       draftPick: integer(player.draft?.pick),
+      draftYear: draftYear !== null && draftYear > 0 ? draftYear : null,
+      college: str(player.college),
       peak: ratings.peak,
       gp: career.gp, ppg: career.ppg, ws: career.ws,
       image: photoUrl(player?.imgURL),
@@ -702,6 +704,7 @@
         peakVerified: row.peakVerified === true,
         rookie: row.peakVerified === true && row.rookie === true,
         draftPick: integer(row.draftPick),
+        draftYear: integer(row.draftYear), college: str(row.college),
         ovr: row.peakVerified === true ? number(row.ovr) :
           (number(row.peak) ?? number(row.ovr)),
         peak: number(row.peak),
@@ -820,6 +823,7 @@
           peakVerified: row.peakVerified === true,
           rookie: row.peakVerified === true && row.rookie === true,
           draftPick: integer(row.draftPick),
+          draftYear: integer(row.draftYear), college: str(row.college),
           ovr: row.peakVerified === true ? number(row.ovr) :
             (number(row.peak) ?? number(row.ovr)),
           peak: number(row.peak), pot: number(row.pot),
@@ -875,6 +879,22 @@
       } else if ((imported.peakVerified && !current.peakVerified) ||
           (imported.peakVerified && (imported.peak ?? -1) > (current.peak ?? -1))) {
         if (updateCardFromPlayer(current, imported)) refreshed = true;
+      }
+      // Old backups remain compatible; a newer backup may fill biography
+      // gaps without clobbering known details on this device.
+      if (imported.type !== 'team-season' &&
+          imported.type !== 'topps-player' &&
+          imported.type !== 'topps-uniform' &&
+          imported.type !== 'background-test') {
+        for (const key of ['college', 'draftYear']) {
+          if ((current[key] === null || current[key] === undefined ||
+               current[key] === '') &&
+              imported[key] !== null && imported[key] !== undefined &&
+              imported[key] !== '') {
+            current[key] = imported[key];
+            refreshed = true;
+          }
+        }
       }
       for (const key of ['photo', 'teamLogo']) {
         if (!current[key] && imported[key]) {
@@ -956,6 +976,15 @@
     let modified = false;
     for (const key of fields) {
       if (target[key] !== player[key]) {
+        target[key] = player[key];
+        modified = true;
+      }
+    }
+    // These two biography fields are additive. An incomplete or older league
+    // file must never erase a known college or draft year.
+    for (const key of ['college', 'draftYear']) {
+      if (player[key] !== undefined && player[key] !== null &&
+          player[key] !== '' && target[key] !== player[key]) {
         target[key] = player[key];
         modified = true;
       }
@@ -1280,7 +1309,7 @@
         jersey: p.jersey, team: p.team, teamName: p.teamName,
         teamLogo: p.publicTeamLogo,
         pos: p.pos, era: p.era, peakVerified: p.peakVerified, rookie: p.rookie,
-        draftPick: p.draftPick,
+        draftPick: p.draftPick, draftYear: p.draftYear, college: p.college,
         ovr: p.ovr, peak: p.peak, pot: p.pot,
         gp: p.gp, ppg: p.ppg, ws: p.ws, photo: p.publicImage
       }, nextPity));
