@@ -912,40 +912,64 @@
     return front;
   }
 
+  // Shared, read-only Series 0 reverse helpers. No storage changes.
+  function series0Masthead(back, descriptor) {
+    const row = make('span', 'dbl-series0-masthead');
+    row.appendChild(make('strong', 'dbl-series0-brand', 'DBL'));
+    row.appendChild(make('span', 'dbl-series0-issue', 'SERIES 0 · ' + descriptor));
+    back.appendChild(row);
+  }
+  function series0Metric(parent, value, label) {
+    const metric = make('span', 'dbl-series0-metric');
+    metric.appendChild(make('strong', 'dbl-series0-metric-value', value));
+    metric.appendChild(make('span', 'dbl-series0-metric-label', label));
+    parent.appendChild(metric);
+  }
+  function series0Footer(back, imprint) {
+    const footer = make('span', 'dbl-series0-footer');
+    footer.appendChild(make('strong', 'dbl-series0-imprint', imprint));
+    footer.appendChild(make('span', 'dbl-series0-turn', 'TAP TO TURN'));
+    back.appendChild(footer);
+  }
   function teamSeasonBack(card, back) {
-    const heading = make('span', 'dbl-cards-back-heading');
-    heading.appendChild(make('strong', 'dbl-cards-back-flagship', 'TEAM SEASON'));
-    heading.appendChild(make('span', 'dbl-cards-back-profile',
-      teamVariantName(card).toUpperCase()+' · FRANCHISE ARCHIVE'));
-    back.appendChild(heading);
-    back.appendChild(make('strong', 'dbl-cards-back-name', String(card.era) + ' ' + card.teamName));
-    back.appendChild(make('span', 'dbl-cards-back-team', card.team));
-    const finish = make('span', 'dbl-cards-team-season-back-finish',
+    back.classList.add('dbl-series0-back', 'dbl-series0-team-back');
+    series0Masthead(back, 'TEAM ARCHIVE');
+    const identity = make('span', 'dbl-series0-identity');
+    identity.appendChild(make('strong', 'dbl-series0-name',
+      card.teamName || card.name || 'Unknown team'));
+    identity.appendChild(make('span', 'dbl-series0-subtitle',
+      (card.era ?? 'YEAR UNKNOWN') + ' SEASON · ' +
+      teamVariantName(card).toUpperCase() + ' EDITION'));
+    back.appendChild(identity);
+    const visual = make('span', 'dbl-series0-team-visual');
+    const crest = make('span', 'dbl-series0-team-crest');
+    crest.appendChild(teamCrest(card));
+    visual.appendChild(crest);
+    const season = make('span', 'dbl-series0-team-identity');
+    season.appendChild(make('strong', 'dbl-series0-team-year', card.era ?? '—'));
+    season.appendChild(make('span', 'dbl-series0-team-abbrev', card.team || 'DBL'));
+    visual.appendChild(season);
+    back.appendChild(visual);
+    // Finish comes from the verified historical-season evaluation, never
+    // inferred from the metal tier or the team's regular-season record.
+    const finish = make('span', 'dbl-cards-team-season-back-finish dbl-series0-team-finish',
       card.finish || 'SEASON FINISH UNAVAILABLE');
     finish.dataset.finish = card.finishKind || 'unknown';
     back.appendChild(finish);
-    const metrics = make('span', 'dbl-cards-back-metrics');
-    const games = Number.isFinite(card.won) && Number.isFinite(card.lost)
-      ? card.won + card.lost + (Number.isFinite(card.tied) ? card.tied : 0) : null;
-    const pct = games > 0 && Number.isFinite(card.won)
-      ? (card.won / games * 100).toFixed(1) + '%' : '—';
-    for (const [value, label] of [
-      [format(card.won), 'WINS'], [format(card.lost), 'LOSSES'],
-      [pct, 'WIN %'], [Number.isFinite(card.playoffRoundsWon) &&
-        card.playoffRoundsWon >= 0 ? format(card.playoffRoundsWon) : '—', 'PLAYOFF ROUNDS']
-    ]) {
-      const metric = make('span', 'dbl-cards-back-metric');
-      metric.appendChild(make('strong', '', value));
-      metric.appendChild(make('span', '', label));
-      metrics.appendChild(metric);
-    }
-    back.appendChild(metrics);
-    back.appendChild(make('span', 'dbl-cards-back-foot',
-      'SERIES ' + (card.series ?? api.currentSeries) + ' · HISTORIC TEAM · ' + card.era));
-    back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
-    if (isMetalTeam(card))
-      back.appendChild(make('span', 'dbl-cards-foil'));
-    back.appendChild(marketTag(card));
+    const stats = make('span', 'dbl-series0-stats dbl-series0-team-stats');
+    const hasRecord = Number.isFinite(card.won) && Number.isFinite(card.lost);
+    const gp = hasRecord ? card.won + card.lost +
+      (Number.isFinite(card.tied) ? card.tied : 0) : null;
+    series0Metric(stats, format(card.won), 'WINS');
+    series0Metric(stats, format(card.lost), 'LOSSES');
+    series0Metric(stats, gp > 0 ? (card.won / gp * 100).toFixed(1) + '%' : '—',
+      'WIN %');
+    series0Metric(stats, Number.isInteger(card.playoffRoundsWon) &&
+      card.playoffRoundsWon >= 0 ? format(card.playoffRoundsWon) : '—',
+      'PLAYOFF ROUNDS WON');
+    back.appendChild(stats);
+    series0Footer(back, 'HISTORIC TEAMS OF THE DBL');
+    if (isMetalTeam(card)) back.appendChild(make('span', 'dbl-cards-foil'));
     back.appendChild(favoriteAction(card));
     return back;
   }
@@ -1266,38 +1290,55 @@
     if (isBackgroundTest(card)) return backgroundTestBack(card, back);
     if (isToppsPlayer(card) || isToppsUniform(card)) return toppsBack(card);
     if (isTeamSeason(card)) return teamSeasonBack(card, back);
-    // Echo the front's stacked FLAGSHIP lockup on the player profile.
-    const heading = make('span', 'dbl-cards-back-heading');
-    heading.appendChild(make('strong', 'dbl-cards-back-flagship',
-      tierMap[card.rarity]?.mythical ? 'MYTHICAL' : 'FLAGSHIP'));
-    heading.appendChild(make('span', 'dbl-cards-back-profile', 'PLAYER PROFILE'));
-    back.appendChild(heading);
-    back.appendChild(make('strong', 'dbl-cards-back-name', card.name));
-    back.appendChild(make('span', 'dbl-cards-back-team', card.teamName));
-    const metrics = make('span', 'dbl-cards-back-metrics');
-    for (const [value, heading] of [
-      [card.peak ?? '—', 'PEAK OVR'],
-      [format(card.gp), 'CAREER GP'],
-      [format(card.ppg, 1), 'CAREER PPG'],
-      [format(card.ws, 1), 'WIN SHARES']
-    ]) {
-      const part = make('span', 'dbl-cards-back-metric');
-      part.appendChild(make('strong', '', value));
-      part.appendChild(make('span', '', heading));
-      metrics.appendChild(part);
-    }
-    back.appendChild(metrics);
-    const editionText = (card.rarity === 'common' ? '' :
-      ' · ' + (tierMap[card.rarity]?.label.toUpperCase() || '')) +
-      (card.autograph === true ? ' · AUTOGRAPH' : '');
-    back.appendChild(make('span', 'dbl-cards-back-foot',
-      'SERIES ' + (card.series ?? api.currentSeries) + ' · ' +
-      (card.era ?? 'DBL') + editionText));
-    back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO TURN'));
-    // Keep the revealed back's foil finish, but reserve the vertical
-    // rarity side-rail for the front of the card only.
+    // A compact archival player dossier. Keep peak-year data distinct from
+    // career averages, and use dashes rather than inventing missing figures.
+    back.classList.add('dbl-series0-back', 'dbl-series0-player-back');
+    const edition = tierMap[card.rarity];
+    series0Masthead(back, edition?.mythical ? 'MYTHICAL ARCHIVE' : 'PLAYER ARCHIVE');
+    const identity = make('span', 'dbl-series0-identity');
+    identity.appendChild(make('strong', 'dbl-series0-name', card.name || 'Unknown player'));
+    identity.appendChild(make('span', 'dbl-series0-subtitle',
+      (card.teamName || card.team || 'DBL') + ' · ' + (card.pos || 'POSITION UNKNOWN')));
+    back.appendChild(identity);
+    const profile = make('span', 'dbl-series0-player-profile');
+    const ovr = make('span', 'dbl-series0-ovr');
+    ovr.appendChild(make('strong', 'dbl-series0-ovr-number',
+      Number.isFinite(card.peak) ? format(card.peak) :
+      Number.isFinite(card.ovr) ? format(card.ovr) : '—'));
+    ovr.appendChild(make('span', 'dbl-series0-ovr-label', 'PEAK OVR'));
+    profile.appendChild(ovr);
+    const facts = make('span', 'dbl-series0-facts');
+    const fact = (label, value) => {
+      const row = make('span', 'dbl-series0-fact');
+      row.appendChild(make('span', 'dbl-series0-fact-label', label));
+      row.appendChild(make('strong', 'dbl-series0-fact-value', value));
+      facts.appendChild(row);
+    };
+    fact('PEAK YEAR', card.peakVerified === false ? '—' : card.era ?? '—');
+    const jersey = api.findJersey?.(card) ?? card.jersey;
+    fact('JERSEY', jersey != null && String(jersey).trim() ?
+      '#' + String(jersey).trim() : '—');
+    fact('DRAFT PICK', Number.isSafeInteger(card.draftPick) &&
+      card.draftPick > 0 ? '#' + format(card.draftPick) : '—');
+    profile.appendChild(facts);
+    back.appendChild(profile);
+    const stats = make('span', 'dbl-series0-stats dbl-series0-player-stats');
+    series0Metric(stats, format(card.gp), 'CAREER GAMES');
+    series0Metric(stats, format(card.ppg, 1), 'CAREER PPG');
+    series0Metric(stats, format(card.ws, 1), 'CAREER WIN SHARES');
+    back.appendChild(stats);
+    const editionLine = make('span', 'dbl-series0-edition');
+    const tags = [edition?.shortLabel || edition?.label || 'BASE'];
+    if (card.autograph === true) tags.push('AUTOGRAPH');
+    if (card.rookie === true) tags.push('ROOKIE');
+    editionLine.appendChild(make('strong', 'dbl-series0-edition-name',
+      tags.join(' · ').toUpperCase()));
+    if (card.rarity === 'black-label' || edition?.mythical)
+      editionLine.appendChild(make('span', 'dbl-series0-serial',
+        'NO. ' + numberedCardSerial(card, edition?.mythical ? 100 : 500)));
+    back.appendChild(editionLine);
+    series0Footer(back, 'DBL · FLAGSHIP COLLECTION');
     back.appendChild(make('span', 'dbl-cards-foil'));
-    back.appendChild(marketTag(card));
     back.appendChild(favoriteAction(card));
     return back;
   }

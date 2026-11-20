@@ -1,0 +1,182 @@
+/* Flagship Series 0 archive reverse only. Other series, sealed backs,
+   portraits, animations, card identities, and storage are untouched. */
+.dbl-cards-back.dbl-series0-back {
+  display: grid; box-sizing: border-box; width: 100%; height: 100%;
+  grid-template-columns: minmax(0,1fr);
+  grid-template-rows: 12% 19% 27% 23% 10% 9%;
+  gap: 0; padding: 5.5% 6.5% 4.5%;
+  align-items: stretch; justify-items: stretch; align-content: stretch;
+  min-width: 0; color: var(--card-text);
+  text-align: center; font-family: "Trebuchet MS",Arial,sans-serif;
+}
+.dbl-cards-back.dbl-series0-back > :not(.dbl-cards-foil):not(.dbl-cards-favorite-action) {
+  position: relative; z-index: 2; min-width: 0; max-width: 100%;
+  box-sizing: border-box;
+}
+.dbl-series0-masthead {
+  grid-row: 1; display: flex; align-items: center;
+  justify-content: space-between; gap: 3%;
+  border-bottom: max(1px,.55cqw) solid var(--card-rule);
+}
+.dbl-series0-brand {
+  font: 950 clamp(11px,9cqw,30px)/1 Georgia,serif;
+  letter-spacing: -.06em; color: var(--card-text);
+}
+.dbl-series0-issue {
+  font: 850 clamp(6px,4.35cqw,14px)/1.1 Arial,Helvetica,sans-serif;
+  letter-spacing: .05em; color: var(--card-muted); white-space: nowrap;
+}
+.dbl-series0-identity {
+  grid-row: 2; display: flex; min-width: 0; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5%;
+  border-bottom: 1px solid var(--card-rule); padding: 1%;
+}
+.dbl-series0-name {
+  display: block; max-width: 100%;
+  font: 900 clamp(11px,8.5cqw,31px)/1.06 "Trebuchet MS",Arial,sans-serif;
+  color: var(--card-text); text-transform: uppercase; letter-spacing: -.04em;
+  text-wrap: balance; overflow-wrap: anywhere;
+}
+.dbl-series0-subtitle {
+  display: block; max-width: 100%;
+  font: 800 clamp(6px,4.3cqw,15px)/1.16 Arial,Helvetica,sans-serif;
+  color: var(--card-muted); text-wrap: balance; overflow-wrap: anywhere;
+}
+.dbl-series0-player-profile {
+  grid-row: 3; display: grid; min-width: 0;
+  grid-template-columns: 40% minmax(0,1fr); align-items: center;
+  column-gap: 4%; padding: 2% 0;
+}
+.dbl-series0-ovr {
+  display: flex; height: 83%; flex-direction: column;
+  justify-content: center; align-items: center; gap: 4%;
+  border-right: 1px solid var(--card-rule);
+}
+.dbl-series0-ovr-number {
+  font: 950 clamp(25px,23cqw,79px)/.95 Georgia,serif;
+  letter-spacing: -.06em; color: var(--card-text);
+  font-variant-numeric: tabular-nums;
+}
+.dbl-series0-ovr-label {
+  font: 900 clamp(6px,4.7cqw,16px)/1.1 Arial,sans-serif;
+  letter-spacing: .04em; color: var(--card-muted);
+}
+.dbl-series0-facts {
+  display: flex; min-width: 0; flex-direction: column; justify-content: center;
+  gap: clamp(2px,1.5cqw,7px); text-align: left;
+}
+.dbl-series0-fact {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 2%; min-width: 0; border-bottom: 1px solid var(--card-rule);
+}
+.dbl-series0-fact-label {
+  font: 800 clamp(5px,3.5cqw,13px)/1.12 Arial,sans-serif;
+  color: var(--card-muted);
+}
+.dbl-series0-fact-value {
+  font: 900 clamp(7px,5.5cqw,19px)/1.05 Georgia,serif;
+  color: var(--card-text); white-space: nowrap; text-align: right;
+}
+.dbl-series0-stats {
+  grid-row: 4; display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 2.7%; padding: 2% 0; align-items: stretch;
+}
+.dbl-series0-metric {
+  min-width: 0; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; gap: 5%;
+  padding: 2% 1%; border: 1px solid var(--card-rule);
+  border-radius: 2px; background: rgba(125,125,125,.08);
+}
+.dbl-series0-metric-value {
+  font: 900 clamp(9px,8.6cqw,29px)/1 Georgia,serif;
+  color: var(--card-text); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.dbl-series0-metric-label {
+  font: 800 clamp(5px,3.7cqw,13px)/1.12 Arial,Helvetica,sans-serif;
+  color: var(--card-muted); text-wrap: balance; letter-spacing: .02em;
+}
+.dbl-series0-edition {
+  grid-row: 5; min-width: 0; display: flex;
+  justify-content: space-between; align-items: center; gap: 4%;
+  border-top: 1px solid var(--card-rule);
+  border-bottom: 1px solid var(--card-rule);
+}
+.dbl-series0-edition-name {
+  font: 900 clamp(5px,4.1cqw,15px)/1.15 Arial,sans-serif;
+  letter-spacing: .035em; color: var(--card-text);
+  overflow-wrap: anywhere;
+}
+.dbl-series0-serial {
+  flex: 0 0 auto;
+  font: 800 clamp(6px,4.2cqw,14px)/1 Georgia,serif;
+  color: var(--card-muted); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.dbl-series0-footer {
+  grid-row: 6; display: flex; align-items: end;
+  justify-content: space-between; min-width: 0; gap: 3%;
+  padding-right: 17%;
+}
+.dbl-series0-imprint {
+  font: 850 clamp(5px,3.5cqw,13px)/1.1 Arial,sans-serif;
+  letter-spacing: .035em; color: var(--card-muted);
+  white-space: nowrap; text-align: left;
+}
+.dbl-series0-turn {
+  font: 800 clamp(5px,3.2cqw,12px)/1.1 Arial,sans-serif;
+  color: var(--card-muted); white-space: nowrap;
+}
+.dbl-cards-back.dbl-series0-team-back {
+  grid-template-rows: 11% 18% 22% 14% 26% 9%;
+}
+.dbl-series0-team-visual {
+  grid-row: 3; display: flex; align-items: center;
+  justify-content: center; gap: 6%; min-width: 0;
+}
+.dbl-series0-team-crest {
+  display: flex; align-items: center; justify-content: center;
+  width: 27%; height: 90%; min-width: 0;
+}
+.dbl-series0-team-crest .dbl-cards-team-crest {
+  flex: 0 1 100%; width: 100%; max-width: 100%;
+  height: auto; aspect-ratio: 1;
+}
+.dbl-series0-team-crest .dbl-cards-team-logo {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+}
+.dbl-series0-team-identity {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2%;
+}
+.dbl-series0-team-year {
+  font: 900 clamp(21px,20cqw,68px)/.95 Georgia,serif;
+  color: var(--card-text); letter-spacing: -.045em;
+}
+.dbl-series0-team-abbrev {
+  font: 850 clamp(6px,5cqw,17px)/1 Arial,sans-serif;
+  color: var(--card-muted); letter-spacing: .06em;
+}
+.dbl-cards-back.dbl-series0-team-back > .dbl-series0-team-finish {
+  grid-row: 4; display: grid; align-items: center; justify-items: center;
+  width: 100%; height: 100%; max-width: none; margin: 0; padding: 1% 2%;
+  font-size: clamp(6px,4.3cqw,16px); line-height: 1.12;
+  text-wrap: balance; overflow-wrap: anywhere;
+}
+.dbl-series0-team-stats {
+  grid-row: 5; grid-template-columns: repeat(2,minmax(0,1fr));
+  grid-template-rows: repeat(2,minmax(0,1fr));
+  gap: 3%; padding: 2% 0;
+}
+.dbl-series0-team-stats .dbl-series0-metric {gap: 3%; padding: 1%;}
+.dbl-series0-team-stats .dbl-series0-metric-value {
+  font-size: clamp(9px,7.2cqw,24px);
+}
+.dbl-series0-team-stats .dbl-series0-metric-label {
+  font-size: clamp(5px,3.4cqw,12px);
+}
+.dbl-cards-back.dbl-series0-back > .dbl-cards-favorite-action {
+  position: absolute; z-index: 10; top: auto; bottom: .7%; right: 1.5%;
+  width: clamp(22px,16cqw,42px); height: clamp(22px,16cqw,42px);
+  font-size: clamp(16px,11.5cqw,30px); padding: 0;
+}
