@@ -63,6 +63,11 @@
   const BACKGROUND_TEST_SERIES = 2;
   const UNDERGROUND_SERIES = 3;
   const UNDERGROUND_HEADLINER_CHANCE = .20;
+  // Legacy Mixed: occasional Underground inserts, significantly less common
+  // than the 20% Headliners slots in Underground-only packs. These chance
+  // bands are disjoint and never reduce Team Season or 1968 Topps rates.
+  const UNDERGROUND_MIXED_BASE_RATE = .04;
+  const UNDERGROUND_MIXED_HEADLINER_RATE = .01;
   const TEAM_INSERT = Object.freeze({
     id: 'team-season', label: 'Team Season', insert: true
   });
@@ -1300,12 +1305,25 @@
     const draw = unused.length ? unused : source;
     return draw[Math.floor(Math.random() * draw.length)];
   }
+  function chooseUndergroundMixedInsert(headliner, takenPids, takenIds) {
+    const cards = headliner ? undergroundHeadlinerPool : undergroundBasePool;
+    if (!cards.length) return null;
+    // Prefer a distinct player, falling back to a distinct edition only
+    // when the historical 1968 roster is smaller than the pack.
+    const uniquePlayers = cards.filter(card => !takenPids.has(card.pid));
+    const uniqueEditions = cards.filter(card => !takenIds.has(card.id));
+    const choices = uniquePlayers.length ? uniquePlayers :
+      uniqueEditions.length ? uniqueEditions : cards;
+    return choices[Math.floor(Math.random() * choices.length)];
+  }
   function getPack(packType = 'mixed') {
     if (!collectionLoaded || mergingCollection || deletingCards ||
         (packType === 'mixed' && !pool.length)) return [];
     if (packType !== 'mixed' && packType !== 'topps-1968' &&
         packType !== 'background-test' && packType !== 'underground-1968') return [];
-    const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set(), picks = [];
+    const taken = new Set(), takenTeamIds = new Set(), takenToppsIds = new Set();
+    const takenUndergroundPids = new Set(), takenUndergroundIds = new Set();
+    const picks = [];
     const startingPity = {...pity};
     const nextPity = {...pity};
     const finish = () => {
@@ -1360,11 +1378,17 @@
     }
     for (let i = 0; i < 5; i++) {
       const mythicalTier = sampleMythical(nextPity);
-      // Both inserts share a single roll: Team Season at 3% and 1968
-      // Topps at 15% of non-Mythical slots, with no protected fifth slot.
+      // Mutually exclusive non-Mythical slot bands: Team Season 3%,
+      // 1968 Topps 15%, Underground Base 4%, Headliners 1% when available.
+      // Existing Team Season and Topps chances are unchanged, and no
+      // fifth-slot guarantee or Mythical/pity behavior is altered.
       if (!mythicalTier) {
         const teamChance = teamSeasonPool.length ? TEAM_INSERT_RATE : 0;
         const toppsChance = toppsById.size ? TOPPS_INSERT_RATE : 0;
+        const undergroundBaseChance = undergroundBasePool.length ?
+          UNDERGROUND_MIXED_BASE_RATE : 0;
+        const undergroundHeadlinerChance = undergroundHeadlinerPool.length ?
+          UNDERGROUND_MIXED_HEADLINER_RATE : 0;
         const roll = Math.random();
         if (roll < teamChance) {
           const insert = chooseTeamInsert(takenTeamIds);
@@ -1381,6 +1405,22 @@
             // Mixed-pack Topps PLAYERS get the same autograph roll as
             // Topps-only packs; uniforms remain explicitly ineligible.
             picks.push(autographPull({...insert, count: 1}, nextPity));
+            continue;
+          }
+        }
+        const undergroundStart = teamChance + toppsChance;
+        if (roll >= undergroundStart &&
+            roll < undergroundStart + undergroundBaseChance +
+              undergroundHeadlinerChance) {
+          const isHeadliner = roll >= undergroundStart + undergroundBaseChance;
+          const insert = chooseUndergroundMixedInsert(
+            isHeadliner, takenUndergroundPids, takenUndergroundIds);
+          if (insert) {
+            takenUndergroundPids.add(insert.pid);
+            takenUndergroundIds.add(insert.id);
+            // Underground has exactly two physical-looking editions, without
+            // new autograph tiers. Its original 1968 identity is retained.
+            picks.push({...insert, count: 1});
             continue;
           }
         }
