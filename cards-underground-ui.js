@@ -9,8 +9,9 @@
     const face = make('span', 'dbl-cards-face dbl-cards-front dbl-underground-front' +
       (insert ? ' is-headliner' : ''));
     const heading = make('span', 'dbl-underground-masthead');
-    heading.appendChild(make('strong', 'dbl-underground-title',
-      insert ? 'HEADLINERS!' : 'THE UNDERGROUND'));
+    // Headliners retain their big poster title. Base cards only carry
+    // the small 1968 issue stamp so the portrait can sit higher.
+    if (insert) heading.appendChild(make('strong', 'dbl-underground-title', 'HEADLINERS!'));
     heading.appendChild(make('span', 'dbl-underground-date', 'DBL · 1968'));
     face.appendChild(heading);
     face.appendChild(make('span', 'dbl-underground-radiant'));
@@ -33,9 +34,6 @@
       card.name || 'Unknown player'));
     lower.appendChild(make('span','dbl-underground-team',
       (card.teamName || card.team || '1968 DBL') + ' · ' + (card.pos || 'PLAYER')));
-    lower.appendChild(make('span','dbl-underground-strap',
-      insert ? 'THE PEOPLE HAVE SPOKEN · COURTSIDE HEADLINER' :
-        'BASKETBALL, BEAUTIFULLY UNCONVENTIONAL'));
     face.appendChild(lower);
     return face;
   }
