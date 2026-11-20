@@ -147,7 +147,9 @@
     // Topps player editions are readily available in Topps-only packs.
     // Uniforms account for roughly one in five Topps slots.
     'topps-1968': 1.2,
-    'topps-1968-uniform': 1.2 * Math.pow(1 / .20, .52)
+    'topps-1968-uniform': 1.2 * Math.pow(1 / .20, .52),
+    'underground-1968': 1.2,
+    'underground-headliner': 1.2 * Math.pow(1 / .20, .52)
   });
 
   function profile(player, throughYear) {

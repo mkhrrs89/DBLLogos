@@ -7,7 +7,7 @@
   const STORAGE_KEY='dbl-card-pack-limits:v1';
   const WINDOW_MS=6*60*60*1000;
   const MAX_PACKS=10;
-  const CAPPED_TYPES=new Set(['mixed','topps-1968']);
+  const CAPPED_TYPES=new Set(['mixed','topps-1968','underground-1968']);
   const isValidRecord=row=>row&&typeof row==='object'&&
     Number.isSafeInteger(row.start)&&row.start>=0&&
     Number.isInteger(row.used)&&row.used>=1&&row.used<=MAX_PACKS;

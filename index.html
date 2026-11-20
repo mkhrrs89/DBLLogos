@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="./cards.css?v=20261119-card-lightbox-smooth-v2" />
     <link rel="stylesheet" href="./topps-1968-backs.css?v=20261119-vintage-reverse-v1" />
     <link rel="stylesheet" href="./cards-series0-backs.css?v=20261120-series0-biography-v2" />
+    <link rel="stylesheet" href="./cards-underground.css?v=20261120-v1" />
     <!-- Dormant 1970 Topps template only: no live Cards collection or pack UI. -->
     <link rel="stylesheet" href="./topps-1970.css?v=20261119-prelaunch-1970-v1" />
     <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
@@ -330,6 +331,7 @@
               <div class="dbl-cards-pack-selector" role="group" aria-label="Pack type">
                 <button type="button" id="cardsMixedPackType" class="dbl-cards-pack-type is-selected" aria-pressed="true">Legacy · Mixed</button>
                 <button type="button" id="cardsToppsPackType" class="dbl-cards-pack-type" aria-pressed="false">1968 Topps Only</button>
+                 <button type="button" id="cardsUndergroundPackType" class="dbl-cards-pack-type" aria-pressed="false">1968 Underground Only</button>
                 <button type="button" id="cardsBackgroundPackType" class="dbl-cards-pack-type" aria-pressed="false">Background Test Only</button>
               </div>
               <p id="cardsPackLimitStatus" class="dbl-cards-pack-limit-status" role="status" aria-live="polite">Legacy Mixed: 10 of 10 packs available. Six-hour window starts with your first pack.</p>
@@ -341,7 +343,7 @@
                 <button id="cardsRevealAllBtn" class="dbl-cards-action-button" type="button">Reveal all cards</button>
                 <button id="cardsNextPackBtn" class="dbl-cards-action-button" type="button">Next pack</button>
               </div>
-              <p class="dbl-cards-save-status">Legacy Mixed packs — Player-card pull weights: Base 87.75% · Chrome 10% · Refractor 2% · Black Label 0.25%. Team Season inserts have a 3% chance and 1968 Topps cards have a 15% chance per eligible slot (including uniform placeholders). Among Team Season editions, Base is most common, followed by Bronze (playoff teams), Silver (finalists), and Gold (champions), with per-edition relative pull weights 1 : 0.32 : 0.10 : 0.03. The overall 3% Team Season chance does not change. Autographs have a base 0.1% chance (1 in 1,000) on each eligible player-card pull, including Topps and Background Test player cards; Black Label and all Mythical cards remain ineligible for autographs. Pity odds (per eligible pull, never guaranteed): Autograph 0.1% base → 1% maximum (starts after 500 misses; maximum after 1,500). Black Label 0.25% base → 1% maximum (starts after 250 misses; maximum after 750). Mythical 0.1% base → 0.25% maximum (starts after 500 misses; maximum after 1,500). Odds increase gradually between those thresholds. Only collected packs count, and pity progress is saved with collection backups. Autographs keep their original rarity and are saved as separate editions. No rarity is guaranteed per pack; standard player-card rarity weights apply to non-insert pulls. Actual overall pull rates may differ. 1968 Topps Only packs contain five 1968 Topps cards, with player and uniform editions drawn from the available 1968 set (typically 80% players and 20% uniforms when both are available). Background Test Only packs contain five cards exclusively from active players with current OVR 50+, with no team or uniform inserts; eligible players can receive an autograph variation.</p>
+              <p class="dbl-cards-save-status">Legacy Mixed packs — Player-card pull weights: Base 87.75% · Chrome 10% · Refractor 2% · Black Label 0.25%. Team Season inserts have a 3% chance and 1968 Topps cards have a 15% chance per eligible slot (including uniform placeholders). Among Team Season editions, Base is most common, followed by Bronze (playoff teams), Silver (finalists), and Gold (champions), with per-edition relative pull weights 1 : 0.32 : 0.10 : 0.03. The overall 3% Team Season chance does not change. Autographs have a base 0.1% chance (1 in 1,000) on each eligible player-card pull, including Topps and Background Test player cards; Black Label and all Mythical cards remain ineligible for autographs. Pity odds (per eligible pull, never guaranteed): Autograph 0.1% base → 1% maximum (starts after 500 misses; maximum after 1,500). Black Label 0.25% base → 1% maximum (starts after 250 misses; maximum after 750). Mythical 0.1% base → 0.25% maximum (starts after 500 misses; maximum after 1,500). Odds increase gradually between those thresholds. Only collected packs count, and pity progress is saved with collection backups. Autographs keep their original rarity and are saved as separate editions. No rarity is guaranteed per pack; standard player-card rarity weights apply to non-insert pulls. Actual overall pull rates may differ. 1968 Topps Only packs contain five 1968 Topps cards, with player and uniform editions drawn from the available 1968 set (typically 80% players and 20% uniforms when both are available). Background Test Only packs contain five cards exclusively from active players with current OVR 50+, with no team or uniform inserts; eligible players can receive an autograph variation. 1968 Underground Only packs contain five 1968-player cards: 80% Base and 20% Headliners! screenprint inserts per independent slot, with NEW BREED markings for rookies. Underground has a separate 10-pack / six-hour limit and does not alter Legacy Mixed or Topps odds.</p>
             </section>
           </div>
 
@@ -381,6 +383,8 @@
                   <option value="team-season">Team Season insert</option>
                    <option value="topps-1968">1968 Topps player</option>
                    <option value="topps-1968-uniform">1968 Topps uniform</option>
+                   <option value="underground-1968">1968 Underground base</option>
+                   <option value="underground-headliner">Underground Headliners!</option>
                   <option value="background-test">Background Test player</option>
                   <option value="autograph">Autographs only</option>
                 </select>
@@ -433,7 +437,7 @@
               <p class="dbl-cards-empty">Your collection is empty. Open a pack to start collecting.</p>
             </div>
             <button id="cardsShowMoreBtn" class="dbl-cards-more" type="button" hidden>Show more cards</button>
-            <p class="dbl-cards-footnote">Four standard player-card finishes: tan Base, silver Chrome, rainbow Refractor, and glossy black Black Label, plus historical Team Season Base, Bronze (playoffs), Silver (Finals) and Gold (champions) inserts and plain-paper 1968 Topps test player/rookie/uniform cards. Every sealed card looks identical until revealed. Minimum peak OVR for standard cards: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. Previously collected cards update when you load a league export with their history. Card prices are fictional nominal-dollar estimates for the uploaded league season (1968-era cents and dollars, NOT modern collectible prices). Rarity, rookies, game-file performance and achievements affect values; they recalculate when you upload a newer league export. No real money, trading or payouts are involved. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it.</p>
+            <p class="dbl-cards-footnote">Four standard player-card finishes: tan Base, silver Chrome, rainbow Refractor, and glossy black Black Label, plus historical Team Season Base, Bronze (playoffs), Silver (Finals) and Gold (champions) inserts and plain-paper 1968 Topps test player/rookie/uniform cards. Every sealed card looks identical until revealed. Minimum peak OVR for standard cards: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. Previously collected cards update when you load a league export with their history. Card prices are fictional nominal-dollar estimates for the uploaded league season (1968-era cents and dollars, NOT modern collectible prices). Rarity, rookies, game-file performance and achievements affect values; they recalculate when you upload a newer league export. No real money, trading or payouts are involved. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it. The separate 1968 Underground set uses those same faces, with Headliners! handbill inserts and rookie print badges.</p>
           </section>
 
           <section id="cardsAllCollectionsView" class="dbl-cards-all-collections" role="tabpanel" aria-labelledby="cardsAllCollectionsTab" hidden>
@@ -474,6 +478,8 @@
                   <option value="team-season">Team Season insert</option>
                    <option value="topps-1968">1968 Topps player</option>
                    <option value="topps-1968-uniform">1968 Topps uniform</option>
+                   <option value="underground-1968">1968 Underground base</option>
+                   <option value="underground-headliner">Underground Headliners!</option>
                 </select>
               </label>
               <label class="dbl-cards-field" for="cardsChecklistOwnership">
@@ -1349,11 +1355,12 @@
     <script src="./home-major-events.js?v=20261119-midseason-major-v1"></script>
     <script src="./home-updates.js?v=20261119-midseason-major-v1"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
-    <script src="./cards-market.js?v=20261118-team-four-finishes-v1"></script>
-    <script src="./cards-engine.js?v=20261120-series0-biography-v1"></script>
-    <script src="./cards-pack-limits.js?v=20261118-six-hour-pack-caps-v1"></script>
+    <script src="./cards-market.js?v=20261120-underground-v1"></script>
+    <script src="./cards-engine.js?v=20261120-underground-v1"></script>
+    <script src="./cards-pack-limits.js?v=20261120-underground-v1"></script>
     <script src="./cards-lightbox.js?v=20261119-card-lightbox-smooth-v2"></script>
-    <script src="./cards-ui.js?v=20261120-series0-biography-v2"></script>
+    <script src="./cards-underground-ui.js?v=20261120-v1"></script>
+    <script src="./cards-ui.js?v=20261120-underground-v1"></script>
     <!-- Internal 1969 card builder; intentionally has no automatic or public activation. -->
     <script src="./topps-1970.js?v=20261119-prelaunch-1970-v1"></script>
     <script src="./cards-background-test.js?v=20261117-white-uniform-guard"></script>

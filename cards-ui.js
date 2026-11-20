@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const api = window.DBLCardEngine;
+  const psychedelic = window.DBLUndergroundCards;
   const cardLightbox = window.DBLCardLightbox;
   const CARDS_SUBTAB_KEY = 'dbl-cards-active-subtab:v1';
   const panel = document.getElementById('cardsPanel');
@@ -31,6 +32,7 @@
   const favoritesFilter = document.getElementById('cardsFavoritesFilter');
   const mixedPackType = document.getElementById('cardsMixedPackType');
   const toppsPackType = document.getElementById('cardsToppsPackType');
+  const undergroundPackType = document.getElementById('cardsUndergroundPackType');
   const backgroundPackType = document.getElementById('cardsBackgroundPackType');
   const order = document.getElementById('cardsSort');
   const loadMore = document.getElementById('cardsShowMoreBtn');
@@ -66,7 +68,7 @@
       !selectVisibleBtn || !deselectAllBtn || !deleteSelectedBtn ||
       !cancelSelectionBtn || !selectionFeedback ||
       !search || !rarityFilter || !teamFilter ||
-      !favoritesFilter || !mixedPackType || !toppsPackType || !backgroundPackType || !order || !loadMore ||
+      !favoritesFilter || !mixedPackType || !toppsPackType || !undergroundPackType || !psychedelic || !backgroundPackType || !order || !loadMore ||
       !clearBtn || !exportBtn || !mergeBtn || !mergeFile || !mergeFeedback ||
       !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
       !checklistStats || !checklistFranchises || !checklistSearch || !checklistRarity ||
@@ -99,6 +101,11 @@
       subtitle: 'On-device background removal · Current OVR 50+ · Plain packs',
       establishedIrl: 'Nov 12, 2026',
       establishedInGame: 'Current season'
+    },
+    {
+      series: 3, name: '1968 Underground',
+      subtitle: 'Psychedelic press · New Breed rookies · Headliners inserts',
+      establishedIrl: 'Nov 20, 2026', establishedInGame: '1968'
     }
   ];
   let activeChecklistSeries = 0;
@@ -111,6 +118,8 @@
   tierIndex['team-season'] = .75;
   tierIndex['topps-1968'] = .5;
   tierIndex['background-test'] = .25;
+  tierIndex['underground-1968'] = .52;
+  tierIndex['underground-headliner'] = 1.6;
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Autographs sort between Black Label and Refractor, regardless of
   // their underlying card edition. This changes display order only.
@@ -134,8 +143,11 @@
   const completionTiers = insertTier ? [...checklistTiers, insertTier] : checklistTiers;
   const toppsCompletionTiers = api.rarities.filter(r =>
     r.id === 'topps-1968' || r.id === 'topps-1968-uniform');
+  const undergroundCompletionTiers = api.rarities.filter(r =>
+    r.id === 'underground-1968' || r.id === 'underground-headliner');
   const activeCompletionTiers = () => activeChecklistSeries === 1
-    ? toppsCompletionTiers : completionTiers;
+    ? toppsCompletionTiers : activeChecklistSeries === 3
+      ? undergroundCompletionTiers : completionTiers;
   const isTeamSeason = card => card?.type === 'team-season';
   // Finish (champion, finalist, playoffs) describes team performance;
   // edition (Base/Bronze/Silver/Gold) controls the collectible artwork.
@@ -143,6 +155,7 @@
   const isToppsPlayer = card => card?.type === 'topps-player';
   const isToppsUniform = card => card?.type === 'topps-uniform';
   const isBackgroundTest = card => card?.type === 'background-test';
+  const isUnderground = card => card?.type === 'underground-player';
   const make = (tag, cls, value) => {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -293,6 +306,8 @@
       .reduce((n, c) => n + c.count, 0)), '1968 Topps pulls');
     appendStat(counter, format(api.items.filter(c => isBackgroundTest(c))
       .reduce((n, c) => n + c.count, 0)), 'Background Test pulls');
+    appendStat(counter, format(api.items.filter(c => c.series === 3)
+      .reduce((n, c) => n + c.count, 0)), 'Underground pulls');
     appendStat(counter, format(api.items.filter(c => isTeamSeason(c))
       .reduce((n, c) => n + c.count, 0)), 'Team Season inserts');
     appendStat(counter, format(api.items.filter(c => c.rarity === 'black-label')
@@ -329,7 +344,8 @@
       {month:'short',day:'numeric'})+' at '+clock;
   }
   function showPackQuota(quota) {
-    const label = packType === 'topps-1968' ? '1968 Topps' :
+    const label = packType === 'underground-1968' ? '1968 Underground' :
+      packType === 'topps-1968' ? '1968 Topps' :
       packType === 'background-test' ? 'Background Test' : 'Legacy Mixed';
     if (packResetTimer !== null) {
       window.clearTimeout(packResetTimer);
@@ -357,6 +373,7 @@
   function showStatus() {
     const s = api.status;
     const fileKey = [s.hasFile, s.poolSize, s.toppsPoolSize,
+      s.undergroundPoolSize,
       s.backgroundTestPoolSize, s.season,
       s.loading, s.problem, packType].join('|');
     if (fileKey !== lastFileState) {
@@ -369,6 +386,10 @@
         'No current players with OVR 50+ are available for Background Test packs.';
       else if (packType === 'background-test') status.textContent =
         format(s.backgroundTestPoolSize) + ' current OVR 50+ players available. Open a Background Test-only pack.';
+      else if (packType === 'underground-1968' && !s.undergroundPoolSize) status.textContent =
+        'No 1968 Underground players yet. Upload an export containing the 1968 season.';
+      else if (packType === 'underground-1968') status.textContent =
+        format(s.undergroundPoolSize) + ' 1968 Underground players available · 20% Headliners per card slot.';
       else if (packType === 'topps-1968' && !s.toppsPoolSize) status.textContent =
         'No 1968 Topps cards are available. Upload a league export that includes the 1968 season.';
       else if (packType === 'topps-1968') status.textContent =
@@ -379,7 +400,8 @@
       else status.textContent =
         'Open the Cards tab to load players from the uploaded league file.';
     }
-    const canOpenSelected = packType === 'topps-1968'
+    const canOpenSelected = packType === 'underground-1968'
+      ? s.undergroundPoolSize > 0 : packType === 'topps-1968'
       ? s.toppsPoolSize > 0 : packType === 'background-test'
         ? s.backgroundTestPoolSize > 0 : s.poolSize > 0;
     const quota = packQuota();
@@ -389,16 +411,20 @@
       !s.ready || !canOpenSelected || s.loading || !quota.available;
     openBtn.textContent = busy ? 'Opening pack…' :
       !quota.available && !quota.error ? 'Pack limit reached · check reset time' :
+      packType === 'underground-1968' ? 'Open Underground pack' :
       packType === 'topps-1968' ? 'Open 1968 Topps pack' :
       packType === 'background-test' ? 'Open Background Test pack' : 'Open five-card pack';
     mixedPackType.classList.toggle('is-selected', packType === 'mixed');
     toppsPackType.classList.toggle('is-selected', packType === 'topps-1968');
+    undergroundPackType.classList.toggle('is-selected', packType === 'underground-1968');
     backgroundPackType.classList.toggle('is-selected', packType === 'background-test');
     mixedPackType.setAttribute('aria-pressed', String(packType === 'mixed'));
     toppsPackType.setAttribute('aria-pressed', String(packType === 'topps-1968'));
+    undergroundPackType.setAttribute('aria-pressed', String(packType === 'underground-1968'));
     backgroundPackType.setAttribute('aria-pressed', String(packType === 'background-test'));
     mixedPackType.disabled = busy;
     toppsPackType.disabled = busy;
+    undergroundPackType.disabled = busy;
     backgroundPackType.disabled = busy;
   }
   // GitHub-hosted archival portraits for players without an export photo.
@@ -1190,6 +1216,7 @@
 
   function frontOf(card) {
     if (isBackgroundTest(card)) return backgroundTestFront(card);
+    if (isUnderground(card)) return psychedelic.front(card, {make,art});
     if (isToppsPlayer(card)) return toppsPlayerFront(card);
     if (isToppsUniform(card)) return toppsUniformFront(card);
     if (isTeamSeason(card)) return teamSeasonFront(card);
@@ -1282,12 +1309,14 @@
       back.appendChild(make('span', 'dbl-cards-back-logo', 'DBL'));
       back.appendChild(make('span', 'dbl-cards-back-ornament', '✦'));
       back.appendChild(make('strong', 'dbl-cards-back-sealed-series',
-        isBackgroundTest(card) ? 'BACKGROUND TEST' : 'SERIES 0'));
+        isUnderground(card) ? '1968 UNDERGROUND' :
+          isBackgroundTest(card) ? 'BACKGROUND TEST' : 'SERIES 0'));
       back.appendChild(make('span', 'dbl-cards-back-small', 'LEGENDS NEVER FADE'));
       back.appendChild(make('span', 'dbl-cards-back-tap', 'TAP TO REVEAL'));
       return back;
     }
     if (isBackgroundTest(card)) return backgroundTestBack(card, back);
+    if (isUnderground(card)) return psychedelic.back(card, {make,format,favoriteAction});
     if (isToppsPlayer(card) || isToppsUniform(card)) return toppsBack(card);
     if (isTeamSeason(card)) return teamSeasonBack(card, back);
     // A compact archival player dossier. Keep peak-year data distinct from
@@ -1366,6 +1395,9 @@
         printed.appendChild(make('strong', 'dbl-topps-preview-wordmark', 'TOPPS'));
         printed.appendChild(make('span', 'dbl-topps-preview-subtitle', 'TEST ISSUE'));
         inner.appendChild(printed);
+        cover.classList.remove('is-sealed');
+      } else if (collection.series === 3) {
+        inner.appendChild(psychedelic.cover(make));
         cover.classList.remove('is-sealed');
       } else if (collection.series === 2) {
         // Third set is a pure visual experiment, not a collectible rarity.
@@ -1707,19 +1739,22 @@
   function newPackArt(tearing = false) {
     const topps = packType === 'topps-1968';
     const background = packType === 'background-test';
+    const underground = packType === 'underground-1968';
     const pack = make('div', 'dbl-cards-pack' + (tearing ? ' is-ripping' : ''));
     pack.dataset.packType = packType;
     pack.appendChild(make('span', 'dbl-cards-pack-crest',
-      background ? 'DBL / EXPERIMENT' : topps ? 'DBL / 1968' : 'DBL / 1916'));
+      underground ? 'DBL / FREE PRESS' : background ? 'DBL / EXPERIMENT' : topps ? 'DBL / 1968' : 'DBL / 1916'));
     pack.appendChild(make('strong', 'dbl-cards-pack-name',
-      background ? 'MASK' : topps ? 'TOPPS' : 'LEGACY'));
+      underground ? 'UNDERGROUND' : background ? 'MASK' : topps ? 'TOPPS' : 'LEGACY'));
     pack.appendChild(make('span', 'dbl-cards-pack-shape',
-      background ? '02' : topps ? '68' : '◇'));
+      underground ? '✿' : background ? '02' : topps ? '68' : '◇'));
     pack.appendChild(make('span', 'dbl-cards-pack-series',
+      underground ? '1968 · THE UNDERGROUND' :
       background ? 'SERIES 2 · BACKGROUND TEST' :
         topps ? '1968 · TEST ISSUE' :
         'SERIES ' + api.currentSeries + ' · THE COLLECTOR SERIES'));
     pack.appendChild(make('span', 'dbl-cards-pack-guarantee',
+      underground ? '5 CARDS · 20% HEADLINERS!' :
       background ? '5 CARDS · CURRENT OVR 50+' :
         topps ? '5 CARDS · 1968 TOPPS ONLY' : '5 CARDS · RANDOM PULLS'));
     pack.appendChild(make('span', 'dbl-cards-pack-tear'));
@@ -2051,6 +2086,31 @@
       [tier.id, {label: tier.label, possible: 0, collected: 0}]));
     const all = [];
     let collected = 0;
+    if (activeChecklistSeries === 3) {
+      const all = [], totals = Object.fromEntries(undergroundCompletionTiers.map(t =>
+        [t.id, {label:t.label, possible:0, collected:0}]));
+      let collected = 0;
+      for (const card of api.checklistUnderground) {
+        const item = owned.get(card.id), isOwned = !!item;
+        const stat = totals[card.rarity];
+        if (!stat) continue;
+        stat.possible++;
+        if (isOwned) {stat.collected++;collected++;}
+        all.push({
+          id:card.id,pid:card.pid,tid:card.tid,type:card.type,
+          name:card.name,team:card.teamName,era:1968,peak:card.peak,
+          rookie:card.rookie,rarity:card.rarity,
+          franchiseKey:Number.isInteger(card.tid) && card.tid >= 0 ?
+            'tid:'+card.tid : 'unknown',
+          franchiseName:card.franchiseName || card.teamName,
+          label:card.rarity === 'underground-headliner' ?
+            'Headliners! · Screenprint insert' :
+            (card.rookie ? 'Underground · New Breed Rookie' : 'Underground · Base'),
+          owned:isOwned,copies:item?.count || 0
+        });
+      }
+      return {all,totals,collected};
+    }
     if (activeChecklistSeries === 1) {
       const all = [], totals = Object.fromEntries(toppsCompletionTiers.map(t =>
         [t.id, {label: t.label, possible: 0, collected: 0}]));
@@ -2287,16 +2347,20 @@
 
   function showChecklist() {
     if (activeCardsSubtab !== CHECKLIST_TAB_INDEX || panel.hidden) return;
-    const topps = activeChecklistSeries === 1;
-    checklistSeriesContext.textContent = topps
-      ? '1968 Topps · Test Issue' : 'Series 0 · Original FLAGSHIP set';
-    checklistDescription.textContent = topps
+    const topps = activeChecklistSeries === 1, underground = activeChecklistSeries === 3;
+    checklistSeriesContext.textContent = underground
+      ? '1968 Underground · Free Press Issue' : topps
+        ? '1968 Topps · Test Issue' : 'Series 0 · Original FLAGSHIP set';
+    checklistDescription.textContent = underground
+      ? 'Every eligible 1968 player as a psychedelic base card and a Headliners! screenprint insert.' : topps
       ? 'Every 1968-active player, including rookies, and home/away uniform inserts from the uploaded league archive.'
       : 'Every obtainable player edition and every eligible Base, Bronze, Silver and Gold Team Season insert. Editions check off when collected.';
-    checklistFranchiseDescription.textContent = topps
+    checklistFranchiseDescription.textContent = underground
+      ? '1968 Underground player and Headliners! completion by historical franchise; duplicates count once.' : topps
       ? '1968 Topps player and uniform completion, grouped by 1968 franchise. Duplicates count once.'
       : 'Completion by franchise, including peak-season player editions and historical Team Season inserts. Name changes stay grouped; duplicates count once.';
-    checklistNote.textContent = topps
+    checklistNote.textContent = underground
+      ? 'Each eligible 1968 player has a base and a Headliners! handbill insert. Headliners appear in 20% of Underground-only pack slots; no insert is guaranteed per pack. First-year players carry a NEW BREED · ROOKIE banner. Saved collections retain cards when the league file changes.' : topps
       ? 'One plain-paper 1968 Topps card per eligible player, with rookie styling for first-season players, plus one home and one away uniform placeholder per 1968 team. No Chrome or Refractor tiers; rare autograph variations can appear but are not required for standard set completion. The checklist comes from the uploaded league export; owned cards remain saved even when that file is unloaded.'
       : 'One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR. Team Season Base is available for every season; Bronze for playoff teams, Silver for finalists, Gold for champions. Each finish is a separate collectible edition. Autographs remain separate; duplicates count once. Owned cards missing from a newer export stay in My Collection.';
     const s = api.status;
@@ -2327,7 +2391,12 @@
     const progress = all.length ? collected / all.length * 100 : 0;
     checklistCounter(checklistStats, 'Overall · ' + progress.toFixed(1) + '%',
       collected, all.length);
-    if (activeChecklistSeries === 1) {
+    if (activeChecklistSeries === 3) {
+      for (const tier of undergroundCompletionTiers) {
+        const t = totals[tier.id];
+        checklistCounter(checklistStats, t.label, t.collected, t.possible);
+      }
+    } else if (activeChecklistSeries === 1) {
       for (const tier of toppsCompletionTiers) {
         const t = totals[tier.id];
         checklistCounter(checklistStats, t.label, t.collected, t.possible);
@@ -2506,6 +2575,7 @@
   }
   mixedPackType.addEventListener('click', () => choosePackType('mixed'));
   toppsPackType.addEventListener('click', () => choosePackType('topps-1968'));
+  undergroundPackType.addEventListener('click', () => choosePackType('underground-1968'));
   backgroundPackType.addEventListener('click', () => choosePackType('background-test'));
   openBtn.addEventListener('click', openPack);
   // A second browser tab can use packs; refresh the displayed count when

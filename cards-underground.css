@@ -1,0 +1,284 @@
+/* 1968 UNDERGROUND: fictional DBL free-press cards styled after genuine
+   late-1960s screenprinted handbills, offset lithography and mod graphics.
+   Period inks: marigold, vermilion, teal, plum and uncoated cream. */
+.dbl-cards-card[data-rarity="underground-1968"],
+.dbl-cards-card[data-rarity="underground-headliner"] {
+  --card-edge: #563028; --card-text:#3b2b32; --card-muted:#6c4b4c;
+  --card-rule:rgba(87,48,39,.55);
+}
+.dbl-cards-card[data-rarity^="underground-"] :is(.dbl-underground-front,.dbl-underground-back) {
+  border-radius:0; border: 1px solid #643e31;
+  box-shadow:0 5px 16px rgba(17,12,13,.34);
+}
+.dbl-cards-card[data-rarity^="underground-"] .dbl-cards-inner {border-radius:0;}
+.dbl-underground-front, .dbl-underground-cover {
+  position:absolute; inset:0; overflow:hidden; isolation:isolate;
+  border-radius:0; color:#3b2932; text-align:center;
+  background:
+    repeating-linear-gradient(0deg,rgba(69,43,35,.03) 0 1px,transparent 1px 5px),
+    radial-gradient(ellipse at 17% 24%,#f1c16e 0 19%,transparent 20%),
+    linear-gradient(142deg,#f3dcab 0%,#f1b95d 57%,#df9167 100%);
+}
+.dbl-underground-front::before, .dbl-underground-cover::before {
+  content:none !important;
+}
+.dbl-underground-front::after,.dbl-underground-cover::after {
+  content:""; position:absolute; inset:0; z-index:6; pointer-events:none;
+  opacity:.33; mix-blend-mode:multiply;
+  background:repeating-linear-gradient(91deg,transparent 0 4px,rgba(95,52,43,.055) 4px 5px);
+}
+.dbl-underground-front.is-headliner {
+  color:#fff1c7;
+  background:
+    repeating-linear-gradient(180deg,rgba(255,219,147,.035) 0 2px,transparent 2px 6px),
+    radial-gradient(ellipse at 28% 40%,#f4bb54 0 20%,transparent 20.5%),
+    linear-gradient(154deg,#ad3f31 0%,#802e4b 48%,#4b435d 100%);
+}
+.dbl-underground-masthead {
+  position:absolute; top:4.5%; left:4%; right:4%; height:15%; z-index:4;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:1%; line-height:1;
+}
+.dbl-underground-title {
+  font-family:"Shrikhand","Kavoon","Cooper Black",Georgia,serif;
+  font-size:clamp(12px,10.7cqw,39px); font-weight:400;
+  line-height:.95; letter-spacing:-.045em;
+  text-shadow:1px 1px 0 #f4e6bb; transform:rotate(-2deg);
+  text-wrap:balance;
+}
+.is-headliner .dbl-underground-title {
+  color:#ffe2a1; font-size:clamp(14px,12cqw,42px);
+  text-shadow:2px 2px 0 #35233e; transform:rotate(2deg);
+}
+.dbl-underground-date {
+  font:900 clamp(6px,4.8cqw,15px)/1.1 Arial,Helvetica,sans-serif;
+  letter-spacing:.18em; text-transform:uppercase;
+}
+.dbl-underground-radiant {
+  position:absolute; inset:17% 3% 23%; z-index:0; border-radius:50%;
+  transform:rotate(-17deg);
+  background:repeating-conic-gradient(from 15deg,#cf6148 0deg 15deg,
+    #f7d88b 15deg 29deg,#3b7b74 29deg 38deg,#f7d88b 38deg 45deg);
+  clip-path:ellipse(52% 48% at 50% 50%);
+  opacity:.74;
+}
+.is-headliner .dbl-underground-radiant {
+  background:repeating-conic-gradient(from 5deg,#df914a 0deg 14deg,
+    #4e7382 14deg 25deg,#e6b557 25deg 34deg,#783a52 34deg 44deg);
+  opacity:.95; transform:rotate(7deg);
+}
+.dbl-underground-portrait {
+  position:absolute; z-index:2; inset:21% 15% 25%; display:block;
+  background:#d99e6a; border:clamp(2px,1.7cqw,6px) solid #442f39;
+  border-radius:46% 46% 6% 6% / 15% 15% 3% 3%;
+  overflow:hidden; transform:rotate(-1.6deg);
+  box-shadow:4px 4px 0 #e8cb88;
+}
+.is-headliner .dbl-underground-portrait {
+  inset:20% 12% 23%; transform:rotate(2deg);
+  border-color:#f3cf80; border-width:clamp(3px,2.2cqw,8px);
+  border-radius:0; box-shadow:5px 5px 0 #2b6473;
+}
+.dbl-underground-portrait > .dbl-cards-art {
+  display:block; position:absolute; inset:0; width:100%; height:100%;
+  border:0; border-radius:0; box-shadow:none; z-index:1; background:#e6bd85;
+  overflow:hidden;
+}
+.dbl-underground-portrait .dbl-cards-player-photo {
+  display:block; width:100%; height:100%; max-width:100%; max-height:100%;
+  object-fit:cover; object-position:50% 12%;
+  filter:grayscale(1) sepia(.65) contrast(1.17) brightness(1.04);
+}
+.dbl-underground-portrait::after {
+  content:""; position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:linear-gradient(145deg,rgba(214,86,58,.22),rgba(241,181,86,.05) 40%,rgba(55,105,108,.23));
+  mix-blend-mode:multiply;
+}
+.is-headliner .dbl-underground-portrait .dbl-cards-player-photo {
+  filter:grayscale(1) sepia(.7) contrast(1.32) brightness(.97);
+}
+.is-headliner .dbl-underground-portrait::after {
+  background:linear-gradient(127deg,rgba(48,128,136,.53),rgba(234,113,55,.13) 50%,rgba(128,55,96,.55));
+}
+.dbl-underground-flower {
+  position:absolute; z-index:3; top:48%; right:2%;
+  color:#542b3a; font:900 clamp(26px,20cqw,75px)/1 Georgia,serif;
+  text-shadow:2px 2px #eab86b; transform:rotate(19deg);
+}
+.dbl-underground-rookie {
+  position:absolute; z-index:5; top:59%; left:4%; width:42%; min-height:10%;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  padding:1.4% 1%; box-sizing:border-box;
+  background:#4b7571; color:#fff0be; border:1px solid #352d38;
+  transform:rotate(-9deg); box-shadow:2px 2px 0 #8f3f4b;
+  font:900 clamp(7px,5.5cqw,19px)/1.05 Arial,sans-serif;
+  letter-spacing:.06em;
+}
+.dbl-underground-rookie span {
+  font-size:.83em; letter-spacing:.17em; margin-top:2%;
+}
+.is-headliner .dbl-underground-rookie {
+  background:#f1b54f; color:#502c46; top:58%; left:2%; transform:rotate(-7deg);
+}
+.dbl-underground-insert-rail {
+  position:absolute; z-index:4; top:23%; right:1.8%;
+  writing-mode:vertical-rl; text-orientation:mixed;
+  color:#ffe5a4;
+  font:900 clamp(7px,4.3cqw,15px)/1 Arial,sans-serif; letter-spacing:.1em;
+}
+.dbl-underground-headliner-ribbon {
+  position:absolute; z-index:4; left:4%; right:4%; top:62%;
+  padding:1.4%; background:#e5bd66; color:#6d3150;
+  border:1px solid #553347; transform:rotate(-3deg);
+  font:900 clamp(7px,5.4cqw,19px)/1 Arial,sans-serif; letter-spacing:.1em;
+}
+.dbl-underground-lower {
+  position:absolute; z-index:4; left:4%; right:4%; bottom:4%;
+  height:22%; display:flex; flex-direction:column; justify-content:space-around;
+  align-items:center; gap:2%; padding:2% 4%; box-sizing:border-box;
+  background:#f1d496; border-top:clamp(2px,1.5cqw,5px) solid #5d3a42;
+  box-shadow:0 -2px 0 rgba(255,235,177,.4);
+}
+.is-headliner .dbl-underground-lower {
+  bottom:3%; height:22%; background:#f4c56b;
+  border-color:#31565d; color:#4b294b;
+}
+.dbl-underground-player-name {
+  display:block; width:100%; max-height:53%;
+  font:400 clamp(11px,9cqw,31px)/1.03 "Kavoon","Cooper Black",Georgia,serif;
+  text-wrap:balance; overflow-wrap:anywhere; letter-spacing:-.035em;
+  color:#542b3d;
+}
+.dbl-underground-team {
+  font:850 clamp(6px,4.4cqw,15px)/1.1 Arial,Helvetica,sans-serif;
+  color:#4c4146; text-wrap:balance; overflow-wrap:anywhere;
+}
+.dbl-underground-strap {
+  width:100%; font:900 clamp(5px,3.5cqw,12px)/1.1 Arial,sans-serif;
+  letter-spacing:.035em; color:#8d3f46;
+  border-top:1px solid rgba(100,50,49,.35); padding-top:1.3%;
+}
+.dbl-underground-back {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:12% 9% 19% 13% 23% 14% 10%;
+  gap:0; padding:5.5% 7.5% 4%;
+  box-sizing:border-box; border:1px solid #81564a;
+  text-align:center; align-items:center; justify-items:center;
+  color:#522b42;
+  background:
+    repeating-linear-gradient(0deg,rgba(99,57,51,.028) 0 1px,transparent 1px 4px),
+    linear-gradient(135deg,#f1d6a6,#f8e5bc 50%,#efc98d);
+}
+.dbl-underground-back::before {content:none !important;}
+.dbl-underground-back.is-headliner {
+  color:#492b44; background:
+    repeating-linear-gradient(90deg,rgba(87,48,56,.04) 0 1px,transparent 1px 5px),
+    linear-gradient(151deg,#ebc36e,#f4dfa5 58%,#cfa589);
+}
+.dbl-cards-back.dbl-underground-back > :not(.dbl-cards-favorite-action) {
+  position:relative; z-index:2; box-sizing:border-box;
+  min-width:0; width:100%; max-width:100%;
+}
+.dbl-underground-back-mark {
+  grid-row:1; display:flex; justify-content:center; align-items:center;
+  font:400 clamp(11px,9.1cqw,32px)/.96 "Shrikhand","Kavoon",Georgia,serif;
+  color:#a64a3d; text-wrap:balance;
+}
+.is-headliner .dbl-underground-back-mark {color:#377a7a;}
+.dbl-underground-back-edition {
+  grid-row:2; align-self:start;
+  border-top:1px solid #9b6250; border-bottom:1px solid #9b6250;
+  padding:2% 0; letter-spacing:.045em;
+  font:900 clamp(5px,3.8cqw,14px)/1.16 Arial,sans-serif;
+}
+.dbl-underground-back-name {
+  grid-row:3; display:grid; place-items:center; padding:2% 1%;
+  font:900 clamp(12px,9.8cqw,36px)/1.05 "Kavoon",Georgia,serif;
+  overflow-wrap:anywhere; text-wrap:balance;
+}
+.dbl-underground-back-team {
+  grid-row:4; display:grid; place-items:center; padding:0 2%;
+  font:800 clamp(6px,4.5cqw,16px)/1.15 Arial,sans-serif;
+  text-wrap:balance; overflow-wrap:anywhere;
+  border-bottom:1px solid rgba(120,75,65,.47);
+}
+.dbl-underground-back-panel {
+  grid-row:5; display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:1.5%; padding:3% 0;
+}
+.dbl-underground-back-stat {
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  gap:8%; min-width:0; border:1px solid #aa6c59;
+  background:rgba(197,115,76,.13);
+}
+.dbl-underground-back-stat strong {
+  font:900 clamp(9px,7cqw,24px)/1 Georgia,serif;
+  font-variant-numeric:tabular-nums;
+}
+.dbl-underground-back-stat span {
+  font:900 clamp(6px,4.3cqw,14px)/1 Arial,sans-serif;
+}
+.dbl-underground-back-bio {
+  grid-row:6; display:flex; flex-direction:column; justify-content:center;
+  gap:14%; min-width:0; padding:0 2%; text-align:center;
+  border-top:1px solid #bb806a; border-bottom:1px solid #bb806a;
+}
+.dbl-underground-back-bio span {
+  display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; font:850 clamp(6px,4.4cqw,15px)/1.1 Arial,sans-serif;
+}
+.dbl-underground-back-fine {
+  grid-row:7; display:grid; place-items:center; padding-right:19%;
+  font:900 clamp(5px,3.6cqw,12px)/1.12 Arial,sans-serif;
+  letter-spacing:.04em;
+}
+.dbl-cards-back.dbl-underground-back > .dbl-cards-favorite-action {
+  position:absolute; top:auto; bottom:1%; right:1.6%;
+  z-index:10; width:clamp(22px,15cqw,41px); height:clamp(22px,15cqw,41px);
+  padding:0; font-size:clamp(16px,11cqw,31px);
+  border-color:#ac6e54; color:#ab594d; background:#f2d9b4;
+}
+.dbl-underground-cover {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:space-between; padding:7% 5%;
+  border:1px solid #66423e; box-sizing:border-box;
+}
+.dbl-underground-cover-date {
+  font:900 clamp(7px,5cqw,16px)/1 Arial,sans-serif;
+  letter-spacing:.15em;
+}
+.dbl-underground-cover-title {
+  font:400 clamp(13px,13cqw,45px)/1.02 "Shrikhand","Kavoon",Georgia,serif;
+  color:#823a47; text-align:center; text-wrap:balance;
+  transform:rotate(-5deg);
+}
+.dbl-underground-cover-flower {
+  color:#447e78; text-shadow:3px 3px #a7473f;
+  font:900 clamp(30px,37cqw,120px)/.94 Georgia,serif; transform:rotate(-13deg);
+}
+.dbl-underground-cover-foot {
+  font:900 clamp(6px,5cqw,16px)/1.2 Arial,sans-serif;
+  letter-spacing:.05em;
+}
+.dbl-cards-pack[data-pack-type="underground-1968"] {
+  color:#f9dba5;
+  background:repeating-conic-gradient(from 19deg at 51% 49%,
+    #a33f4a 0 18deg,#e7ae55 18deg 35deg,#377b77 35deg 50deg,#6e3d60 50deg 68deg);
+  border-color:#a76143; box-shadow:0 23px 55px rgba(0,0,0,.4),
+    inset 0 0 0 10px rgba(69,31,48,.38);
+}
+.dbl-cards-pack[data-pack-type="underground-1968"] .dbl-cards-pack-name {
+  color:#ffdf9d; font:400 clamp(20px,10cqw,45px)/1 "Shrikhand",Georgia,serif;
+  text-shadow:2px 3px #452b3d; overflow-wrap:anywhere;
+}
+.dbl-cards-pack[data-pack-type="underground-1968"] .dbl-cards-pack-shape {
+  color:#ffe29c; text-shadow:3px 3px #533554;
+}
+
+/* The ten-letter wrapper title must remain legible at narrow iPhone sizes. */
+.dbl-cards-pack[data-pack-type="underground-1968"] .dbl-cards-pack-name {
+  font-size: clamp(13px,7cqw,27px);
+  letter-spacing: -.04em;
+}
