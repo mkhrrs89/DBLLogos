@@ -78,8 +78,11 @@
   overflow:hidden; transform:none;
   box-shadow:4px 4px 0 #e8cb88;
 }
+/* Headliners use 2:3 source headshots. A taller, slightly narrower window
+   reveals the chin/shoulders without changing the crooked poster treatment.
+   Align its bottom edge with the top of the nameplate to prevent occlusion. */
 .is-headliner .dbl-underground-portrait {
-  inset:20% 12% 23%; transform:rotate(2deg);
+  inset:17% 16% 16%; transform:rotate(2deg);
   border-color:#f3cf80; border-width:clamp(3px,2.2cqw,8px);
   border-radius:0; box-shadow:5px 5px 0 #2b6473;
 }
@@ -99,6 +102,9 @@
   mix-blend-mode:multiply;
 }
 .is-headliner .dbl-underground-portrait .dbl-cards-player-photo {
+  /* Preserve the complete 2:3 photograph even if a source is slightly
+     different in aspect ratio from the printed portrait window. */
+  object-fit:contain; object-position:center center;
   filter:grayscale(1) sepia(.7) contrast(1.32) brightness(.97);
 }
 .is-headliner .dbl-underground-portrait::after {
@@ -132,7 +138,7 @@
   box-shadow:0 -2px 0 rgba(255,235,177,.4);
 }
 .is-headliner .dbl-underground-lower {
-  bottom:3%; height:17%; background:#f4c56b;
+  bottom:3%; height:13%; background:#f4c56b;
   border-color:#31565d; color:#4b294b;
 }
 .dbl-underground-player-name {
