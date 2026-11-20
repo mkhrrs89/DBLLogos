@@ -19,11 +19,7 @@
     original.classList.add('dbl-underground-face-photo');
     portrait.appendChild(original);
     face.appendChild(portrait);
-    if (insert) {
-      face.appendChild(make('span','dbl-underground-insert-rail','SCREENPRINT HANDBILL'));
-      face.appendChild(make('span','dbl-underground-headliner-ribbon',
-        'THE BIG NAMES'));
-    } else {
+    if (!insert) {
       face.appendChild(make('span','dbl-underground-flower','✿'));
     }
     if (card.rookie === true) {

@@ -120,18 +120,6 @@
 .is-headliner .dbl-underground-rookie {
   background:#f1b54f; color:#502c46; top:58%; left:2%; transform:rotate(-7deg);
 }
-.dbl-underground-insert-rail {
-  position:absolute; z-index:4; top:23%; right:1.8%;
-  writing-mode:vertical-rl; text-orientation:mixed;
-  color:#ffe5a4;
-  font:900 clamp(7px,4.3cqw,15px)/1 Arial,sans-serif; letter-spacing:.1em;
-}
-.dbl-underground-headliner-ribbon {
-  position:absolute; z-index:4; left:4%; right:4%; top:62%;
-  padding:1.4%; background:#e5bd66; color:#6d3150;
-  border:1px solid #553347; transform:rotate(-3deg);
-  font:900 clamp(7px,5.4cqw,19px)/1 Arial,sans-serif; letter-spacing:.1em;
-}
 .dbl-underground-lower {
   position:absolute; z-index:4; left:4%; right:4%; bottom:4%;
   height:22%; display:flex; flex-direction:column; justify-content:space-around;
