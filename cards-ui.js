@@ -909,7 +909,11 @@
   function teamSeasonFront(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-cards-team-season-front');
     front.appendChild(make('span', 'dbl-cards-team-season-masthead', 'HISTORIC TEAMS OF THE DBL'));
-    front.appendChild(make('span','dbl-cards-team-season-edition',teamVariantName(card).toUpperCase()+' EDITION'));
+    // Plain Base Team Season cards need no visible edition label; metal
+    // variants retain their collectible finish names.
+    if (teamVariant(card) !== 'base')
+      front.appendChild(make('span', 'dbl-cards-team-season-edition',
+        teamVariantName(card).toUpperCase() + ' EDITION'));
     front.appendChild(make('strong', 'dbl-cards-team-season-year', card.era ?? '—'));
     const emblem = make('span', 'dbl-cards-team-season-emblem');
     emblem.appendChild(teamCrest(card, true));
