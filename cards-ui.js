@@ -1344,9 +1344,7 @@
     const fact = (label, value) => {
       const row = make('span', 'dbl-series0-fact');
       row.appendChild(make('span', 'dbl-series0-fact-label', label));
-      const printed = make('strong', 'dbl-series0-fact-value', value);
-      if (label === 'COLLEGE' && value !== '—') printed.title = String(value);
-      row.appendChild(printed);
+      row.appendChild(make('strong', 'dbl-series0-fact-value', value));
       facts.appendChild(row);
     };
     fact('PEAK YEAR', card.peakVerified === false ? '—' : card.era ?? '—');
@@ -1356,9 +1354,16 @@
     fact('DRAFT PICK', Number.isSafeInteger(card.draftPick) &&
       card.draftPick > 0 ? '#' + format(card.draftPick) : '—');
     fact('DRAFT YEAR', Number.isSafeInteger(card.draftYear) &&
-      card.draftYear > 0 ? format(card.draftYear) : '—');
-    fact('COLLEGE', card.college || '—');
+      card.draftYear > 0 ? String(card.draftYear) : '—');
     profile.appendChild(facts);
+    // Print the full college name across the entire player profile.
+    const college = make('span', 'dbl-series0-college');
+    college.appendChild(make('span', 'dbl-series0-college-label', 'COLLEGE'));
+    const school = String(card.college || '').trim() || '—';
+    const collegeName = make('strong', 'dbl-series0-college-name', school);
+    collegeName.title = school;
+    college.appendChild(collegeName);
+    profile.appendChild(college);
     back.appendChild(profile);
     const stats = make('span', 'dbl-series0-stats dbl-series0-player-stats');
     series0Metric(stats, format(card.gp), 'CAREER GAMES');
