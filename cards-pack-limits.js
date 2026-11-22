@@ -6,11 +6,15 @@
   if (window.DBLCardPackLimits) return;
   const STORAGE_KEY='dbl-card-pack-limits:v1';
   const WINDOW_MS=6*60*60*1000;
-  const MAX_PACKS=10;
+  const MAX_PACKS=5;
+  // Older active six-hour windows can have up to ten successful pulls.
+  // Continue reading those records until they expire instead of treating
+  // them as corruption (which would fail closed indefinitely).
+  const LEGACY_MAX_PACKS=10;
   const CAPPED_TYPES=new Set(['mixed','topps-1968','underground-1968']);
   const isValidRecord=row=>row&&typeof row==='object'&&
     Number.isSafeInteger(row.start)&&row.start>=0&&
-    Number.isInteger(row.used)&&row.used>=1&&row.used<=MAX_PACKS;
+    Number.isInteger(row.used)&&row.used>=1&&row.used<=LEGACY_MAX_PACKS;
 
   function read() {
     try {
@@ -47,7 +51,7 @@
       (now<record.start||now-record.start<WINDOW_MS);
     const used=active?record.used:0;
     return {type,unlimited:false,available:used<MAX_PACKS,
-      remaining:MAX_PACKS-used,used,
+      remaining:Math.max(0,MAX_PACKS-used),used,
       resetAt:active?record.start+WINDOW_MS:null,
       max:MAX_PACKS,windowMs:WINDOW_MS};
   }
