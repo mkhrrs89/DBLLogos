@@ -10,10 +10,24 @@
   if (window.DBLUndergroundNicknames) return;
   const entries = Object.freeze([
     { name: 'Don Moss', nickname: 'The Donfather' },
-    // Only THIS curated nickname card prints the player's real first name.
-    // Other player cards and the source roster retain "O-Train Rollins".
+    // Print-name overrides affect only this nickname insert, never the
+    // original 1968 player record or its other card editions.
     { name: 'O-Train Rollins', nickname: 'O-Train',
-      printName: 'Otis Rollins' }
+      printName: 'Otis Rollins' },
+    { name: 'Frankie Davenport', nickname: 'The Crooner' },
+    { name: 'Rabbit Angstrom', nickname: 'Rabbit',
+      printName: 'Harry Angstrom' },
+    { name: 'Gideon Crane', nickname: 'The Wrecking Crane' },
+    { name: 'O.C. Smith', nickname: 'The Switchboard' },
+    { name: 'Howard Barber', nickname: 'The Pickpocket' },
+    { name: 'Urias Grobe', nickname: 'The Harlem Hornet' },
+    { name: 'Sam McFadden', nickname: 'Buckshot' },
+    { name: 'Lenny Loudermilk', nickname: 'The Milkman' },
+    { name: 'Bob Pack', nickname: 'The Packhorse' },
+    { name: 'Calvin Rookstone', nickname: 'Stonewall' },
+    { name: 'Jonathan Royals', nickname: 'The Dealer' },
+    { name: 'Zesi ZaDuuk', nickname: 'The Wizard of Louisville' },
+    { name: 'Charles Allen', nickname: 'The Buffalo Bull' }
   ]);
   const normalizedName = value => String(value || '').normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '').toLowerCase()
