@@ -34,14 +34,13 @@
 
   tabBtn.addEventListener('click', () => {
     activateTab();
-    if (items.length && loadedVersion === fileVersion) {
-      // Hidden tabs retain their DOM. Rebuilding thousands of news cards on
-      // each click also triggers unnecessary full-feed persistence writes.
-      if (!wrap.querySelector('.news-item') && loadingVersion !== fileVersion) {
-        void render(items);
-      }
+    if (loadedVersion === fileVersion && loadedVersion !== 0) {
+      // Even a feed restored directly from IndexedDB (without recomputing
+      // the in-memory items) is already complete. Keep its existing DOM.
+      if (!wrap.querySelector('.news-item') && items.length &&
+          loadingVersion !== fileVersion) void render(items);
     } else {
-      buildNews();
+      void buildNews();
     }
   });
 
@@ -109,6 +108,18 @@
     loadingVersion = version;
 
     try {
+      // A saved, complete feed for this SAME league file avoids decompressing
+      // and rescanning its players, feats, and historical games on reload.
+      // Name alone is unsafe: require matching filename, size and timestamp.
+      const cached = await window.DBLNewsPersistence?.forFile?.(file);
+      if (!isCurrent(file, version)) return;
+      if (cached) {
+        if (wrap.dataset.newsCacheSignature !== cached.fileSignature)
+          window.DBLNewsPersistence.applySavedNews(cached);
+        loadedVersion = version;
+        return;
+      }
+
       await waitForMainLoad(file.name, version);
       if (!isCurrent(file, version)) return;
 
@@ -786,6 +797,10 @@
     // One atomic insertion keeps the Year-divider observer and News cache
     // from walking or saving partially assembled story lists.
     wrap.className = 'news-wrap';
+    wrap.dataset.newsCacheSignature = '';
+    // Pin source identity when rendering, not when the debounced save runs:
+    // another file may be uploaded before that save timer fires.
+    wrap.dataset.newsSourceSignature = window.DBLNewsPersistence?.signature?.(pendingFile) || '';
     wrap.replaceChildren(fragment);
     return true;
   }
@@ -830,6 +845,8 @@
 
   function showLoading(message) {
     renderEpoch += 1;
+    wrap.dataset.newsCacheSignature = '';
+    wrap.dataset.newsSourceSignature = '';
     wrap.className = 'news-wrap empty-state';
     wrap.replaceChildren();
     const empty = document.createElement('div');

@@ -16,12 +16,22 @@
   let saveTimer = 0;
   let dbPromise = null;
 
+  const currentLeagueFile = () =>
+    window.DBLLeagueFileHub?.getCurrentFile?.() ||
+    fileInput.files?.[0] || null;
+
+  function fileSignature(file) {
+    const size = Number(file?.size);
+    const modified = Number(file?.lastModified);
+    const name = typeof file?.name === 'string' ? file.name : '';
+    return name && Number.isFinite(size) && size > 0 &&
+      Number.isFinite(modified) && modified > 0
+      ? JSON.stringify([name, size, modified, file.type || '']) : '';
+  }
+
   restoreSavedNews();
 
-  const hasActiveLeagueFile = () => Boolean(
-    (fileInput.files && fileInput.files.length)
-    || window.DBLLeagueFileHub?.getCurrentFile?.(),
-  );
+  const hasActiveLeagueFile = () => Boolean(currentLeagueFile());
 
   tabBtn.addEventListener('click', () => {
     if (hasActiveLeagueFile()) return;
@@ -50,22 +60,29 @@
     saveTimer = window.setTimeout(saveCurrentNews, 160);
   });
 
+  // All images receive their URLs before a finished News feed is inserted.
+  // Only observe top-level feed swaps and year dividers: watching every
+  // image/descendant creates needless work across thousands of stories.
   observer.observe(wrap, {
     childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['src'],
   });
 
   async function saveCurrentNews() {
     if (restoring) return;
     const stories = wrap.querySelectorAll('.news-item');
     if (!stories.length) return;
+    const activeSignature = fileSignature(currentLeagueFile());
+    const renderedSignature = wrap.dataset.newsSourceSignature || '';
+    // A newer league file can arrive during the save debounce. Never stamp
+    // its identity onto older articles, which would make a stale feed appear
+    // to be an exact cache match on the next visit.
+    if (activeSignature && renderedSignature !== activeSignature) return;
 
     const [file] = fileInput.files || [];
     const payload = {
       key: FEED_KEY,
       fileName: file?.name || loadSavedTimelineFileName() || '',
+      fileSignature: renderedSignature,
       savedAt: new Date().toISOString(),
       count: stories.length,
       html: wrap.innerHTML,
@@ -125,13 +142,44 @@
   }
 
   function applySavedNews(saved) {
+    if (!saved?.html || !Number(saved.count)) return;
     restoring = true;
+    window.clearTimeout(saveTimer);
     wrap.className = 'news-wrap';
+    wrap.dataset.newsCacheSignature = saved.fileSignature || '';
+    wrap.dataset.newsSourceSignature = saved.fileSignature || '';
     wrap.innerHTML = saved.html;
     window.setTimeout(() => {
       restoring = false;
     }, 0);
   }
+
+  // News calls this only when a File object is available. An exact cache hit
+  // is optional: legacy saves without a signature still restore normally when
+  // there is no league file, but cannot bypass a fresh league scan.
+  async function forFile(file) {
+    const expected = fileSignature(file);
+    if (!expected) return null;
+    try {
+      const db = await openDatabase();
+      const saved = await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).get(FEED_KEY);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Could not check News cache.'));
+      });
+      if (saved?.fileSignature === expected && saved?.html &&
+          Number(saved?.count) > 0) return saved;
+    } catch (error) {
+      // No cache is a normal situation; regenerate from the league file.
+    }
+    const legacy = loadLegacySavedNews();
+    return legacy?.fileSignature === expected ? legacy : null;
+  }
+
+  window.DBLNewsPersistence = Object.freeze({
+    forFile, applySavedNews, signature: fileSignature
+  });
 
   function loadLegacySavedNews() {
     try {

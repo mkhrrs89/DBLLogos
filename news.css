@@ -29,6 +29,10 @@
 }
 
 .news-item {
+  /* Safari/iPhone can skip layout and paint for offscreen historical stories
+     while keeping every article in the DOM, accessible to search and scroll. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 125px;
   display: grid;
   grid-template-columns: 96px 148px minmax(0, 1fr);
   gap: 14px;
