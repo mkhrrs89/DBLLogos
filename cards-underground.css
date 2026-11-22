@@ -331,9 +331,11 @@
   transform:rotate(-3deg); clip-path:polygon(0 0,100% 6%,98% 100%,3% 93%);
 }
 .dbl-nickname-poster-banner strong {
-  display:block; max-width:100%;
-  font:400 clamp(12px,10.5cqw,39px)/1 "Shrikhand","Kavoon",Georgia,serif;
-  letter-spacing:-.045em; text-wrap:balance;
+  /* The fixed set title must stay on one line inside the red ink banner,
+     including at iPhone card sizes and large full-screen lightbox sizes. */
+  display:block; width:100%; min-width:0; max-width:100%;
+  font:400 clamp(10px,7.5cqw,28px)/1.05 "Shrikhand","Kavoon",Georgia,serif;
+  letter-spacing:-.045em; white-space:nowrap; text-align:center;
   text-shadow:1px 2px 0 #4d2a3c;
 }
 .dbl-nickname-billboard {
@@ -381,11 +383,6 @@
   border-left:clamp(1px,.6cqw,3px) solid #f4d396;
   color:#fce2a9; font:900 clamp(7px,5.2cqw,18px)/1 Arial,sans-serif;
   letter-spacing:.14em; text-align:center;
-}
-.dbl-nickname-pressmark {
-  position:absolute; z-index:5; top:70%; right:8%;
-  color:#ffe3ac; font:900 clamp(17px,14cqw,52px)/1 Georgia,serif;
-  transform:rotate(-13deg);
 }
 .dbl-nickname-poster-credit {
   position:absolute; z-index:6; bottom:2.5%; left:3%; right:3%; height:12%;

@@ -19,7 +19,7 @@
     face.appendChild(make('span', 'dbl-nickname-printtexture'));
     const issue = make('span', 'dbl-nickname-issue');
     issue.appendChild(make('strong', '', 'DBL UNDERGROUND'));
-    issue.appendChild(make('span', '', '1968 · FREE PRESS'));
+    issue.appendChild(make('span', '', '1968'));
     face.appendChild(issue);
 
     const banner = make('span', 'dbl-nickname-poster-banner');
@@ -38,7 +38,6 @@
     face.appendChild(portrait);
 
     face.appendChild(make('span', 'dbl-nickname-vertical-ink', '1968 · THE PEOPLE KNOW'));
-    face.appendChild(make('span', 'dbl-nickname-pressmark', '✳'));
 
     const credit = make('span', 'dbl-nickname-poster-credit');
     credit.appendChild(make('strong', 'dbl-nickname-poster-realname',
