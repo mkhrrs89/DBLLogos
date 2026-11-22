@@ -6,26 +6,49 @@
   const isHeadliner = card => card?.rarity === 'underground-headliner';
   const isNickname = card => card?.rarity === 'underground-nickname';
   const quoted = text => '“' + String(text || '').trim().replace(/^["“”]+|["“”]+$/g, '') + '”';
-  // 1968 novelty insert, independent of Base and Headliners artwork.
+  // A separate late-60s character handbill: nickname-first letterpress type,
+  // asymmetric photo collage and a clipped red banner, unlike the Base and
+  // Headliners layout. Original portraits, name overrides and rookie flags
+  // still come from the existing collection/1968 league data.
+  const nicknameLengthClass = nickname => {
+    const length = String(nickname || '').length;
+    return length > 20 ? ' is-long' : length > 13 ? ' is-medium' : '';
+  };
   function nicknameFront(card, {make, art}) {
-    const face = make('span','dbl-cards-face dbl-cards-front dbl-underground-nickname-front');
-    const top = make('span','dbl-nickname-top');
-    top.appendChild(make('span','dbl-nickname-year','DBL · 1968'));
-    top.appendChild(make('strong','dbl-nickname-title','THEY CALL HIM…'));
-    face.appendChild(top);
-    face.appendChild(make('span','dbl-nickname-sunburst'));
-    const photo = make('span','dbl-nickname-portrait');
-    const existingFace = art(card);
-    existingFace.classList.add('dbl-underground-face-photo');
-    photo.appendChild(existingFace);
-    face.appendChild(photo);
-    const caption = make('span','dbl-nickname-bottom');
-    caption.appendChild(make('strong','dbl-nickname-alias',quoted(card.nickname)));
-    caption.appendChild(make('span','dbl-nickname-identity',
-      (card.name || 'Unknown player') + ' · ' + (card.teamName || card.team || 'DBL')));
-    face.appendChild(caption);
-    if (card.rookie === true)
-      face.appendChild(make('span','dbl-nickname-rookie','NEW BREED · ROOKIE'));
+    const face = make('span', 'dbl-cards-face dbl-cards-front dbl-nickname-poster');
+    face.appendChild(make('span', 'dbl-nickname-printtexture'));
+    const issue = make('span', 'dbl-nickname-issue');
+    issue.appendChild(make('strong', '', 'DBL UNDERGROUND'));
+    issue.appendChild(make('span', '', '1968 · FREE PRESS'));
+    face.appendChild(issue);
+
+    const banner = make('span', 'dbl-nickname-poster-banner');
+    banner.appendChild(make('strong', '', 'THEY CALL HIM…'));
+    face.appendChild(banner);
+
+    const billboard = make('span', 'dbl-nickname-billboard');
+    billboard.appendChild(make('strong', 'dbl-nickname-billboard-type' +
+      nicknameLengthClass(card.nickname), quoted(card.nickname)));
+    face.appendChild(billboard);
+
+    const portrait = make('span', 'dbl-nickname-cutout');
+    const photo = art(card);
+    photo.classList.add('dbl-underground-face-photo');
+    portrait.appendChild(photo);
+    face.appendChild(portrait);
+
+    face.appendChild(make('span', 'dbl-nickname-vertical-ink', '1968 · THE PEOPLE KNOW'));
+    face.appendChild(make('span', 'dbl-nickname-pressmark', '✳'));
+
+    const credit = make('span', 'dbl-nickname-poster-credit');
+    credit.appendChild(make('strong', 'dbl-nickname-poster-realname',
+      card.name || 'Unknown player'));
+    credit.appendChild(make('span', 'dbl-nickname-poster-team',
+      (card.teamName || card.team || '1968 DBL') + ' · ' + (card.pos || 'PLAYER')));
+    face.appendChild(credit);
+    if (card.rookie === true) {
+      face.appendChild(make('span', 'dbl-nickname-poster-rookie', 'NEW BREED · ROOKIE'));
+    }
     return face;
   }
   function front(card, {make, art}) {
@@ -62,7 +85,55 @@
     face.appendChild(lower);
     return face;
   }
+  // Personality-file reverse: a different layout and palette from the
+  // regular Underground reverses, but identical statistics and heart action.
+  function nicknameBack(card, {make,format,favoriteAction}) {
+    const back = make('span', 'dbl-cards-face dbl-cards-back dbl-underground-back dbl-nickname-back is-nickname');
+    const mast = make('span', 'dbl-nickname-back-mast');
+    mast.appendChild(make('strong', '', 'THEY CALL HIM…'));
+    mast.appendChild(make('span', '', 'PERSONALITY ISSUE · 1968'));
+    back.appendChild(mast);
+
+    const alias = make('span', 'dbl-nickname-back-alias');
+    alias.appendChild(make('strong', 'dbl-nickname-back-alias-type' +
+      nicknameLengthClass(card.nickname), quoted(card.nickname)));
+    back.appendChild(alias);
+
+    const player = make('span', 'dbl-nickname-back-player');
+    player.appendChild(make('strong', '', card.name || 'Unknown player'));
+    player.appendChild(make('span', '',
+      (card.teamName || card.team || 'DBL') + ' · ' + (card.pos || 'PLAYER') +
+      (card.rookie ? ' · NEW BREED ROOKIE' : '')));
+    back.appendChild(player);
+
+    const stats = make('span', 'dbl-nickname-back-stats');
+    for (const [label,value] of [
+      ['GP',format(card.gp)], ['PPG',format(card.ppg,1)],
+      ['RPG',format(card.rpg,1)], ['APG',format(card.apg,1)]
+    ]) {
+      const cell = make('span', 'dbl-nickname-back-stat');
+      cell.appendChild(make('strong', '', value));
+      cell.appendChild(make('span', '', label));
+      stats.appendChild(cell);
+    }
+    back.appendChild(stats);
+
+    const biography = make('span', 'dbl-nickname-back-bio');
+    const school = make('span', '', 'COLLEGE · ' + (card.college || '—'));
+    school.title = card.college || '';
+    biography.appendChild(school);
+    biography.appendChild(make('span', '', 'DRAFT · ' +
+      (Number.isSafeInteger(card.draftYear) && card.draftYear > 0 ?
+        card.draftYear : '—')));
+    back.appendChild(biography);
+
+    back.appendChild(make('span', 'dbl-nickname-back-colophon',
+      'THE UNDERGROUND · PLAYER NICKNAMES'));
+    back.appendChild(favoriteAction(card));
+    return back;
+  }
   function back(card, {make,format,favoriteAction}) {
+    if (isNickname(card)) return nicknameBack(card, {make,format,favoriteAction});
     const insert = isHeadliner(card), nickname = isNickname(card);
     const reverse = make('span','dbl-cards-face dbl-cards-back dbl-underground-back' +
       (nickname ? ' is-nickname' : insert ? ' is-headliner' : ''));

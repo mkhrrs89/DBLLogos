@@ -1,0 +1,140 @@
+/* DBL Pack Room odds and rules: four legible tables instead of a wall of text.
+   Isolated from card backs, binder and other app tables. */
+.dbl-cards-odds-guide {
+  position:relative; z-index:1;
+  width:100%; max-width:1160px; min-width:0;
+  margin:clamp(20px,3vw,34px) auto 0;
+  padding-top:clamp(16px,2vw,24px);
+  border-top:1px solid rgba(237,187,124,.25);
+  text-align:left; font-family:Arial,Helvetica,sans-serif;
+  color:#f2ddc2;
+}
+.dbl-cards-guide-heading {margin:0 0 16px;}
+.dbl-cards-guide-eyebrow {
+  display:block; font-size:.65rem; font-weight:850;
+  line-height:1.25; color:#cda476; letter-spacing:.17em;
+}
+.dbl-cards-guide-heading h4 {
+  margin:4px 0 5px;
+  font:800 clamp(1.18rem,2.5vw,1.55rem)/1.16 Georgia,serif;
+  color:#f7dfb9; letter-spacing:-.02em;
+}
+.dbl-cards-guide-heading p {
+  margin:0; max-width:68ch; color:#cbb9ab;
+  font-size:.79rem; line-height:1.5;
+}
+.dbl-cards-guide-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:start; gap:14px;
+}
+.dbl-cards-guide-card {
+  min-width:0; padding:clamp(12px,1.8vw,20px);
+  border:1px solid rgba(228,185,132,.29);
+  border-radius:12px;
+  background:linear-gradient(150deg,rgba(255,230,182,.065),rgba(85,59,71,.07));
+  box-shadow:inset 0 1px 0 rgba(255,244,211,.045);
+}
+.dbl-cards-guide-card h5 {
+  display:flex; align-items:baseline; gap:9px;
+  margin:0 0 13px; padding-bottom:10px;
+  border-bottom:1px solid rgba(222,183,136,.22);
+  color:#e5ae6c; font:900 .69rem/1.2 Arial,sans-serif;
+  letter-spacing:.1em;
+}
+.dbl-cards-guide-card h5 span {
+  font:800 1.02rem/1.2 Georgia,serif;
+  color:#f5ddb9; letter-spacing:0;
+}
+.dbl-cards-guide-table {
+  width:100%; table-layout:fixed; border-collapse:collapse;
+  margin:10px 0 0; color:#f1e0cd; text-align:left;
+  font:500 .76rem/1.4 Arial,Helvetica,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.dbl-cards-guide-table caption {
+  padding:0 0 6px; color:#f6d39f; text-align:left;
+  font:750 .75rem/1.32 Arial,sans-serif;
+}
+.dbl-cards-guide-table th,
+.dbl-cards-guide-table td {
+  box-sizing:border-box;
+  padding:8px 9px; border-bottom:1px solid rgba(237,193,145,.14);
+  vertical-align:middle; text-align:left;
+  overflow-wrap:anywhere;
+}
+.dbl-cards-guide-table thead th {
+  color:#dec29f; background:rgba(213,148,84,.14);
+  font-size:.7rem; font-weight:850;
+}
+.dbl-cards-guide-table tbody th {font-weight:750; color:#f3e0c4;}
+.dbl-cards-guide-table tbody tr:nth-child(even) {background:rgba(255,239,195,.035);}
+.dbl-cards-guide-table:not(.dbl-cards-guide-formats):not(.dbl-cards-guide-underground):not(.dbl-cards-guide-pity) th:last-child,
+.dbl-cards-guide-table:not(.dbl-cards-guide-formats):not(.dbl-cards-guide-underground):not(.dbl-cards-guide-pity) td:last-child {
+  width:26%; text-align:right; white-space:nowrap;
+}
+.dbl-cards-guide-note,
+.dbl-cards-guide-lead {
+  margin:9px 0 15px; color:#c7b4a7;
+  font-size:.74rem; line-height:1.53;
+}
+.dbl-cards-guide-lead {color:#ead2b6;}
+.dbl-cards-guide-lead strong {color:#f5d59f;}
+.dbl-cards-guide-formats th:first-child {width:26%;}
+.dbl-cards-guide-formats th:last-child,
+.dbl-cards-guide-formats td:last-child {
+  width:20%; text-align:center; font-weight:800; white-space:normal;
+}
+.dbl-cards-guide-underground th:first-child {width:34%;}
+.dbl-cards-guide-underground th:not(:first-child),
+.dbl-cards-guide-underground td:not(:first-child) {text-align:center;}
+.dbl-cards-guide-pity th:first-child {width:23%;}
+.dbl-cards-guide-pity th:not(:first-child),
+.dbl-cards-guide-pity td {text-align:center;}
+.dbl-cards-guide-pity th,
+.dbl-cards-guide-pity td {padding:8px 5px;font-size:.7rem;}
+.dbl-cards-guide-disclaimer {
+  margin:12px 0 0; color:#a99a91;
+  font-size:.7rem; line-height:1.45;
+}
+@media (max-width:800px) {
+  .dbl-cards-guide-grid {grid-template-columns:minmax(0,1fr);}
+}
+@media (max-width:520px) {
+  .dbl-cards-odds-guide {margin-top:18px;}
+  .dbl-cards-guide-grid {gap:11px;}
+  .dbl-cards-guide-card {padding:12px 10px;}
+  .dbl-cards-guide-table {font-size:.73rem;}
+  .dbl-cards-guide-table th,.dbl-cards-guide-table td {padding:7px 6px;}
+  .dbl-cards-guide-formats th:first-child {width:28%;}
+  .dbl-cards-guide-formats th:last-child {width:22%;}
+  .dbl-cards-guide-formats {font-size:.68rem;}
+  .dbl-cards-guide-underground {font-size:.7rem;}
+  /* Present five-column pity rows as labeled, two-column mini tables on
+     phones; retain semantic table markup and headers for screen readers. */
+  .dbl-cards-guide-pity thead {
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
+  .dbl-cards-guide-pity tbody {display:block;}
+  .dbl-cards-guide-pity tbody tr {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    margin:0 0 10px; border:1px solid rgba(232,181,121,.22);
+    border-radius:7px; overflow:hidden; background:rgba(255,232,196,.025);
+  }
+  .dbl-cards-guide-pity tbody th {
+    display:block; grid-column:1/-1; width:100%;
+    border-bottom:1px solid rgba(232,181,121,.2);
+    background:rgba(213,148,84,.14);
+    font-size:.78rem; text-align:left;
+  }
+  .dbl-cards-guide-pity tbody td {
+    display:block; text-align:left; font-size:.79rem;
+    padding:8px; border-bottom:0;
+  }
+  .dbl-cards-guide-pity tbody td::before {
+    content:attr(data-label); display:block;
+    margin-bottom:3px; color:#ccb396;
+    font-size:.66rem; line-height:1.2;
+  }
+}

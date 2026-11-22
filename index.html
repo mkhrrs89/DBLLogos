@@ -27,7 +27,8 @@
     <link rel="stylesheet" href="./cards.css?v=20261119-card-lightbox-smooth-v2" />
     <link rel="stylesheet" href="./topps-1968-backs.css?v=20261121-logo-position-fix-v2" />
     <link rel="stylesheet" href="./cards-series0-backs.css?v=20261120-college-readable-v3" />
-    <link rel="stylesheet" href="./cards-underground.css?v=20261122-nickname-inserts-v1" />
+    <link rel="stylesheet" href="./cards-underground.css?v=20261122-poster-redesign-v2" />
+    <link rel="stylesheet" href="./cards-pack-guide.css?v=20261122-odds-tables-v1" />
     <!-- Dormant 1970 Topps template only: no live Cards collection or pack UI. -->
     <link rel="stylesheet" href="./topps-1970.css?v=20261119-prelaunch-1970-v1" />
     <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
@@ -343,7 +344,119 @@
                 <button id="cardsRevealAllBtn" class="dbl-cards-action-button" type="button">Reveal all cards</button>
                 <button id="cardsNextPackBtn" class="dbl-cards-action-button" type="button">Next pack</button>
               </div>
-              <p class="dbl-cards-save-status">Legacy Mixed packs — Player-card pull weights: Base 87.75% · Chrome 10% · Refractor 2% · Black Label 0.25%. Team Season inserts have a 3% chance and 1968 Topps cards have a 15% chance per eligible non-Mythical slot (including uniform placeholders). In those same eligible Legacy Mixed slots, 1968 Underground Base cards appear at 4% and Headliners! at 1% when the 1968 roster is available. These new Underground slots replace standard player-card slots, not the existing Topps or Team Season hit rates. Among Team Season editions, Base is most common, followed by Bronze (playoff teams), Silver (finalists), and Gold (champions), with per-edition relative pull weights 1 : 0.32 : 0.10 : 0.03. The overall 3% Team Season chance does not change. Autographs have a base 0.1% chance (1 in 1,000) on each eligible player-card pull, including Series 0 Black Label, all three Mythicals, 1968 Topps players, Background Test players, and both 1968 Underground editions. Team Season and Topps uniform cards cannot be signed. Pity odds (per eligible pull, never guaranteed): Autograph 0.1% base → 1% maximum (starts after 500 misses; maximum after 1,500). Black Label 0.25% base → 1% maximum (starts after 250 misses; maximum after 750). Mythical 0.1% base → 0.25% maximum (starts after 500 misses; maximum after 1,500). Odds increase gradually between those thresholds. Only collected packs count, and pity progress is saved with collection backups. Signatures are applied to ordinary player cards without creating extra checklist entries; the binder retains signed and unsigned physical copies separately, and both count toward the same underlying checklist edition. No rarity is guaranteed per pack; standard player-card rarity weights apply to non-insert pulls. Actual overall pull rates may differ. 1968 Topps Only packs contain five 1968 Topps cards, with player and uniform editions drawn from the available 1968 set (typically 80% players and 20% uniforms when both are available). Background Test Only packs contain five cards exclusively from active players with current OVR 50+, with no team or uniform inserts; eligible players can receive an autograph variation. 1968 Underground Only packs contain five 1968-player cards. With no eligible curated nicknames: 80% Base and 20% Headliners! per slot. When selected They Call Him… players are eligible: 75% Base, 20% Headliners!, and 5% nickname inserts per slot. Nickname cards feature only explicitly selected players, are not in Legacy Mixed packs, and are not guaranteed. Rookie badges are preserved. Underground has its own 5-pack / six-hour limit; Topps-only odds remain unchanged.</p>
+              <section class="dbl-cards-odds-guide" aria-labelledby="cardsOddsGuideTitle">
+                <header class="dbl-cards-guide-heading">
+                  <span class="dbl-cards-guide-eyebrow">THE COLLECTOR'S REFERENCE</span>
+                  <h4 id="cardsOddsGuideTitle">Pack Odds &amp; Rules</h4>
+                  <p>Four quick-reference sections. Percentages are per eligible card slot, not guarantees per pack.</p>
+                </header>
+                <div class="dbl-cards-guide-grid">
+                  <section class="dbl-cards-guide-card" aria-labelledby="cardsOddsMixedTitle">
+                    <h5 id="cardsOddsMixedTitle">01 <span>Legacy Mixed</span></h5>
+                    <table class="dbl-cards-guide-table">
+                      <caption>Standard player-card finish weights</caption>
+                      <thead><tr><th scope="col">Finish</th><th scope="col">Weight</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">Base</th><td>87.75%</td></tr>
+                        <tr><th scope="row">Chrome</th><td>10%</td></tr>
+                        <tr><th scope="row">Refractor</th><td>2%</td></tr>
+                        <tr><th scope="row">Black Label</th><td>0.25%</td></tr>
+                      </tbody>
+                    </table>
+                    <p class="dbl-cards-guide-note">These are weights among standard player finishes when no other insert or hidden rarity is drawn. Secret Mythical cards have a separate, combined 0.1% base chance, subject to pity.</p>
+                    <table class="dbl-cards-guide-table">
+                      <caption>Additional inserts in eligible non-Mythical slots</caption>
+                      <thead><tr><th scope="col">Insert</th><th scope="col">Chance</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">Team Season</th><td>3%</td></tr>
+                        <tr><th scope="row">1968 Topps (player or uniform)</th><td>15%</td></tr>
+                        <tr><th scope="row">Underground Base</th><td>4%</td></tr>
+                        <tr><th scope="row">Underground Headliners!</th><td>1%</td></tr>
+                      </tbody>
+                    </table>
+                    <p class="dbl-cards-guide-note">Underground slots require an available 1968 roster and replace standard player slots; they do not reduce the existing Topps or Team Season chances. “They Call Him…” nickname inserts are exclusive to Underground-only packs.</p>
+                    <table class="dbl-cards-guide-table">
+                      <caption>Team Season finishes — relative draw weights</caption>
+                      <thead><tr><th scope="col">Edition</th><th scope="col">Weight</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">Base · all seasons</th><td>1.00</td></tr>
+                        <tr><th scope="row">Bronze · playoff teams</th><td>0.32</td></tr>
+                        <tr><th scope="row">Silver · finalists</th><td>0.10</td></tr>
+                        <tr><th scope="row">Gold · champions</th><td>0.03</td></tr>
+                      </tbody>
+                    </table>
+                    <p class="dbl-cards-guide-note">These are relative edition weights, not percentages. Overall Team Season chance remains 3%.</p>
+                  </section>
+
+                  <section class="dbl-cards-guide-card" aria-labelledby="cardsOddsPacksTitle">
+                    <h5 id="cardsOddsPacksTitle">02 <span>Pack Types &amp; Limits</span></h5>
+                    <table class="dbl-cards-guide-table dbl-cards-guide-formats">
+                      <caption>What each five-card pack contains</caption>
+                      <thead><tr><th scope="col">Pack</th><th scope="col">Cards</th><th scope="col">Limit</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">Legacy Mixed</th><td>Standard, Team Season, Topps and possible Underground inserts</td><td>5 / 6 hr</td></tr>
+                        <tr><th scope="row">1968 Topps Only</th><td>1968 player and uniform cards; typically 80% / 20% when both are available</td><td>5 / 6 hr</td></tr>
+                        <tr><th scope="row">1968 Underground Only</th><td>Base, Headliners! and selected nickname inserts</td><td>5 / 6 hr</td></tr>
+                        <tr><th scope="row">Background Test Only</th><td>Current players with OVR 50+; no team or uniform inserts</td><td>Unlimited</td></tr>
+                      </tbody>
+                    </table>
+                    <p class="dbl-cards-guide-note">Each capped pack type has its own six-hour window, beginning with its first opened pack.</p>
+                    <table class="dbl-cards-guide-table dbl-cards-guide-underground">
+                      <caption>1968 Underground Only — odds per slot</caption>
+                      <thead><tr><th scope="col">Edition</th><th scope="col">No nicknames</th><th scope="col">Nicknames available</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">Base</th><td>80%</td><td>75%</td></tr>
+                        <tr><th scope="row">Headliners!</th><td>20%</td><td>20%</td></tr>
+                        <tr><th scope="row">They Call Him…</th><td>—</td><td>5%</td></tr>
+                      </tbody>
+                    </table>
+                    <p class="dbl-cards-guide-note">Nickname cards appear only for specifically selected players matched in the uploaded 1968 roster. They are not guaranteed. First-year players keep their NEW BREED rookie marking.</p>
+                  </section>
+
+                  <section class="dbl-cards-guide-card" aria-labelledby="cardsOddsAutosTitle">
+                    <h5 id="cardsOddsAutosTitle">03 <span>Autographs</span></h5>
+                    <p class="dbl-cards-guide-lead">Every eligible player-card pull has a <strong>0.1% base autograph chance (1 in 1,000)</strong>, before pity.</p>
+                    <table class="dbl-cards-guide-table">
+                      <caption>Which cards can be signed?</caption>
+                      <thead><tr><th scope="col">Card type</th><th scope="col">Autographs</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">Series 0 player cards, including Black Label and all hidden Mythicals</th><td>Yes</td></tr>
+                        <tr><th scope="row">1968 Topps player cards</th><td>Yes</td></tr>
+                        <tr><th scope="row">Background Test player cards</th><td>Yes</td></tr>
+                        <tr><th scope="row">Underground Base, Headliners! and They Call Him…</th><td>Yes</td></tr>
+                        <tr><th scope="row">Team Season cards</th><td>No</td></tr>
+                        <tr><th scope="row">1968 Topps uniform cards</th><td>No</td></tr>
+                      </tbody>
+                    </table>
+                    <p class="dbl-cards-guide-note">A signature is ink on the same underlying edition, not an extra checklist requirement. The binder keeps signed and unsigned copies separate, but both count as owning that edition.</p>
+                  </section>
+
+                  <section class="dbl-cards-guide-card" aria-labelledby="cardsOddsPityTitle">
+                    <h5 id="cardsOddsPityTitle">04 <span>Pity System</span></h5>
+                    <p class="dbl-cards-guide-lead">Odds rise gradually after enough unsuccessful eligible pulls, but no outcome is guaranteed.</p>
+                    <table class="dbl-cards-guide-table dbl-cards-guide-pity">
+                      <caption>Base odds and maximum pity chances</caption>
+                      <thead><tr>
+                        <th scope="col">Outcome</th><th scope="col">Base</th>
+                        <th scope="col">Starts after</th><th scope="col">Max after</th><th scope="col">Max odds</th>
+                      </tr></thead>
+                      <tbody>
+                        <tr><th scope="row">Autograph</th>
+                          <td data-label="Base odds">0.1%</td><td data-label="Starts after">500 misses</td>
+                          <td data-label="Max after">1,500 misses</td><td data-label="Maximum odds">1%</td></tr>
+                        <tr><th scope="row">Black Label</th>
+                          <td data-label="Base odds">0.25%</td><td data-label="Starts after">250 misses</td>
+                          <td data-label="Max after">750 misses</td><td data-label="Maximum odds">1%</td></tr>
+                        <tr><th scope="row">Secret Mythical cards</th>
+                          <td data-label="Base odds">0.1%</td><td data-label="Starts after">500 misses</td>
+                          <td data-label="Max after">1,500 misses</td><td data-label="Maximum odds">0.25%</td></tr>
+                      </tbody>
+                    </table>
+                    <p class="dbl-cards-guide-note">Only successfully collected packs advance pity counters. Progress is included in collection exports and imports. Pity modifies eligible pulls, not guaranteed pack contents.</p>
+                  </section>
+                </div>
+                <p class="dbl-cards-guide-disclaimer">All displayed odds are per eligible card slot. Actual overall rates depend on available cards and insert eligibility. No insert or rarity is guaranteed per pack.</p>
+              </section>
             </section>
           </div>
 
@@ -1362,7 +1475,7 @@
     <script src="./cards-engine.js?v=20261122-nickname-inserts-v1"></script>
     <script src="./cards-pack-limits.js?v=20261122-five-per-window-v1"></script>
     <script src="./cards-lightbox.js?v=20261119-card-lightbox-smooth-v2"></script>
-    <script src="./cards-underground-ui.js?v=20261122-nickname-inserts-v1"></script>
+    <script src="./cards-underground-ui.js?v=20261122-poster-redesign-v2"></script>
     <script src="./cards-ui.js?v=20261122-nickname-inserts-v1"></script>
     <!-- Internal 1969 card builder; intentionally has no automatic or public activation. -->
     <script src="./topps-1970.js?v=20261119-prelaunch-1970-v1"></script>
