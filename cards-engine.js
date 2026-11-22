@@ -185,15 +185,20 @@
     if (variant==='gold') return card.finishKind==='champion';
     return false;
   }
-  // Autographs are a separate edition sharing a player's normal rarity,
-  // with a canonical :auto suffix. Team cards, uniforms, Black Label and
-  // Mythicals may never be autographed.
+  // Signatures are individual signed physical copies of an EXISTING edition,
+  // not a new rarity or checklist requirement. The :auto storage suffix
+  // preserves signed and unsigned copies (and older saved autos) separately.
+  // All six Series 0 player rarities and both Underground player editions
+  // can be signed; Team Season and Topps uniforms never can.
   const canAutograph = card =>
     card && Number.isSafeInteger(integer(card.pid)) && integer(card.pid) >= 0 &&
-    card.type !== 'team-season' && card.type !== 'topps-uniform' &&
-    card.rarity !== 'black-label' && !String(card.rarity || '').startsWith('mythic-') &&
-    (card.type === 'topps-player' || card.type === 'background-test' ||
-      (!card.type && card.series === CARD_SERIES));
+    ((card.type === 'topps-player' && card.rarity === TOPPS_PLAYER.id) ||
+      (card.type === 'background-test' && card.rarity === BACKGROUND_TEST.id) ||
+      (card.type === 'underground-player' &&
+        (card.rarity === UNDERGROUND_BASE.id ||
+          card.rarity === UNDERGROUND_HEADLINER.id)) ||
+      (!card.type && card.series === CARD_SERIES &&
+        RARITIES.some(tier => tier.id === card.rarity)));
   const isAutograph = row => row?.autograph === true && canAutograph(row);
   const autoId = (baseId, row) => baseId + (isAutograph(row) ? ':auto' : '');
   const baseCardId = card => card?.autograph === true ?
@@ -299,12 +304,15 @@
         (row.rarity !== UNDERGROUND_BASE.id && !headliner) ||
         integer(row.series) !== UNDERGROUND_SERIES ||
         integer(row.era) !== TOPPS_YEAR || pid === null || pid < 0 ||
-        row.autograph === true || !Number.isInteger(count) ||
+        (row.autograph === true && !canAutograph(row)) ||
+        !Number.isInteger(count) ||
         count < 1 || count > 1000000) return null;
     const teamName = str(row.teamName) || '1968 team unavailable';
     return {
-      id: undergroundId(pid, headliner), type: 'underground-player',
+      id: autoId(undergroundId(pid, headliner), row),
+      type: 'underground-player',
       rarity: headliner ? UNDERGROUND_HEADLINER.id : UNDERGROUND_BASE.id,
+      autograph: isAutograph(row),
       series: UNDERGROUND_SERIES, era: TOPPS_YEAR, pid, tid: integer(row.tid),
       count, sourceCounts: origins, favorite: row.favorite === true,
       name: str(row.name) || 'Unknown player',
@@ -842,6 +850,8 @@
         item = normalizeBackgroundTest(row, qty, origins);
         if (!item) throw Error('The backup contains an invalid Background Test card.');
       } else if (row.type === 'underground-player') {
+        if (row.autograph === true && !canAutograph(row))
+          throw Error('The backup contains an ineligible Underground autograph.');
         item = normalizeUnderground(row, qty, origins);
         if (!item) throw Error('The backup contains an invalid 1968 Underground edition.');
       } else if (row.type === 'topps-player' || row.type === 'topps-uniform') {
@@ -1094,7 +1104,7 @@
         continue;
       }
       if (item.type === 'underground-player') {
-        const live = undergroundById.get(item.id);
+        const live = undergroundById.get(baseCardId(item));
         if (live && updateUnderground(item, live)) modified = true;
         continue;
       }
@@ -1360,7 +1370,7 @@
         const source = different.length ? different : unseen.length ? unseen : sourcePool;
         const card = source[Math.floor(Math.random() * source.length)];
         chosenPids.add(card.pid); chosenIds.add(card.id);
-        picks.push({...card, count:1});
+        picks.push(autographPull({...card, count:1}, nextPity));
       }
       return finish();
     }
@@ -1418,9 +1428,9 @@
           if (insert) {
             takenUndergroundPids.add(insert.pid);
             takenUndergroundIds.add(insert.id);
-            // Underground has exactly two physical-looking editions, without
-            // new autograph tiers. Its original 1968 identity is retained.
-            picks.push({...insert, count: 1});
+            // An occasional signature is written onto this same printed
+            // Underground edition, not added as a new collectible rarity.
+            picks.push(autographPull({...insert, count: 1}, nextPity));
             continue;
           }
         }
@@ -1894,7 +1904,7 @@
       if (card?.type === 'background-test')
         return backgroundTestByPid.get(card.pid)?.image || card.photo || '';
       if (card?.type === 'topps-player') return toppsById.get(baseCardId(card))?.image || card.photo || '';
-      if (card?.type === 'underground-player') return undergroundById.get(card.id)?.image || card.photo || '';
+      if (card?.type === 'underground-player') return undergroundById.get(baseCardId(card))?.image || card.photo || '';
       return poolByPid.get(card.pid)?.image || card.photo || '';
     },
     findJersey(card) { return card?.jersey || poolByPid.get(card?.pid)?.jersey || ''; },
@@ -1909,7 +1919,7 @@
       if (card?.type === 'team-season') {
         return teamSeasonById.get(card.id)?.logo || card.teamLogo || '';
       }
-      if (card?.type === 'underground-player') return undergroundById.get(card.id)?.logo || card.teamLogo || '';
+      if (card?.type === 'underground-player') return undergroundById.get(baseCardId(card))?.logo || card.teamLogo || '';
       if (card?.type === 'topps-player' || card?.type === 'topps-uniform') {
         return toppsById.get(baseCardId(card))?.logo || card.teamLogo || '';
       }

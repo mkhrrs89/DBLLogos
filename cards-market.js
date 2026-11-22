@@ -272,12 +272,10 @@
     // achievements and scarcity without changing any pack probabilities.
     const base = Math.round(clamp(.04 * star * multiple * vintage *
       rookiePremium * draftHype * rookieStanding, .01, 250) * 100) / 100;
-    // An independently rare 1-in-1,000 autograph is a distinct collectible
-    // edition, but keeps the player's normal Base/Chrome/Refractor pricing
-    // inputs. Price the auto premium separately from PID preferences.
+    // A signed physical copy keeps its exact original card rarity. The
+    // autograph premium applies to Black Label, Mythicals, and Underground
+    // just as it already applies to other signable player cards.
     const signed = card.autograph === true &&
-      card.rarity !== 'black-label' &&
-      !String(card.rarity || '').startsWith('mythic-') &&
       card.type !== 'team-season' && card.type !== 'topps-uniform';
     const autographPrice = signed ? Math.round((base * 8 + Number.EPSILON) * 100) / 100 : base;
     return boostedPrice(card, autographPrice);

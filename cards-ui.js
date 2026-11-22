@@ -1211,7 +1211,10 @@
   // placement, finish, and hash with a /100 edition size. This does not
   // change collection copies, card IDs, pull odds, or pack limits.
   function numberedCardSerial(card, editionSize) {
-    const identity = String(card.id || card.pid || card.name || 'black-label');
+    // A handwritten signature does not change the already-printed
+    // Black Label /500 or Mythical /100 serial on this same card design.
+    const identity = String(card.id || card.pid || card.name || 'black-label')
+      .replace(/:auto$/, '');
     let hash = 2166136261;
     for (let i = 0; i < identity.length; i++)
       hash = Math.imul(hash ^ identity.charCodeAt(i), 16777619) >>> 0;
@@ -2088,9 +2091,20 @@
     // editions from the series selected through All Collections.
     const players = activeChecklistSeries === api.currentSeries
       ? api.checklistPlayers : [];
-    const owned = new Map(api.items
-      .filter(card => (card.series ?? api.currentSeries) === activeChecklistSeries)
-      .map(card => [card.id, card]));
+    // A signature annotates a physical copy, not a new checklist edition.
+    // Signed-only ownership must satisfy the ORIGINAL player/rarity checklist
+    // item, and signed + unsigned copies contribute to its one owned total.
+    const owned = new Map();
+    for (const card of api.items) {
+      if ((card.series ?? api.currentSeries) !== activeChecklistSeries) continue;
+      const editionId = card.autograph === true
+        ? String(card.id).replace(/:auto$/, '') : card.id;
+      const existing = owned.get(editionId);
+      owned.set(editionId, {
+        ...card,
+        count: (existing?.count || 0) + card.count
+      });
+    }
     const totals = Object.fromEntries(completionTiers.map(tier =>
       [tier.id, {label: tier.label, possible: 0, collected: 0}]));
     const all = [];
