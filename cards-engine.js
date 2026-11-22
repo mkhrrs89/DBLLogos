@@ -63,6 +63,10 @@
   const BACKGROUND_TEST_SERIES = 2;
   const UNDERGROUND_SERIES = 3;
   const UNDERGROUND_HEADLINER_CHANCE = .20;
+  // 5% nickname insert only after the curated roster has eligible players.
+  // Until then dedicated packs retain the original 80/20 Base/Headliners.
+  const UNDERGROUND_NICKNAME_CHANCE = .05;
+  const nicknameRegistry = window.DBLUndergroundNicknames;
   // Legacy Mixed: occasional Underground inserts, significantly less common
   // than the 20% Headliners slots in Underground-only packs. These chance
   // bands are disjoint and never reduce Team Season or 1968 Topps rates.
@@ -76,6 +80,7 @@
   const BACKGROUND_TEST = Object.freeze({id: 'background-test', label: 'Background Test', insert: true});
   const UNDERGROUND_BASE = Object.freeze({id: 'underground-1968', label: 'Underground · Base', insert: true});
   const UNDERGROUND_HEADLINER = Object.freeze({id: 'underground-headliner', label: 'Underground · Headliners', insert: true});
+  const UNDERGROUND_NICKNAME = Object.freeze({id: 'underground-nickname', label: 'They Call Him…', insert: true});
   const RARITIES = [
     { id: 'common', label: 'Base', chance: 87.75, pool: 1 },
     { id: 'crome', label: 'Chrome', chance: 10, pool: .72 },
@@ -165,7 +170,7 @@
     return merged;
   }
   const tierIndex = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
-  const tierMap = Object.fromEntries([...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM, BACKGROUND_TEST, UNDERGROUND_BASE, UNDERGROUND_HEADLINER].map(r => [r.id, r]));
+  const tierMap = Object.fromEntries([...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM, BACKGROUND_TEST, UNDERGROUND_BASE, UNDERGROUND_HEADLINER, UNDERGROUND_NICKNAME].map(r => [r.id, r]));
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
   const integer = x => Number.isInteger(number(x)) ? number(x) : null;
   const str = x => typeof x === 'string' ? x.trim() : '';
@@ -196,7 +201,8 @@
       (card.type === 'background-test' && card.rarity === BACKGROUND_TEST.id) ||
       (card.type === 'underground-player' &&
         (card.rarity === UNDERGROUND_BASE.id ||
-          card.rarity === UNDERGROUND_HEADLINER.id)) ||
+          card.rarity === UNDERGROUND_HEADLINER.id ||
+          card.rarity === UNDERGROUND_NICKNAME.id)) ||
       (!card.type && card.series === CARD_SERIES &&
         RARITIES.some(tier => tier.id === card.rarity)));
   const isAutograph = row => row?.autograph === true && canAutograph(row);
@@ -219,7 +225,7 @@
   let teamSeasonPool = [], teamSeasonById = new Map();
   let toppsPlayerPool = [], toppsUniformPool = [], toppsById = new Map();
   let backgroundTestPool = [], backgroundTestByPid = new Map();
-  let undergroundBasePool = [], undergroundHeadlinerPool = [], undergroundById = new Map();
+  let undergroundBasePool = [], undergroundHeadlinerPool = [], undergroundNicknamePool = [], undergroundById = new Map();
   // Derived from the uploaded file, never stored in the collection.
   let marketProfiles = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
@@ -293,15 +299,20 @@
     };
   }
 
-  function undergroundId(pid, headliner = false) {
-    return 'underground:1968:' + (headliner ? 'headliner:' : 'player:') + pid;
+  function undergroundId(pid, edition = 'player') {
+    // Existing boolean callers intentionally keep the same IDs.
+    const code = edition === true ? 'headliner' :
+      edition === false ? 'player' : edition;
+    return 'underground:1968:' + code + ':' + pid;
   }
   // Wholly separate Series 3, but same verified 1968-active roster/photos.
   function normalizeUnderground(row, count, origins) {
     const pid = integer(row?.pid);
     const headliner = row?.rarity === UNDERGROUND_HEADLINER.id;
+    const nicknameEdition = row?.rarity === UNDERGROUND_NICKNAME.id;
     if (row?.type !== 'underground-player' ||
-        (row.rarity !== UNDERGROUND_BASE.id && !headliner) ||
+        (row.rarity !== UNDERGROUND_BASE.id && !headliner && !nicknameEdition) ||
+        (nicknameEdition && (!str(row.nickname) || str(row.nickname).length > 80)) ||
         integer(row.series) !== UNDERGROUND_SERIES ||
         integer(row.era) !== TOPPS_YEAR || pid === null || pid < 0 ||
         (row.autograph === true && !canAutograph(row)) ||
@@ -309,9 +320,11 @@
         count < 1 || count > 1000000) return null;
     const teamName = str(row.teamName) || '1968 team unavailable';
     return {
-      id: autoId(undergroundId(pid, headliner), row),
+      id: autoId(undergroundId(pid, nicknameEdition ? 'nickname' : headliner), row),
       type: 'underground-player',
-      rarity: headliner ? UNDERGROUND_HEADLINER.id : UNDERGROUND_BASE.id,
+      rarity: nicknameEdition ? UNDERGROUND_NICKNAME.id :
+        headliner ? UNDERGROUND_HEADLINER.id : UNDERGROUND_BASE.id,
+      nickname: nicknameEdition ? str(row.nickname) : '',
       autograph: isAutograph(row),
       series: UNDERGROUND_SERIES, era: TOPPS_YEAR, pid, tid: integer(row.tid),
       count, sourceCounts: origins, favorite: row.favorite === true,
@@ -331,7 +344,7 @@
     let changed = false;
     for (const key of ['name','firstName','lastName','team','teamName',
       'franchiseName','teamLogo','tid','pos','jersey','rookie','college',
-      'draftYear','ovr','gp','ppg','rpg','apg']) {
+      'draftYear','ovr','gp','ppg','rpg','apg','nickname']) {
       if (fresh[key] !== undefined && fresh[key] !== null &&
           fresh[key] !== '' && target[key] !== fresh[key]) {
         target[key] = fresh[key];
@@ -1361,10 +1374,14 @@
       if (!undergroundBasePool.length) return [];
       const chosenPids = new Set(), chosenIds = new Set();
       for (let i = 0; i < 5; i++) {
-        // Each slot: 80% base, 20% Headliners. No artificial guarantee;
-        // prefer five different players when a league has enough.
-        const insert = Math.random() < UNDERGROUND_HEADLINER_CHANCE;
-        const sourcePool = insert ? undergroundHeadlinerPool : undergroundBasePool;
+        // 20% Headliners, 5% curated nicknames, 75% Base when nicknames
+        // exist; otherwise the original 20%/80% split is unchanged.
+        const roll = Math.random();
+        const headliner = roll < UNDERGROUND_HEADLINER_CHANCE;
+        const nickname = !headliner && undergroundNicknamePool.length > 0 &&
+          roll < UNDERGROUND_HEADLINER_CHANCE + UNDERGROUND_NICKNAME_CHANCE;
+        const sourcePool = headliner ? undergroundHeadlinerPool :
+          nickname ? undergroundNicknamePool : undergroundBasePool;
         const different = sourcePool.filter(c => !chosenPids.has(c.pid));
         const unseen = sourcePool.filter(c => !chosenIds.has(c.id));
         const source = different.length ? different : unseen.length ? unseen : sourcePool;
@@ -1737,6 +1754,11 @@
       const undergroundHeadliners = undergroundBase.map(p => ({
         ...p, id:undergroundId(p.pid,true), rarity:UNDERGROUND_HEADLINER.id
       }));
+      const undergroundNicknames = (nicknameRegistry?.resolve(undergroundBase) || [])
+        .map(p => ({ ...p, id:undergroundId(p.pid,'nickname'),
+          rarity:UNDERGROUND_NICKNAME.id,
+          // Print an explicitly approved real name only on this edition.
+          name: p.printName || p.name }));
       toppsPlayers.sort((a, b) => a.name.localeCompare(b.name) || a.pid - b.pid);
       toppsUniforms.sort((a, b) => a.teamName.localeCompare(b.teamName) ||
         a.uniform.localeCompare(b.uniform));
@@ -1753,7 +1775,9 @@
       toppsById = new Map([...toppsPlayers, ...toppsUniforms].map(card => [card.id, card]));
       undergroundBasePool = undergroundBase;
       undergroundHeadlinerPool = undergroundHeadliners;
-      undergroundById = new Map([...undergroundBase, ...undergroundHeadliners].map(card => [card.id, card]));
+      undergroundNicknamePool = undergroundNicknames;
+      undergroundById = new Map([...undergroundBase, ...undergroundHeadliners,
+        ...undergroundNicknames].map(card => [card.id, card]));
       teamLogos = availableLogos;
       activeSeason = season;
       poolFile = file;
@@ -1773,6 +1797,7 @@
       toppsById = new Map();
       undergroundBasePool = [];
       undergroundHeadlinerPool = [];
+      undergroundNicknamePool = [];
       undergroundById = new Map();
       problem = 'Could not read players from this league file. Try re-uploading it.';
     } finally {
@@ -1801,6 +1826,7 @@
     toppsById = new Map();
     undergroundBasePool = [];
     undergroundHeadlinerPool = [];
+    undergroundNicknamePool = [];
     undergroundById = new Map();
     teamLogos = new Map();
     activeSeason = null;
@@ -1825,7 +1851,7 @@
   }
   const api = Object.freeze({
     currentSeries: CARD_SERIES,
-    rarities: [...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM, BACKGROUND_TEST, UNDERGROUND_BASE, UNDERGROUND_HEADLINER].map(r => Object.freeze({
+    rarities: [...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM, BACKGROUND_TEST, UNDERGROUND_BASE, UNDERGROUND_HEADLINER, UNDERGROUND_NICKNAME].map(r => Object.freeze({
       ...r, minOvr: MIN_OVR_BY_RARITY[r.id]
     })),
     exportCollection, previewCollectionMerge, mergeCollection,
@@ -1852,11 +1878,12 @@
       }));
     },
     get checklistUnderground() {
-      return [...undergroundBasePool, ...undergroundHeadlinerPool].map(c => ({
+      return [...undergroundBasePool, ...undergroundHeadlinerPool,
+        ...undergroundNicknamePool].map(c => ({
         id:c.id, pid:c.pid, tid:c.tid, type:c.type, series:c.series,
         rarity:c.rarity, name:c.name, team:c.team, teamName:c.teamName,
         franchiseName:c.franchiseName, era:TOPPS_YEAR,
-        rookie:c.rookie, peak:c.ovr
+        rookie:c.rookie, peak:c.ovr, nickname:c.nickname || ''
       }));
     },
     // Read-only historical team season catalog for Checklist completion.
@@ -1933,6 +1960,7 @@
         ready: collectionLoaded, poolSize: pool.length,
         toppsPoolSize: toppsById.size, backgroundTestPoolSize: backgroundTestPool.length,
         undergroundPoolSize: undergroundBasePool.length,
+        undergroundNicknamePoolSize: undergroundNicknamePool.length,
         season: activeSeason,
         problem, savedOK, packs, merging: mergingCollection,
         deletingCards,

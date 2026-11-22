@@ -149,7 +149,8 @@
     'topps-1968': 1.2,
     'topps-1968-uniform': 1.2 * Math.pow(1 / .20, .52),
     'underground-1968': 1.2,
-    'underground-headliner': 1.2 * Math.pow(1 / .20, .52)
+    'underground-headliner': 1.2 * Math.pow(1 / .20, .52),
+    'underground-nickname': 1.2 * Math.pow(1 / .05, .52)
   });
 
   function profile(player, throughYear) {

@@ -120,6 +120,7 @@
   tierIndex['background-test'] = .25;
   tierIndex['underground-1968'] = .52;
   tierIndex['underground-headliner'] = 1.6;
+  tierIndex['underground-nickname'] = 1.65;
   const tierMap = Object.fromEntries(api.rarities.map(r => [r.id, r]));
   // Autographs sort between Black Label and Refractor, regardless of
   // their underlying card edition. This changes display order only.
@@ -144,7 +145,8 @@
   const toppsCompletionTiers = api.rarities.filter(r =>
     r.id === 'topps-1968' || r.id === 'topps-1968-uniform');
   const undergroundCompletionTiers = api.rarities.filter(r =>
-    r.id === 'underground-1968' || r.id === 'underground-headliner');
+    r.id === 'underground-1968' || r.id === 'underground-headliner' ||
+    r.id === 'underground-nickname');
   const activeCompletionTiers = () => activeChecklistSeries === 1
     ? toppsCompletionTiers : activeChecklistSeries === 3
       ? undergroundCompletionTiers : completionTiers;
@@ -373,7 +375,7 @@
   function showStatus() {
     const s = api.status;
     const fileKey = [s.hasFile, s.poolSize, s.toppsPoolSize,
-      s.undergroundPoolSize,
+      s.undergroundPoolSize, s.undergroundNicknamePoolSize,
       s.backgroundTestPoolSize, s.season,
       s.loading, s.problem, packType].join('|');
     if (fileKey !== lastFileState) {
@@ -389,7 +391,10 @@
       else if (packType === 'underground-1968' && !s.undergroundPoolSize) status.textContent =
         'No 1968 Underground players yet. Upload an export containing the 1968 season.';
       else if (packType === 'underground-1968') status.textContent =
-        format(s.undergroundPoolSize) + ' 1968 Underground players available · 20% Headliners per card slot.';
+        format(s.undergroundPoolSize) + ' 1968 Underground players available · 20% Headliners' +
+        (s.undergroundNicknamePoolSize
+          ? ' · 5% They Call Him… (' + format(s.undergroundNicknamePoolSize) + ' selected players)'
+          : ' · nickname insert roster awaiting entries') + '.';
       else if (packType === 'topps-1968' && !s.toppsPoolSize) status.textContent =
         'No 1968 Topps cards are available. Upload a league export that includes the 1968 season.';
       else if (packType === 'topps-1968') status.textContent =
@@ -1915,6 +1920,7 @@
           tier !== 'all' && tier !== item.rarity) return false;
       if (selectedTeam !== 'all' && teamNameForCard(item) !== selectedTeam) return false;
       return !q || item.name.toLocaleLowerCase().includes(q) ||
+        String(item.nickname || '').toLocaleLowerCase().includes(q) ||
         item.team.toLocaleLowerCase().includes(q) ||
         item.teamName.toLocaleLowerCase().includes(q) ||
         String(item.era ?? '').includes(q);
@@ -2122,11 +2128,14 @@
         all.push({
           id:card.id,pid:card.pid,tid:card.tid,type:card.type,
           name:card.name,team:card.teamName,era:1968,peak:card.peak,
+          nickname:card.nickname || '',
           rookie:card.rookie,rarity:card.rarity,
           franchiseKey:Number.isInteger(card.tid) && card.tid >= 0 ?
             'tid:'+card.tid : 'unknown',
           franchiseName:card.franchiseName || card.teamName,
-          label:card.rarity === 'underground-headliner' ?
+          label:card.rarity === 'underground-nickname' ?
+            'They Call Him… · “' + card.nickname + '”' :
+            card.rarity === 'underground-headliner' ?
             'Headliners! · Screenprint insert' :
             (card.rookie ? 'Underground · New Breed Rookie' : 'Underground · Base'),
           owned:isOwned,copies:item?.count || 0
@@ -2375,15 +2384,15 @@
       ? '1968 Underground · Free Press Issue' : topps
         ? '1968 Topps · Test Issue' : 'Series 0 · Original FLAGSHIP set';
     checklistDescription.textContent = underground
-      ? 'Every eligible 1968 player as a psychedelic base card and a Headliners! screenprint insert.' : topps
+      ? 'Every eligible 1968 player as a psychedelic base card and a Headliners! insert, plus selected They Call Him… nickname cards.' : topps
       ? 'Every 1968-active player, including rookies, and home/away uniform inserts from the uploaded league archive.'
       : 'Every obtainable player edition and every eligible Base, Bronze, Silver and Gold Team Season insert. Editions check off when collected.';
     checklistFranchiseDescription.textContent = underground
-      ? '1968 Underground player and Headliners! completion by historical franchise; duplicates count once.' : topps
+      ? '1968 Underground Base, Headliners!, and curated They Call Him… editions by historical franchise; duplicates count once.' : topps
       ? '1968 Topps player and uniform completion, grouped by 1968 franchise. Duplicates count once.'
       : 'Completion by franchise, including peak-season player editions and historical Team Season inserts. Name changes stay grouped; duplicates count once.';
     checklistNote.textContent = underground
-      ? 'Each eligible 1968 player has a base and a Headliners! handbill insert. Headliners appear in 20% of Underground-only pack slots; no insert is guaranteed per pack. First-year players carry a NEW BREED · ROOKIE banner. Saved collections retain cards when the league file changes.' : topps
+      ? 'Each eligible 1968 player has Base and Headliners! editions. They Call Him… contains only selected players with approved nicknames. If at least one is eligible, Underground-only pack slots are 75% Base, 20% Headliners!, and 5% nicknames; until then the original 80%/20% split applies. No inserts are guaranteed. Rookie indicators and saved collections remain unchanged.' : topps
       ? 'One plain-paper 1968 Topps card per eligible player, with rookie styling for first-season players, plus one home and one away uniform placeholder per 1968 team. No Chrome or Refractor tiers; rare autograph variations can appear but are not required for standard set completion. The checklist comes from the uploaded league export; owned cards remain saved even when that file is unloaded.'
       : 'One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR. Team Season Base is available for every season; Bronze for playoff teams, Silver for finalists, Gold for champions. Each finish is a separate collectible edition. Autographs remain separate; duplicates count once. Owned cards missing from a newer export stay in My Collection.';
     const s = api.status;
@@ -2445,6 +2454,7 @@
       (rarity === 'all' || card.rarity === rarity) &&
       (ownership === 'all' || (ownership === 'owned') === card.owned) &&
       (!query || card.name.toLocaleLowerCase().includes(query) ||
+        String(card.nickname || '').toLocaleLowerCase().includes(query) ||
         card.team.toLocaleLowerCase().includes(query) ||
         String(card.era ?? '').includes(query)));
     if (checklistSort.value === 'rating') {
