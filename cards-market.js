@@ -13,8 +13,8 @@
   const yr = v => Number.isInteger(num(v)) ? num(v) : null;
 
   // User-defined fictional player-card price boosts are independent of
-  // collection ownership, pack odds, and the league file. Keep this small
-  // browser-local settings record separate from existing collection backups.
+  // collection ownership, pack odds, and the league file. Keep the original
+  // browser-local record, but include its validated rules in portable backups.
   const PLAYER_MULTIPLIERS_KEY = 'dbl-card-player-value-multipliers:v1';
   const MAX_PLAYER_MULTIPLIER = 1000;
   const MAX_OVERRIDES = 5000;
@@ -57,6 +57,51 @@
   function listPlayerMultipliers() {
     return [...playerMultipliers].sort(([a],[b]) => a - b)
       .map(([pid, multiplier]) => Object.freeze({pid, multiplier}));
+  }
+  // Shared validation for My Collection and Saved Links imports. Every row
+  // must be valid before any local setting or collection is modified.
+  function validatePlayerMultipliers(rows) {
+    if (!Array.isArray(rows) || rows.length > MAX_OVERRIDES)
+      throw Error('The backup contains an invalid player value multiplier list.');
+    const seen = new Set(), valid = [];
+    for (const row of rows) {
+      if (!row || typeof row !== 'object' || Array.isArray(row))
+        throw Error('The backup contains an invalid player value multiplier.');
+      const pid = parsePid(row.pid), multiplier = parseMultiplier(row.multiplier);
+      if (pid === null || multiplier === null || seen.has(pid))
+        throw Error('The backup contains an invalid or duplicate player value multiplier.');
+      seen.add(pid);
+      // 1× is the default, not a request to delete another device's rule.
+      if (multiplier > 1) valid.push({pid,multiplier});
+    }
+    return valid;
+  }
+  function planPlayerMultiplierMerge(rows) {
+    const valid = validatePlayerMultipliers(rows);
+    const next = new Map(playerMultipliers);
+    let added = 0, updated = 0;
+    for (const {pid,multiplier} of valid) {
+      const previous = next.get(pid);
+      if (previous === undefined) added++;
+      else if (previous !== multiplier) updated++;
+      next.set(pid,multiplier);
+    }
+    if (next.size > MAX_OVERRIDES)
+      throw Error('The combined player value multiplier list exceeds the limit.');
+    return {next, added, updated, total:next.size, changed:added+updated>0};
+  }
+  function previewPlayerMultiplierMerge(rows) {
+    const {added,updated,total,changed} = planPlayerMultiplierMerge(rows);
+    return {added,updated,total,changed};
+  }
+  function mergePlayerMultipliers(rows) {
+    const plan = planPlayerMultiplierMerge(rows);
+    if (!plan.changed) return {ok:true,added:0,updated:0,
+      total:plan.total,changed:false};
+    if (!savePlayerMultipliers(plan.next))
+      return {ok:false,error:'Could not save imported player value multipliers.'};
+    return {ok:true,added:plan.added,updated:plan.updated,
+      total:plan.total,changed:true};
   }
   function savePlayerMultipliers(next) {
     const items = [...next].map(([pid, multiplier]) => ({pid, multiplier}));
@@ -285,6 +330,7 @@
   window.DBLCardMarket = Object.freeze({
     profile, value, multipliers: MULT, playerMultiplier,
     listPlayerMultipliers, setPlayerMultiplier, updatePlayerMultiplier,
-    removePlayerMultiplier
+    removePlayerMultiplier, validatePlayerMultipliers,
+    previewPlayerMultiplierMerge, mergePlayerMultipliers
   });
 })();

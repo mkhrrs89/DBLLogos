@@ -843,7 +843,8 @@
     if (!collectionLoaded) throw Error('Your collection is still loading.');
     return {
       format: BACKUP_FORMAT, backupVersion: BACKUP_VERSION,
-      exportedAt: new Date().toISOString(), ...snapshot()
+      exportedAt: new Date().toISOString(), ...snapshot(),
+      playerValueMultipliers: market.listPlayerMultipliers()
     };
   }
 
@@ -859,6 +860,10 @@
         backup.packs > 100000000)
       throw Error('The collection backup has an invalid pack total.');
     const incomingPacks = sourceCounts(backup.packSources, backup.packs, true);
+    // Optional in all earlier backups; omission never clears local rules.
+    const incomingMultipliers = Object.prototype.hasOwnProperty.call(
+      backup, 'playerValueMultipliers')
+      ? market.validatePlayerMultipliers(backup.playerValueMultipliers) : null;
     // Backups from before the pity system are valid and do not reset the
     // destination's local streak progress.
     const incomingPity = Object.prototype.hasOwnProperty.call(backup, 'pity')
@@ -948,13 +953,17 @@
       if (cards.has(item.id)) throw Error('The backup contains duplicate card rows.');
       cards.set(item.id, item);
     }
-    return {cards, packSources: incomingPacks, pity: incomingPity};
+    return {cards, packSources: incomingPacks, pity: incomingPity,
+      playerValueMultipliers:incomingMultipliers};
   }
 
   function planCollectionMerge(backup) {
     if (deletingCards) throw Error('Wait for the selected-card deletion to finish.');
     if (!collectionLoaded) throw Error('Your collection is still restoring.');
     const incoming = validateImportBackup(backup);
+    const multiplierPreview = incoming.playerValueMultipliers === null
+      ? {added:0,updated:0,changed:false}
+      : market.previewPlayerMultiplierMerge(incoming.playerValueMultipliers);
     const next = new Map([...collection].map(([id, item]) =>
       [id, {...item, sourceCounts: {...item.sourceCounts}}]));
     let addedCards = 0, addedEditions = 0, refreshed = false;
@@ -1043,14 +1052,18 @@
     const pityChanged = PITY_NAMES.some(name => nextPity[name] !== pity[name]);
     if (nextPacks > 100000000) throw Error('Merged pack totals exceed the collection limit.');
     const addedPacks = nextPacks - packs;
+    const cardChanged = addedCards !== 0 || addedPacks !== 0 ||
+      refreshed || pityChanged;
     const info = {
       addedCards, addedEditions, addedPacks,
+      addedMultipliers:multiplierPreview.added,
+      updatedMultipliers:multiplierPreview.updated,
       totalCards: [...next.values()].reduce((n, card) => n + card.count, 0),
       totalEditions: next.size, totalPacks: nextPacks,
-      unchanged: addedCards === 0 && addedPacks === 0 && !refreshed &&
-        !pityChanged
+      unchanged: !cardChanged && !multiplierPreview.changed
     };
-    return {info, next, nextPacks, nextPackSources, nextPity};
+    return {info, next, nextPacks, nextPackSources, nextPity, cardChanged,
+      playerValueMultipliers:incoming.playerValueMultipliers};
   }
 
   function previewCollectionMerge(backup) {
@@ -1065,31 +1078,41 @@
     if (plan.info.unchanged) return {...plan.info, saved: true};
     mergingCollection = true;
     notify();
-    // Queue behind any in-flight pack/upgrade saves, and don't update RAM
-    // until the merged state is actually written. On failure, nothing is lost.
-    const state = {
-      version: STATE_VERSION, packs: plan.nextPacks,
-      packSources: {...plan.nextPackSources}, pity: {...plan.nextPity},
-      items: [...plan.next.values()].map(item => ({
-        ...item, sourceCounts: {...item.sourceCounts},
-        photo: photoUrl(item.photo, true),
-        teamLogo: photoUrl(item.teamLogo, true)
-      }))
-    };
-    const committed = saveQueue.catch(() => {}).then(() => writeState(state));
-    saveQueue = committed;
+    // Keep the durable-first collection write. A multiplier-only import
+    // should NOT rewrite thousands of cards just to change Settings values.
     try {
-      const saved = await committed;
-      if (!saved) {
-        savedOK = false;
-        return {...plan.info, saved: false};
+      if (plan.cardChanged) {
+        const state = {
+          version: STATE_VERSION, packs: plan.nextPacks,
+          packSources: {...plan.nextPackSources}, pity: {...plan.nextPity},
+          items: [...plan.next.values()].map(item => ({
+            ...item, sourceCounts: {...item.sourceCounts},
+            photo: photoUrl(item.photo, true),
+            teamLogo: photoUrl(item.teamLogo, true)
+          }))
+        };
+        const committed = saveQueue.catch(() => {}).then(() => writeState(state));
+        saveQueue = committed;
+        const saved = await committed;
+        if (!saved) {
+          savedOK = false;
+          return {...plan.info, saved:false};
+        }
+        collection = plan.next;
+        packSources = plan.nextPackSources;
+        packs = plan.nextPacks;
+        pity = plan.nextPity;
+        savedOK = true;
       }
-      collection = plan.next;
-      packSources = plan.nextPackSources;
-      packs = plan.nextPacks;
-      pity = plan.nextPity;
-      savedOK = true;
-      return {...plan.info, saved: true};
+      if (plan.playerValueMultipliers !== null) {
+        const merged = market.mergePlayerMultipliers(plan.playerValueMultipliers);
+        if (!merged.ok) {
+          // If cards were committed, report the partial result accurately.
+          return {...plan.info,saved:plan.cardChanged,multiplierSaved:false,
+            multiplierError:merged.error};
+        }
+      }
+      return {...plan.info,saved:true,multiplierSaved:true};
     } finally {
       mergingCollection = false;
       notify();

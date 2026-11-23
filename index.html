@@ -478,7 +478,7 @@
               </div>
             </header>
             <p id="cardsMergeFeedback" class="dbl-cards-merge-feedback" role="status" aria-live="polite"></p>
-            <p class="dbl-cards-transfer-explainer">Export your collection as a JSON backup, then import it on another device to combine cards, duplicate copies, and packs opened. You can transfer in either direction; importing an updated backup won't double-count old pulls. No automatic cloud syncing.</p>
+            <p class="dbl-cards-transfer-explainer">Export your collection as a JSON backup, then import it on another device to combine cards, duplicate copies, packs opened, and player card value multipliers. Existing multipliers for matching player PIDs are updated; unrelated settings stay intact. Older backups without multipliers remain compatible. No automatic cloud syncing.</p>
             <div id="cardsCollectionStats" class="dbl-cards-collection-stats"></div>
             <div class="dbl-cards-filter-row">
               <label class="dbl-cards-field dbl-cards-field-search" for="cardsSearch">
@@ -1392,8 +1392,9 @@
               <h3 id="settingsCardValueTitle">Player card value multipliers</h3>
               <p>Increase the estimated value of every player card with a matching game-file PID,
                 across Series 0 and 1968 Topps. For example, 2 means 2× the normal value.
-                Enter 1 to restore normal pricing. These preferences are saved in this browser;
-                card ownership, league files, and pull odds are not changed.</p>
+                Enter 1 to restore normal pricing. These preferences are saved in this browser
+                and included in My Collection and Saved Links backups; card ownership,
+                league files, and pull odds are not changed.</p>
             </div>
             <form id="settingsCardValueForm" class="settings-card-value-form" novalidate>
               <label for="settingsCardPid">
@@ -1426,7 +1427,7 @@
           <div class="settings-section saved-links-section">
             <div class="settings-section-heading">
               <h3>Saved links backup</h3>
-              <p>Export or import banners, uniforms, headshot-background links, border ratings, Home notes, and Storylines together. League files are not included or affected. Older backups without notes or Storylines leave your current entries untouched.</p>
+              <p>Export or import banners, uniforms, headshot-background links, border ratings, Home notes, Storylines, and player card value multipliers together. League files are not included or affected. Older backups without notes, Storylines, or multipliers preserve your existing entries.</p>
             </div>
             <div class="banner-actions">
               <input id="savedLinksImportFile" class="visually-hidden-file-input" type="file" accept=".json,application/json" />
@@ -1471,13 +1472,13 @@
     <script src="./home-major-events.js?v=20261119-midseason-major-v1"></script>
     <script src="./home-updates.js?v=20261119-midseason-major-v1"></script>
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
-    <script src="./cards-market.js?v=20261122-nickname-inserts-v1"></script>
+    <script src="./cards-market.js?v=20261123-multiplier-backups-v1"></script>
     <script src="./cards-underground-nicknames.js?v=20261122-sixteen-nicknames-v3"></script>
-    <script src="./cards-engine.js?v=20261122-newest-collection-sort-v1"></script>
+    <script src="./cards-engine.js?v=20261123-multiplier-backups-v1"></script>
     <script src="./cards-pack-limits.js?v=20261122-five-per-window-v1"></script>
     <script src="./cards-lightbox.js?v=20261119-card-lightbox-smooth-v2"></script>
     <script src="./cards-underground-ui.js?v=20261122-nickname-clean-front-v4"></script>
-    <script src="./cards-ui.js?v=20261122-nickname-size-fit-v2"></script>
+    <script src="./cards-ui.js?v=20261123-multiplier-backups-v1"></script>
     <!-- Internal 1969 card builder; intentionally has no automatic or public activation. -->
     <script src="./topps-1970.js?v=20261119-prelaunch-1970-v1"></script>
     <script src="./cards-background-test.js?v=20261117-white-uniform-guard"></script>
@@ -1513,7 +1514,7 @@
     <script src="./college-auto-locations.js?v=20261027-expanded-geography"></script>
     <script src="./colleges.js?v=20261027-hide-assigned-filter"></script>
     <script src="./settings.js?v=20261117-multiplier-delete-confirm"></script>
-    <script src="./saved-links-backup.js?v=20261119-storylines-backup-v4"></script>
+    <script src="./saved-links-backup.js?v=20261123-multiplier-backups-v5"></script>
     <script src="./tab-router.js?v=20261119-stories-folder-storylines-v1"></script>
   </body>
 </html>

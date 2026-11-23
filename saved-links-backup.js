@@ -6,6 +6,7 @@
     headshotBackgroundStatuses: 'dbl-logo-headshot-background-statuses:v1',
   };
   const FORMAT = 'dbl-saved-links';
+  const market = window.DBLCardMarket;
   const NOTES_KEY = 'dbl-home-notes:v1';
   const STORYLINES_KEY = 'dbl-storylines:v1';
   const NOTES_MAX_LENGTH = 120000;
@@ -64,8 +65,11 @@
       if (notes.length > NOTES_MAX_LENGTH) throw new Error('Saved notes exceed the backup limit.');
       const storylines=validateStorylines(JSON.parse(localStorage.getItem(STORYLINES_KEY) ||
         '{"version":1,"items":[]}'));
-      const payload = { format: FORMAT, version: 4, exportedAt: new Date().toISOString(),
-        links, notes, storylines };
+      if (!market?.listPlayerMultipliers || !market?.mergePlayerMultipliers)
+        throw Error('Player multipliers are unavailable. Export cancelled to avoid an incomplete backup.');
+      const payload = { format: FORMAT, version: 5, exportedAt: new Date().toISOString(),
+        links, notes, storylines,
+        playerValueMultipliers:market.listPlayerMultipliers() };
       const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
       const anchor = document.createElement('a');
       anchor.href = url;
@@ -74,7 +78,7 @@
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      report('Exported banners, uniforms, headshot backgrounds, Home notes, and Storylines.');
+      report('Exported saved links, Home notes, Storylines, and player card value multipliers.');
     } catch (error) {
       report(error?.message || 'Export failed.');
     }
@@ -106,7 +110,14 @@
       // the user already created on this device.
       if (Object.hasOwn(data, 'storylines'))
         incoming.storylines=validateStorylines(data.storylines);
-      if (!Object.keys(incoming).length) throw new Error('The backup does not contain supported saved data.');
+      // Field is optional on old exports. If present (even as null), validate
+      // strictly before changing any of the other saved-link records.
+      const hasMultipliers = Object.hasOwn(data, 'playerValueMultipliers');
+      const importedMultipliers = hasMultipliers ? data.playerValueMultipliers : null;
+      const multiplierPreview = hasMultipliers
+        ? market.previewPlayerMultiplierMerge(importedMultipliers) : null;
+      if (!Object.keys(incoming).length && !hasMultipliers)
+        throw new Error('The backup does not contain supported saved data.');
 
       // An import changes only collections provided by the backup. Never
       // delete/reset the league file, or unrelated local app preferences.
@@ -120,6 +131,13 @@
           localStorage.setItem(key, category === 'notes' ? values : JSON.stringify(values));
           updated.push(category);
         }
+        // Apply last, so a rejected multiplier write can roll back links,
+        // notes and Storylines without changing any in-memory multiplier.
+        if (hasMultipliers) {
+          const merged = market.mergePlayerMultipliers(importedMultipliers);
+          if (!merged.ok)
+            throw Error(merged.error || 'Could not save imported player value multipliers.');
+        }
       } catch (error) {
         for (const category of updated) {
           try {
@@ -131,7 +149,7 @@
             console.warn('Could not roll back a failed saved-links import.', ignored);
           }
         }
-        throw new Error('Could not save imported links on this device.');
+        throw new Error(error?.message || 'Could not save imported links on this device.');
       }
       window.dispatchEvent(new CustomEvent('dbl:saved-links-imported', {
         detail: {
@@ -141,9 +159,13 @@
           headshotBackgroundStatuses: 'headshotBackgroundStatuses' in incoming,
           notes: 'notes' in incoming,
           storylines: 'storylines' in incoming,
+          playerValueMultipliers: hasMultipliers,
         },
       }));
-      report('Imported saved links: ' + Object.keys(incoming).join(', ') + '.');
+      report('Imported saved links: ' + Object.keys(incoming).join(', ') +
+        (multiplierPreview ? (Object.keys(incoming).length ? '; ' : '') +
+          'player value multipliers (' + multiplierPreview.added + ' added, ' +
+          multiplierPreview.updated + ' updated)' : '') + '.');
     } catch (error) {
       report('Import failed: ' + (error?.message || 'Invalid file.'));
     }

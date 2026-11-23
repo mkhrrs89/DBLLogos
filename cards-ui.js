@@ -2786,34 +2786,45 @@
       const backup = JSON.parse(text);
       const preview = api.previewCollectionMerge(backup);
       if (preview.unchanged) {
-        transferMessage('This collection is already included here. No cards or pack counts were changed.');
+        transferMessage('Cards, packs and player value multipliers are already included here. No changes made.');
         return;
       }
       const additions = '+' + format(preview.addedCards) + ' card copies, +' +
         format(preview.addedEditions) + ' unique editions, +' +
-        format(preview.addedPacks) + ' packs opened.';
+        format(preview.addedPacks) + ' packs opened.\n' +
+        '+' + format(preview.addedMultipliers) + ' new player multipliers, ' +
+        format(preview.updatedMultipliers) + ' existing multiplier values updated.';
       const proceed = window.confirm(
         'Merge this DBL Cards backup into the collection on this device?\n\n' +
         additions + '\n\n' +
         'After merging: ' + format(preview.totalCards) + ' cards, ' +
         format(preview.totalEditions) + ' unique editions, ' +
         format(preview.totalPacks) + ' packs opened.\n\n' +
-        'Nothing you already own will be removed. For extra safety, ' +
-        'you can export this device’s collection before merging.'
+        'Nothing you already own will be removed. For the same player PID, ' +
+        'the imported multiplier replaces the local multiplier; other local ' +
+        'multipliers are preserved. For safety, you can export your current ' +
+        'collection before merging.'
       );
       if (!proceed) {
         transferMessage('Import cancelled. Your collection was not changed.');
         return;
       }
       const result = await api.mergeCollection(backup);
-      if (!result.saved) {
-        transferMessage('Could not save the merged collection. Your existing cards were kept.', true);
+      if (!result.saved || result.multiplierSaved === false) {
+        transferMessage(result.multiplierSaved === false
+          ? (result.saved
+            ? 'Cards saved, but player value multipliers could not be saved. ' +
+              'Retry the import. ' + (result.multiplierError || '')
+            : 'Could not save player value multipliers. Your collection was unchanged.')
+          : 'Could not save the merged collection. Your existing cards were kept.', true);
         return;
       }
       transferMessage('Collections merged! Added ' + format(result.addedCards) +
-        ' card copies and ' + format(result.addedPacks) + ' packs. ' +
+        ' card copies, ' + format(result.addedPacks) + ' packs, and ' +
+        format(result.addedMultipliers) + ' player multipliers; updated ' +
+        format(result.updatedMultipliers) + ' existing multiplier values. ' +
         'You now have ' + format(result.totalEditions) + ' unique editions. ' +
-        'Export again to transfer the combined collection to your other device.');
+        'Export again to transfer everything to your other device.');
       if (activeCardsSubtab === 1) showGallery();
       if (activeCardsSubtab === CHECKLIST_TAB_INDEX) showChecklist();
     } catch (error) {
