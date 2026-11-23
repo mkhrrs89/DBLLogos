@@ -2751,7 +2751,12 @@
   width: 100%;
   gap: clamp(12px, 1.5vw, 22px);
   justify-content: flex-start; /* safe fallback if the row overflows */
-  padding: 20px 14px 30px;
+  /* Keep the top of all cards level, even while sealed cards have no
+     market-value caption yet and their entries are therefore shorter. */
+  align-items: flex-start;
+  /* Extra top clearance prevents iOS's horizontally scrollable pack strip
+     from clipping the upper points of the NEW CARD starburst. */
+  padding: 40px 14px 30px;
   /* Native momentum is faster and easier to interrupt for the next reveal
      than the old proximity snap, which kept settling after each swipe. */
   scroll-snap-type: none;
@@ -2779,8 +2784,8 @@
      iPhones: the burst must not cover the top edge of the card. */
   box-sizing: border-box;
   width: 100%;
-  min-height: 46px;
-  flex: 0 0 46px;
+  min-height: 54px;
+  flex: 0 0 54px;
   font-size: clamp(11px, 1vw, 14px);
 }
 @media (max-width: 800px) {

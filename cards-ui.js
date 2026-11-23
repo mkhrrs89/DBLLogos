@@ -1793,7 +1793,7 @@
     }
     revealBtn.disabled = true;
   }
-  function showPulls(picks, token, ownedBeforePack) {
+  function showPulls(picks, token, ownedBeforePack, ownedAfterPack) {
     if (token !== packToken) return;
     closeCardLightbox(true);
     busy = false;
@@ -1807,6 +1807,9 @@
       const entry = make('div', 'dbl-cards-pull-entry');
       const status = make('span', 'dbl-cards-pull-status');
       const alreadyOwned = ownedBeforePack.get(card.id) || 0;
+      // Include the newly collected card(s), including repeated editions
+      // inside this same pack, in the compact post-reveal copy label.
+      const totalOwned = ownedAfterPack.get(card.id) || alreadyOwned + 1;
       entry.appendChild(status);
       // A separate caption below the card avoids covering its portrait,
       // signature, or stats. Both rarity and estimated value stay secret
@@ -1822,8 +1825,10 @@
       marketTags.set(pullValue, card);
       const element = cardElement(card, true, () => {
         const isNew = alreadyOwned === 0;
-        status.textContent = isNew ? 'NEW CARD' :
-          format(alreadyOwned) + (alreadyOwned === 1 ? ' COPY' : ' COPIES') + ' ALREADY OWNED';
+        status.textContent = isNew ? 'NEW CARD' : format(totalOwned) + 'x';
+        // Keep the compact visible label without losing its accessible meaning.
+        status.setAttribute('aria-label', isNew ? 'New card' :
+          format(totalOwned) + ' copies owned including this pack');
         status.classList.add(isNew ? 'is-new' : 'is-owned');
         // This callback runs only the first time the card is revealed.
         // Repeated flips cannot replay the NEW burst or hide the value.
@@ -1854,8 +1859,8 @@
     if (!quota.available) { showStatus(); return; }
     const pulled = api.getPack(packType);
     if (pulled.length !== 5) return;
-    // Count copies of each player/rarity edition BEFORE collecting this pack.
-    // The just-opened cards must not inflate the 'already owned' labels.
+    // Snapshot pre-pack ownership for the NEW CARD reveal (and only that);
+    // total-copy labels will instead reflect the completed pack.
     const ownedBeforePack = new Map(api.items.map(card => [card.id, card.count]));
     // Reserve only after drawing a valid five-card pack. A failed collection
     // gets its slot back; successful openings keep their timer through
@@ -1876,13 +1881,17 @@
       showStatus();
       return;
     }
+    // Snapshot after collection succeeds: includes every copy from this
+    // pack, even multiple pulls of the same edition. No inventory writes.
+    const ownedAfterPack = new Map(api.items.map(card => [card.id, card.count]));
     busy = true;
     const token = ++packToken;
     actions.hidden = true;
     packStage.replaceChildren(newPackArt(true),
       make('p', 'dbl-cards-stage-note', 'Unsealing your collector pack…'));
     showStatus();
-    window.setTimeout(() => showPulls(pulled, token, ownedBeforePack), reduced() ? 10 : 850);
+    window.setTimeout(() =>
+      showPulls(pulled, token, ownedBeforePack, ownedAfterPack), reduced() ? 10 : 850);
   }
   function teamNameForCard(card) {
     const name = String(card.teamName || '').trim();
