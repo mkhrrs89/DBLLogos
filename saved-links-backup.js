@@ -9,6 +9,7 @@
   const market = window.DBLCardMarket;
   const NOTES_KEY = 'dbl-home-notes:v1';
   const STORYLINES_KEY = 'dbl-storylines:v1';
+  const SHORTCUTS_KEY = 'dbl-shortcuts:v1';
   const NOTES_MAX_LENGTH = 120000;
   function validateStorylines(value) {
     if (!window.DBLStorylines?.validateSnapshot)
@@ -67,8 +68,11 @@
         '{"version":1,"items":[]}'));
       if (!market?.listPlayerMultipliers || !market?.mergePlayerMultipliers)
         throw Error('Player multipliers are unavailable. Export cancelled to avoid an incomplete backup.');
-      const payload = { format: FORMAT, version: 5, exportedAt: new Date().toISOString(),
-        links, notes, storylines,
+      const shortcuts = window.DBLShortcuts?.exportSnapshot?.();
+      if (!shortcuts)
+        throw Error('Shortcuts are unavailable. Export cancelled to avoid an incomplete backup.');
+      const payload = { format: FORMAT, version: 6, exportedAt: new Date().toISOString(),
+        links, notes, storylines, shortcuts,
         playerValueMultipliers:market.listPlayerMultipliers() };
       const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
       const anchor = document.createElement('a');
@@ -78,7 +82,7 @@
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      report('Exported saved links, Home notes, Storylines, and player card value multipliers.');
+      report('Exported saved links, Home notes, Storylines, Shortcuts, and player card value multipliers.');
     } catch (error) {
       report(error?.message || 'Export failed.');
     }
@@ -110,6 +114,12 @@
       // the user already created on this device.
       if (Object.hasOwn(data, 'storylines'))
         incoming.storylines=validateStorylines(data.storylines);
+      // Backups predating Shortcuts must preserve pins already on this device.
+      if (Object.hasOwn(data, 'shortcuts')) {
+        if (!window.DBLShortcuts?.validateSnapshot)
+          throw Error('Shortcuts are unavailable for import.');
+        incoming.shortcuts = window.DBLShortcuts.validateSnapshot(data.shortcuts);
+      }
       // Field is optional on old exports. If present (even as null), validate
       // strictly before changing any of the other saved-link records.
       const hasMultipliers = Object.hasOwn(data, 'playerValueMultipliers');
@@ -126,7 +136,8 @@
       try {
         for (const [category, values] of Object.entries(incoming)) {
           const key = category === 'notes' ? NOTES_KEY :
-            category === 'storylines' ? STORYLINES_KEY : KEYS[category];
+            category === 'storylines' ? STORYLINES_KEY :
+            category === 'shortcuts' ? SHORTCUTS_KEY : KEYS[category];
           previous[category] = localStorage.getItem(key);
           localStorage.setItem(key, category === 'notes' ? values : JSON.stringify(values));
           updated.push(category);
@@ -142,7 +153,8 @@
         for (const category of updated) {
           try {
             const key = category === 'notes' ? NOTES_KEY :
-            category === 'storylines' ? STORYLINES_KEY : KEYS[category];
+            category === 'storylines' ? STORYLINES_KEY :
+            category === 'shortcuts' ? SHORTCUTS_KEY : KEYS[category];
             if (previous[category] === null) localStorage.removeItem(key);
             else localStorage.setItem(key, previous[category]);
           } catch (ignored) {
@@ -159,6 +171,7 @@
           headshotBackgroundStatuses: 'headshotBackgroundStatuses' in incoming,
           notes: 'notes' in incoming,
           storylines: 'storylines' in incoming,
+          shortcuts: 'shortcuts' in incoming,
           playerValueMultipliers: hasMultipliers,
         },
       }));
