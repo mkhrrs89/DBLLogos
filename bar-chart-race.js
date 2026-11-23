@@ -398,8 +398,9 @@
         const collection=category==='awards'?player.awards:
           metric.startsWith('post:')?player.playoffs:player.regular;
         const ys=series(collection,metric,firstYear,lastYear);
-        if(ys[ys.length-1]!==0||ys.some(v=>v!==0))
-          items.push({id:player.id,name:player.name,image:player.image,player,values:ys});
+        // Keep zero-total players available for pinning even when they
+        // have not yet recorded this stat or award.
+        items.push({id:player.id,name:player.name,image:player.image,player,values:ys});
       }
     }else{
       for(const team of dataset.teams.values()){
@@ -415,8 +416,8 @@
           }
           arr[y-firstYear]=total;
         }
-        if(arr[arr.length-1]!==0)
-          items.push({id:team.id,name:'',image:'',team,values:arr});
+        // Teams without a title/win remain valid manual pin targets.
+        items.push({id:team.id,name:'',image:'',team,values:arr});
       }
     }
     metricCache={key,metric,category,items};
@@ -510,8 +511,8 @@
       }
       node.name.textContent=info.name;
       const actual=rows.findIndex(row=>row.id===id);
-      const rank=actual<0?'—':String(actual+1);
-      node.rank.textContent='#'+rank;
+      const rank=actual<0?'unranked':String(actual+1);
+      node.rank.textContent=actual<0?'(unranked)':'#'+rank;
       node.bar.style.backgroundColor=info.primary;
       node.bar.style.width=(Math.min(100,entry.value/max*100))+'%';
       node.label.style.color=isLight(info.primary)&&entry.value/max>.38?'#1A1414':'var(--text)';
@@ -520,7 +521,8 @@
       node.root.classList.toggle('is-pinned',id===pinnedId);
       node.root.style.opacity='1';
       node.root.style.transform='translateY('+(index*31)+'px)';
-      node.root.setAttribute('aria-label','#'+rank+' '+info.name+', '+
+      node.root.setAttribute('aria-label',
+        (actual<0?'Unranked ':'#'+rank+' ')+info.name+', '+
         formatValue(entry.value)+' '+unit);
     });
     for(const [id,node] of rowNodes){
