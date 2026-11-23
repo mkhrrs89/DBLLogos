@@ -1,0 +1,89 @@
+/* DBL Cards · Market: five fictional virtual trading partners.
+   New selectors are fully scoped so Pack Room and binder remain unchanged. */
+.dbl-cards-market[hidden], .dbl-market-overlay[hidden] {display:none!important}
+.dbl-cards-market {min-width:0; padding:12px 0 18px}
+.dbl-market-heading {margin:2px 0 14px}
+.dbl-market-heading h3 {font:800 clamp(1.35rem,2.6vw,1.85rem)/1.15 Georgia,serif;
+  color:var(--text);margin:4px 0 6px}
+.dbl-market-heading p:last-child {max-width:780px;line-height:1.55;color:var(--muted);margin:0}
+.dbl-market-status,.dbl-market-note {color:var(--muted);font-size:.9rem;line-height:1.5;margin:10px 0}
+.dbl-market-status.is-error,.dbl-market-offer-feedback.is-error {color:#ca5951}
+.dbl-market-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr));
+  gap:14px;align-items:stretch}
+.dbl-market-dealer {display:flex;flex-direction:column;gap:8px;
+  background:var(--surface,var(--card-bg,#22252a));color:var(--text);
+  border:1px solid var(--line);border-radius:13px;padding:14px;min-width:0}
+.dbl-market-dealer.is-sold {opacity:.72}
+.dbl-market-dealer-header {display:flex;align-items:center;gap:9px;min-width:0}
+.dbl-market-avatar {display:grid;place-items:center;flex:0 0 38px;height:38px;
+  border-radius:50%;font:900 15px Georgia,serif;color:#fae6bc;
+  background:linear-gradient(145deg,#8c473b,#414e53)}
+.dbl-market-dealer-header strong {display:block;font-size:1rem;line-height:1.2}
+.dbl-market-dealer-header small {display:block;color:var(--muted);margin-top:2px}
+.dbl-market-card-art {width:min(100%,176px);margin:4px auto;position:relative}
+.dbl-market-card-art .dbl-cards-card {width:100%}
+.dbl-market-card-name {font:800 .93rem/1.25 Georgia,serif;margin-top:4px;text-align:center;overflow-wrap:anywhere}
+.dbl-market-card-edition {font-size:.77rem;text-align:center;color:var(--muted)}
+.dbl-market-dealer-value {display:flex;justify-content:space-between;align-items:baseline;
+  gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+.dbl-market-dealer-value strong {font-size:1.12rem;color:var(--text)}
+.dbl-market-button {appearance:none;min-height:40px;border-radius:9px;border:1px solid #9b643c;
+  background:linear-gradient(145deg,#a66f42,#865137);color:#fff8e8;
+  font:750 .9rem Arial,sans-serif;padding:10px 14px;cursor:pointer}
+.dbl-market-button:hover:not(:disabled){filter:brightness(1.1)}
+.dbl-market-button:disabled{cursor:not-allowed;opacity:.54}
+.dbl-market-button:focus-visible,.dbl-market-close:focus-visible {
+  outline:3px solid var(--accent);outline-offset:2px}
+.dbl-market-dealer > .dbl-market-button {margin-top:auto}
+.dbl-market-button.is-secondary{background:transparent;color:var(--text);border-color:var(--line)}
+.dbl-market-overlay {position:fixed;inset:0;z-index:9999;display:flex;align-items:center;
+  justify-content:center;padding:max(12px,env(safe-area-inset-top))
+  max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom))
+  max(12px,env(safe-area-inset-left));box-sizing:border-box;
+  background:rgba(8,10,15,.84);backdrop-filter:blur(5px)}
+.dbl-market-modal {width:min(100%,675px);max-height:94dvh;overflow:auto;
+  border:1px solid var(--line);border-radius:14px;background:var(--surface,var(--card-bg,#22252a));
+  color:var(--text);padding:clamp(14px,3vw,24px);box-sizing:border-box;
+  box-shadow:0 20px 55px rgba(0,0,0,.45);overscroll-behavior:contain}
+.dbl-market-modal-heading {display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.dbl-market-modal-heading h3 {margin:4px 0 6px;font:800 1.3rem Georgia,serif}
+.dbl-market-modal-heading p:last-child {color:var(--muted);font-size:.9rem;line-height:1.45;margin:0 0 12px}
+.dbl-market-close {background:transparent;color:var(--text);border:1px solid var(--line);
+  border-radius:8px;font-size:25px;line-height:1;cursor:pointer;padding:5px 11px}
+.dbl-market-comparison {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;margin:9px 0 13px}
+.dbl-market-comparison > div {border:1px solid var(--line);border-radius:8px;
+  padding:10px;background:rgba(120,130,140,.06)}
+.dbl-market-comparison span {display:block;color:var(--muted);font-size:.75rem;margin-bottom:4px}
+.dbl-market-comparison strong {font-size:1.15rem}
+.dbl-market-search-label {font-weight:750;display:block;font-size:.86rem}
+.dbl-market-search-label input {display:block;width:100%;box-sizing:border-box;
+  border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--text);
+  background:var(--surface,var(--card-bg,#1c2228));font:inherit;margin-top:5px}
+.dbl-market-selector-hint {font-size:.78rem;color:var(--muted);line-height:1.4;margin:8px 0}
+.dbl-market-owned-list {max-height:min(47dvh,420px);overflow-y:auto;
+  border:1px solid var(--line);border-radius:10px}
+.dbl-market-owned-row {display:flex;align-items:center;gap:9px;padding:10px;
+  border-bottom:1px solid var(--line);min-width:0}
+.dbl-market-owned-row:last-child{border-bottom:0}
+.dbl-market-owned-row.is-chosen {background:rgba(186,136,75,.1)}
+.dbl-market-owned-checkbox{width:18px;height:18px;flex:0 0 auto;accent-color:var(--accent)}
+.dbl-market-owned-label{flex:1;min-width:0}
+.dbl-market-owned-label strong{font-size:.85rem;display:block;overflow-wrap:anywhere}
+.dbl-market-owned-label small{color:var(--muted);display:block;font-size:.74rem;line-height:1.3}
+.dbl-market-owned-quantity{display:flex;gap:5px;align-items:center;font-size:.75rem;color:var(--muted)}
+.dbl-market-owned-quantity input{width:58px;min-width:0;box-sizing:border-box;
+  border:1px solid var(--line);border-radius:6px;padding:6px;
+  color:var(--text);background:var(--surface,var(--card-bg,#1c2228));
+  font:inherit;font-size:.84rem}
+.dbl-market-owned-quantity input:disabled{opacity:.45}
+.dbl-market-more-hint{color:var(--muted);padding:8px;font-size:.8rem}
+.dbl-market-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap}
+.dbl-market-offer-feedback{font-weight:700;font-size:.85rem;line-height:1.4;margin:10px 0 0}
+@media(max-width:480px){.dbl-market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .dbl-market-dealer{padding:9px;gap:6px}.dbl-market-card-art{width:min(100%,145px)}
+ .dbl-market-dealer-header{gap:6px}.dbl-market-avatar{flex-basis:30px;height:30px;font-size:12px}
+ .dbl-market-dealer-header strong{font-size:.82rem}.dbl-market-dealer-header small{font-size:.68rem}
+ .dbl-market-card-name{font-size:.8rem}.dbl-market-modal{max-height:92dvh}
+ .dbl-market-owned-row{padding:8px 7px;gap:6px}
+ .dbl-market-owned-label strong{font-size:.8rem}}

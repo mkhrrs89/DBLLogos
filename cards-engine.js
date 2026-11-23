@@ -163,6 +163,31 @@
     return result;
   }
   const sumSourceCounts = counts => Object.values(counts).reduce((sum, n) => sum + n, 0);
+  // Trade debits are grow-only and separate from gross acquisitions. This
+  // lets later imports of older backups preserve already-surrendered copies.
+  function spentCounts(raw, strict = false) {
+    if (raw === undefined) return {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      if (strict) throw Error('Invalid traded-card ledger.');
+      return {};
+    }
+    const parsed = {};
+    for (const [id, qty] of Object.entries(raw)) {
+      if (!SOURCE_ID_RE.test(id) || !Number.isSafeInteger(qty) ||
+          qty < 1 || qty > 1000000) {
+        if (strict) throw Error('Invalid traded-card counter.');
+        return {};
+      }
+      parsed[id] = qty;
+    }
+    if (sumSourceCounts(parsed) > 1000000) {
+      if (strict) throw Error('Traded-card counters exceed the limit.');
+      return {};
+    }
+    return parsed;
+  }
+  const netCopies = (gross, spent) =>
+    Math.max(0, sumSourceCounts(gross) - sumSourceCounts(spent || {}));
   function unionSourceCounts(a, b) {
     const merged = {...a};
     for (const [id, count] of Object.entries(b))
@@ -234,6 +259,7 @@
   // Derived from the uploaded file, never stored in the collection.
   let marketProfiles = new Map();
   let collection = new Map(), packs = 0, collectionLoaded = false;
+  let marketTaken = new Set(), trading = false;
   let packSources = {}, mergingCollection = false, deletingCards = false;
   // Pity advances only when a generated pack is actually collected, never
   // just because the user previewed/drew an uncollected pack.
@@ -263,7 +289,7 @@
   function normalizedTopps(row, count, sourceLedger) {
     if (!row || (row.type !== 'topps-player' && row.type !== 'topps-uniform') ||
         integer(row.era) !== TOPPS_YEAR || !Number.isInteger(count) ||
-        count < 1 || count > 1000000) return null;
+        count < 0 || count > 1000000) return null;
     const team = str(row.team) || 'DBL';
     const teamName = str(row.teamName) || 'Unknown team';
     const tid = integer(row.tid);
@@ -324,7 +350,7 @@
         integer(row.era) !== TOPPS_YEAR || pid === null || pid < 0 ||
         (row.autograph === true && !canAutograph(row)) ||
         !Number.isInteger(count) ||
-        count < 1 || count > 1000000) return null;
+        count < 0 || count > 1000000) return null;
     const teamName = str(row.teamName) || '1968 team unavailable';
     return {
       id: autoId(undergroundId(pid, nicknameEdition ? 'nickname' : headliner), row),
@@ -369,7 +395,7 @@
     if (row?.type !== 'background-test' ||
         row?.rarity !== BACKGROUND_TEST.id ||
         pid === null || pid < 0 || era === null ||
-        !Number.isInteger(count) || count < 1 || count > 1000000) return null;
+        !Number.isInteger(count) || count < 0 || count > 1000000) return null;
     return {
       id: autoId('bgtest:player:' + pid, row), type: 'background-test',
       rarity: BACKGROUND_TEST.id, series: BACKGROUND_TEST_SERIES,
@@ -712,14 +738,21 @@
   function parseState(value) {
     collection = new Map();
     for (const row of Array.isArray(value?.items) ? value.items : []) {
-      const qty = integer(row?.count);
+      const savedCount = integer(row?.count);
+      if (savedCount === null || savedCount < 0 || savedCount > 1000000) continue;
+      const spent = spentCounts(row?.tradeSpent);
+      const origins = sourceCounts(row?.sourceCounts,
+        savedCount + sumSourceCounts(spent));
+      const qty = netCopies(origins, spent);
       if (row?.type === 'background-test') {
-        const item = normalizeBackgroundTest(row, qty, sourceCounts(row.sourceCounts, qty));
+        const item = normalizeBackgroundTest(row, qty, origins);
         if (!item) continue;
+        item.tradeSpent = spent;
         const old = collection.get(item.id);
         if (old) {
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
-          old.count = sumSourceCounts(old.sourceCounts);
+          old.tradeSpent = unionSourceCounts(old.tradeSpent || {}, item.tradeSpent);
+          old.count = netCopies(old.sourceCounts, old.tradeSpent);
           old.favorite ||= item.favorite;
           old.lastAddedAt = Math.max(old.lastAddedAt || 0, item.lastAddedAt || 0);
           updateBackgroundTest(old, item);
@@ -727,12 +760,14 @@
         continue;
       }
       if (row?.type === 'underground-player') {
-        const item = normalizeUnderground(row, qty, sourceCounts(row.sourceCounts, qty));
+        const item = normalizeUnderground(row, qty, origins);
         if (!item) continue;
+        item.tradeSpent = spent;
         const old = collection.get(item.id);
         if (old) {
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
-          old.count = sumSourceCounts(old.sourceCounts);
+          old.tradeSpent = unionSourceCounts(old.tradeSpent || {}, item.tradeSpent);
+          old.count = netCopies(old.sourceCounts, old.tradeSpent);
           old.favorite ||= item.favorite;
           old.lastAddedAt = Math.max(old.lastAddedAt || 0, item.lastAddedAt || 0);
           updateUnderground(old, item);
@@ -740,12 +775,14 @@
         continue;
       }
       if (row?.type === 'topps-player' || row?.type === 'topps-uniform') {
-        const item = normalizedTopps(row, qty, sourceCounts(row.sourceCounts, qty));
+        const item = normalizedTopps(row, qty, origins);
         if (!item) continue;
+        item.tradeSpent = spent;
         const old = collection.get(item.id);
         if (old) {
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
-          old.count = sumSourceCounts(old.sourceCounts);
+          old.tradeSpent = unionSourceCounts(old.tradeSpent || {}, item.tradeSpent);
+          old.count = netCopies(old.sourceCounts, old.tradeSpent);
           old.favorite = old.favorite === true || item.favorite === true;
           old.lastAddedAt = Math.max(old.lastAddedAt || 0, item.lastAddedAt || 0);
         } else collection.set(item.id, item);
@@ -754,7 +791,7 @@
       if (row?.type === 'team-season' && row?.rarity === TEAM_INSERT.id) {
         const tid = integer(row.tid), year = integer(row.era ?? row.season);
         if (tid === null || tid < 0 || year === null || qty === null ||
-            qty < 1 || qty > 1000000) continue;
+            qty < 0 || qty > 1000000) continue;
         const variant = teamVariant(row);
         if (!TEAM_VARIANTS.includes(variant) ||
             !eligibleTeamVariant(row,variant)) continue;
@@ -763,6 +800,7 @@
           id, type: 'team-season', rarity: TEAM_INSERT.id, series: CARD_SERIES,
           teamVariant:variant,
           count: qty, favorite: row.favorite === true, tid, era: year,
+          tradeSpent:spent,
           lastAddedAt: acquisitionTime(row.lastAddedAt),
           name: str(row.name) || str(row.teamName) || 'Unknown team',
           teamName: str(row.teamName) || str(row.name) || 'Unknown team',
@@ -774,10 +812,11 @@
           finish: str(row.finish), finishKind: str(row.finishKind)
         };
         const old = collection.get(id);
-        item.sourceCounts = sourceCounts(row.sourceCounts, qty);
+        item.sourceCounts = origins;
         if (old) {
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
-          old.count = sumSourceCounts(old.sourceCounts);
+          old.tradeSpent = unionSourceCounts(old.tradeSpent || {}, item.tradeSpent);
+          old.count = netCopies(old.sourceCounts, old.tradeSpent);
           old.favorite = old.favorite === true || item.favorite === true;
           old.lastAddedAt = Math.max(old.lastAddedAt || 0, item.lastAddedAt || 0);
         } else collection.set(id, item);
@@ -785,7 +824,7 @@
       }
       const pid = integer(row?.pid);
       const rarity = OLD_RARITY[row?.rarity] || row?.rarity;
-      if (pid === null || pid < 0 || qty === null || qty < 1 || qty > 1000000 ||
+      if (pid === null || pid < 0 || qty === null || qty < 0 || qty > 1000000 ||
           !tierMap[rarity]) continue;
       // Consolidate both prior visual variants and retired rarity names;
       // merging records adds their duplicate quantities, not replacing them.
@@ -794,7 +833,7 @@
       const id = autoId(pid + ':' + rarity, {...eligible, autograph});
       const item = {
         id, pid, rarity, autograph, series: CARD_SERIES, count: qty,
-        favorite: row.favorite === true, lastAddedAt: acquisitionTime(row.lastAddedAt),
+        tradeSpent:spent, favorite: row.favorite === true, lastAddedAt: acquisitionTime(row.lastAddedAt),
         name: str(row.name) || 'Unknown player',
         firstName: str(row.firstName), lastName: str(row.lastName),
         jersey: /^\d{1,3}$/.test(String(row.jersey || '')) ? String(row.jersey) : '',
@@ -815,11 +854,12 @@
         pot: number(row.pot), gp: number(row.gp), ppg: number(row.ppg),
         ws: number(row.ws), photo: photoUrl(row.photo, true)
       };
-      item.sourceCounts = sourceCounts(row.sourceCounts, qty);
+      item.sourceCounts = origins;
       const existing = collection.get(id);
       if (existing) {
         existing.sourceCounts = unionSourceCounts(existing.sourceCounts, item.sourceCounts);
-        existing.count = sumSourceCounts(existing.sourceCounts);
+        existing.tradeSpent = unionSourceCounts(existing.tradeSpent || {}, item.tradeSpent);
+        existing.count = netCopies(existing.sourceCounts, existing.tradeSpent);
         existing.favorite = existing.favorite === true || item.favorite === true;
         existing.lastAddedAt = Math.max(existing.lastAddedAt || 0, item.lastAddedAt || 0);
         if (!existing.photo && item.photo) existing.photo = item.photo;
@@ -829,12 +869,18 @@
     packSources = sourceCounts(value?.packSources, packs);
     packs = sumSourceCounts(packSources);
     pity = validatedPity(value?.pity);
+    marketTaken = new Set(Array.isArray(value?.marketTaken)
+      ? value.marketTaken.filter(token => typeof token === 'string' &&
+          /^\d{4}-\d{2}-\d{2}:[0-4]:[A-Za-z0-9:_-]{1,110}$/.test(token))
+          .slice(-4000) : []);
   }
   function snapshot() {
     return {version: STATE_VERSION, packs, packSources: {...packSources},
       pity: {...pity},
+      marketTaken:[...marketTaken],
       items: [...collection.values()].map(i => ({
         ...i, sourceCounts: {...i.sourceCounts},
+        tradeSpent:{...(i.tradeSpent || {})},
         photo: photoUrl(i.photo, true),
         teamLogo: photoUrl(i.teamLogo, true)
       }))};
@@ -873,9 +919,14 @@
       if (!row || typeof row !== 'object' || Array.isArray(row))
         throw Error('The backup contains an invalid card.');
       const qty = row.count;
-      if (!Number.isSafeInteger(qty) || qty < 1 || qty > 1000000)
+      if (!Number.isSafeInteger(qty) || qty < 0 || qty > 1000000)
         throw Error('The backup contains an invalid card quantity.');
-      const origins = sourceCounts(row.sourceCounts, qty, true);
+      const spent = spentCounts(row.tradeSpent, true);
+      const origins = sourceCounts(row.sourceCounts,
+        qty + sumSourceCounts(spent), true);
+      if (netCopies(origins, spent) !== qty ||
+          (qty === 0 && sumSourceCounts(spent) === 0))
+        throw Error('The backup contains inconsistent traded-card counts.');
       let item;
       if (row.type === 'background-test') {
         if (row.autograph === true && !canAutograph(row))
@@ -949,12 +1000,24 @@
       // All editions inherit optional acquisition metadata from this backup,
       // without requiring changes to the long-lived v8 backup format.
       item.lastAddedAt = acquisitionTime(row.lastAddedAt);
+      item.tradeSpent = spent;
       // Never trust user-edited IDs; build them from actual canonical fields.
       if (cards.has(item.id)) throw Error('The backup contains duplicate card rows.');
       cards.set(item.id, item);
     }
+    const incomingMarketTaken = new Set();
+    if (backup.marketTaken !== undefined) {
+      if (!Array.isArray(backup.marketTaken) || backup.marketTaken.length > 4000)
+        throw Error('Invalid traded market offer history.');
+      for (const token of backup.marketTaken) {
+        if (typeof token !== 'string' ||
+            !/^\d{4}-\d{2}-\d{2}:[0-4]:[A-Za-z0-9:_-]{1,110}$/.test(token))
+          throw Error('Invalid market offer history entry.');
+        incomingMarketTaken.add(token);
+      }
+    }
     return {cards, packSources: incomingPacks, pity: incomingPity,
-      playerValueMultipliers:incomingMultipliers};
+      playerValueMultipliers:incomingMultipliers, marketTaken:incomingMarketTaken};
   }
 
   function planCollectionMerge(backup) {
@@ -965,7 +1028,8 @@
       ? {added:0,updated:0,changed:false}
       : market.previewPlayerMultiplierMerge(incoming.playerValueMultipliers);
     const next = new Map([...collection].map(([id, item]) =>
-      [id, {...item, sourceCounts: {...item.sourceCounts}}]));
+      [id, {...item, sourceCounts: {...item.sourceCounts},
+        tradeSpent:{...(item.tradeSpent || {})}}]));
     let addedCards = 0, addedEditions = 0, refreshed = false;
     const importedNow = Date.now();
     for (const [id, imported] of incoming.cards) {
@@ -974,9 +1038,11 @@
         // A legacy backup has no original date. For a newly imported edition,
         // use its first appearance in this collection as the addition time.
         next.set(id, {...imported, sourceCounts: {...imported.sourceCounts},
-          lastAddedAt: imported.lastAddedAt || importedNow});
+          tradeSpent:{...(imported.tradeSpent || {})},
+          lastAddedAt: imported.lastAddedAt || (imported.count ? importedNow : 0)});
         addedCards += imported.count;
-        addedEditions++;
+        if (imported.count > 0) addedEditions++;
+        else refreshed = true; // A new zero-copy tombstone still needs saving.
         continue;
       }
       // Importing a favorite must never erase a locally saved favorite.
@@ -986,11 +1052,18 @@
         refreshed = true;
       }
       const joined = unionSourceCounts(current.sourceCounts, imported.sourceCounts);
-      const mergedCount = sumSourceCounts(joined);
+      const joinedSpent = unionSourceCounts(current.tradeSpent || {},
+        imported.tradeSpent || {});
+      if (Object.keys(joinedSpent).some(source =>
+          (current.tradeSpent || {})[source] !== joinedSpent[source]) ||
+          Object.keys(joined).some(source =>
+            (current.sourceCounts || {})[source] !== joined[source])) refreshed = true;
+      const mergedCount = netCopies(joined, joinedSpent);
       if (mergedCount > 1000000) throw Error('Merged copies exceed the collection limit.');
       const gainedCopies = mergedCount > current.count;
       addedCards += mergedCount - current.count;
       current.sourceCounts = joined;
+      current.tradeSpent = joinedSpent;
       current.count = mergedCount;
       // Preserve known times from both devices. For newly gained copies from
       // an old backup, their addition to this collection is known only now.
@@ -1041,6 +1114,11 @@
         }
       }
     }
+    const nextMarketTaken = new Set([...marketTaken, ...incoming.marketTaken]);
+    while (nextMarketTaken.size > 4000)
+      nextMarketTaken.delete(nextMarketTaken.values().next().value);
+    const offersChanged = nextMarketTaken.size !== marketTaken.size ||
+      [...nextMarketTaken].some(token => !marketTaken.has(token));
     const nextPackSources = unionSourceCounts(packSources, incoming.packSources);
     const nextPacks = sumSourceCounts(nextPackSources);
     // Use maximum streak, never addition: repeated imports are idempotent
@@ -1053,17 +1131,18 @@
     if (nextPacks > 100000000) throw Error('Merged pack totals exceed the collection limit.');
     const addedPacks = nextPacks - packs;
     const cardChanged = addedCards !== 0 || addedPacks !== 0 ||
-      refreshed || pityChanged;
+      refreshed || pityChanged || offersChanged;
     const info = {
       addedCards, addedEditions, addedPacks,
       addedMultipliers:multiplierPreview.added,
       updatedMultipliers:multiplierPreview.updated,
       totalCards: [...next.values()].reduce((n, card) => n + card.count, 0),
-      totalEditions: next.size, totalPacks: nextPacks,
+      totalEditions: [...next.values()].filter(c => c.count > 0).length,
+      totalPacks: nextPacks,
       unchanged: !cardChanged && !multiplierPreview.changed
     };
     return {info, next, nextPacks, nextPackSources, nextPity, cardChanged,
-      playerValueMultipliers:incoming.playerValueMultipliers};
+      nextMarketTaken, playerValueMultipliers:incoming.playerValueMultipliers};
   }
 
   function previewCollectionMerge(backup) {
@@ -1072,7 +1151,7 @@
   }
 
   async function mergeCollection(backup) {
-    if (mergingCollection || deletingCards)
+    if (mergingCollection || deletingCards || trading)
       throw Error('A collection update is already running.');
     const plan = planCollectionMerge(backup);
     if (plan.info.unchanged) return {...plan.info, saved: true};
@@ -1085,8 +1164,10 @@
         const state = {
           version: STATE_VERSION, packs: plan.nextPacks,
           packSources: {...plan.nextPackSources}, pity: {...plan.nextPity},
+          marketTaken:[...plan.nextMarketTaken],
           items: [...plan.next.values()].map(item => ({
             ...item, sourceCounts: {...item.sourceCounts},
+            tradeSpent:{...(item.tradeSpent || {})},
             photo: photoUrl(item.photo, true),
             teamLogo: photoUrl(item.teamLogo, true)
           }))
@@ -1099,6 +1180,7 @@
           return {...plan.info, saved:false};
         }
         collection = plan.next;
+        marketTaken = plan.nextMarketTaken;
         packSources = plan.nextPackSources;
         packs = plan.nextPacks;
         pity = plan.nextPity;
@@ -1163,7 +1245,7 @@
     return modified;
   }
   function refreshCollectedCards() {
-    if (!collectionLoaded || mergingCollection || deletingCards || !poolFile || !collection.size) return;
+    if (!collectionLoaded || mergingCollection || deletingCards || trading || !poolFile || !collection.size) return;
     let modified = false;
     for (const item of collection.values()) {
       if (item.type === 'background-test') {
@@ -1209,7 +1291,7 @@
     return collection.get(id)?.favorite === true;
   }
   function setFavorite(id, favorite) {
-    if (!collectionLoaded || mergingCollection || deletingCards) return false;
+    if (!collectionLoaded || mergingCollection || deletingCards || trading) return false;
     const item = collection.get(id);
     if (!item) return false;
     const desired = favorite === true;
@@ -1238,11 +1320,11 @@
     notify();
   });
   async function clearCollection() {
-    if (!collectionLoaded || mergingCollection || deletingCards) return false;
+    if (!collectionLoaded || mergingCollection || deletingCards || trading) return false;
     // Serialize the reset behind any in-flight pack saves so an older write
     // can never resurrect cards after the user clears them.
     const empty = {version: STATE_VERSION, packs: 0, packSources: {},
-      pity: emptyPity(), items: []};
+      pity: emptyPity(), marketTaken:[], items: []};
     saveQueue = saveQueue.catch(() => {}).then(() => writeState(empty));
     const cleared = await saveQueue;
     if (!cleared) {
@@ -1251,6 +1333,7 @@
       return false;
     }
     collection.clear();
+    marketTaken.clear();
     packs = 0;
     packSources = {};
     pity = emptyPity();
@@ -1262,7 +1345,7 @@
   // pack history or any other card. Commit to storage first, then memory:
   // a failed write must never make the user's cards disappear.
   async function deleteSelectedCards(ids) {
-    if (!collectionLoaded || mergingCollection || deletingCards ||
+    if (!collectionLoaded || mergingCollection || deletingCards || trading ||
         !Array.isArray(ids) || ids.length > 50000) return {saved:false, deletedEditions:0, deletedCards:0};
     const unique = new Set(ids.filter(id => typeof id === 'string' && collection.has(id)));
     if (!unique.size) return {saved:true, deletedEditions:0, deletedCards:0};
@@ -1271,9 +1354,10 @@
     const next = new Map([...collection].filter(([id]) => !unique.has(id)));
     const state = {
       version:STATE_VERSION, packs, packSources:{...packSources},
-      pity:{...pity},
+      pity:{...pity}, marketTaken:[...marketTaken],
       items:[...next.values()].map(item => ({
         ...item, sourceCounts:{...item.sourceCounts},
+        tradeSpent:{...(item.tradeSpent || {})},
         photo:photoUrl(item.photo, true),
         teamLogo:photoUrl(item.teamLogo, true)
       }))
@@ -1395,7 +1479,7 @@
     return choices[Math.floor(Math.random() * choices.length)];
   }
   function getPack(packType = 'mixed') {
-    if (!collectionLoaded || mergingCollection || deletingCards ||
+    if (!collectionLoaded || mergingCollection || deletingCards || trading ||
         (packType === 'mixed' && !pool.length)) return [];
     if (packType !== 'mixed' && packType !== 'topps-1968' &&
         packType !== 'background-test' && packType !== 'underground-1968') return [];
@@ -1530,7 +1614,7 @@
     return finish();
   }
   function collectPack(picks) {
-    if (!collectionLoaded || mergingCollection || deletingCards ||
+    if (!collectionLoaded || mergingCollection || deletingCards || trading ||
         !Array.isArray(picks) || picks.length !== 5) return false;
     const pending = pendingPity.get(picks);
     // Only a pack produced by getPack can advance pity. A second uncollected
@@ -1546,7 +1630,7 @@
         // The most recently pulled copy determines the edition's position.
         owned.lastAddedAt = Math.max(owned.lastAddedAt || 0, openedAt);
         owned.sourceCounts[thisSourceId] = (owned.sourceCounts[thisSourceId] || 0) + 1;
-        owned.count = sumSourceCounts(owned.sourceCounts);
+        owned.count = netCopies(owned.sourceCounts, owned.tradeSpent);
         if (card.type === 'background-test') {
           updateBackgroundTest(owned, card);
         } else if (card.type === 'underground-player') {
@@ -1908,12 +1992,217 @@
       ? {...card, rookieRank: liveTopps.rookieRank} : card;
     return market.value(pricedCard, year, profile, team);
   }
+  // MARKET — five daily collector offers. The candidate catalog includes
+  // every eligible current-file edition, including signed copies, rather
+  // than reusing pack odds or awarding anything through getPack().
+  const MARKET_PARTNERS = Object.freeze([
+    {name:'The Archivist', style:'History specialist', threshold:1.00},
+    {name:'The Wheeler', style:'Always looking for a deal', threshold:1.12},
+    {name:'The Scout', style:'High-upside prospect hunter', threshold:.95},
+    {name:'The Vault', style:'Rare-edition collector', threshold:1.18},
+    {name:'The Raconteur', style:'Legends and oddities', threshold:1.05}
+  ]);
+  let catalogFile = null, marketCatalog = [];
+  let marketOffersFile = null, marketOffersDay = '', cachedMarketOffers = [];
+  function tradeCatalog() {
+    if (!poolFile || !collectionLoaded) return [];
+    if (catalogFile === poolFile) return marketCatalog;
+    const all = new Map();
+    const add = card => {
+      if (!card?.id || all.has(card.id)) return;
+      const {image, imageFallback, logo, ...clean} = card;
+      clean.photo = photoUrl(card.photo, true);
+      clean.teamLogo = photoUrl(card.teamLogo, true);
+      all.set(clean.id, clean);
+      if (canAutograph(clean)) all.set(clean.id + ':auto', {
+        ...clean, id:clean.id + ':auto', autograph:true
+      });
+    };
+    for (const player of pool) for (const tier of RARITIES) {
+      if (player.peak < MIN_OVR_BY_RARITY[tier.id]) continue;
+      add({
+        id: player.pid + ':' + tier.id, pid:player.pid, rarity:tier.id,
+        series:CARD_SERIES, count:1, name:player.name,
+        firstName:player.firstName, lastName:player.lastName,
+        jersey:player.jersey, team:player.team, teamName:player.teamName,
+        teamLogo:player.publicTeamLogo, pos:player.pos, era:player.era,
+        peakVerified:player.peakVerified, rookie:player.rookie,
+        draftPick:player.draftPick, draftYear:player.draftYear,
+        college:player.college, ovr:player.ovr, peak:player.peak,
+        pot:player.pot, gp:player.gp, ppg:player.ppg, ws:player.ws,
+        photo:player.publicImage
+      });
+    }
+    for (const card of [...toppsPlayerPool, ...toppsUniformPool,
+      ...undergroundBasePool, ...undergroundHeadlinerPool,
+      ...undergroundNicknamePool, ...teamSeasonPool, ...backgroundTestPool])
+      add(card);
+    catalogFile = poolFile;
+    marketOffersFile = null;
+    cachedMarketOffers = [];
+    marketCatalog = [...all.values()];
+    return marketCatalog;
+  }
+  const marketDay = () => {
+    const now = new Date();
+    return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),
+      String(now.getDate()).padStart(2,'0')].join('-');
+  };
+  const marketHash = s => {
+    let h = 2166136261;
+    for (let i=0; i<s.length; i++)
+      h = Math.imul(h ^ s.charCodeAt(i),16777619);
+    return h >>> 0;
+  };
+  const seededRandom = key => {
+    let state = marketHash(key);
+    return () => {
+      state += 0x6D2B79F5;
+      let t = state;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  };
+  function getMarketOffers() {
+    const catalog = tradeCatalog();
+    if (!catalog.length) return [];
+    const dated = marketDay();
+    if (marketOffersFile === poolFile && marketOffersDay === dated &&
+        cachedMarketOffers.length)
+      return cachedMarketOffers.map(offer => ({
+        ...offer, value:marketValue(offer.card),sold:marketTaken.has(offer.key)
+      }));
+    const rng = seededRandom(dated + '|' + activeSeason + '|' +
+      catalog.length + '|' + catalog[0].id + '|' + catalog[catalog.length-1].id);
+    const ranked = catalog.map(card => ({card, value:marketValue(card)}))
+      .filter(row => Number.isFinite(row.value) && row.value >= 0)
+      .sort((a,b) => b.value - a.value || a.card.id.localeCompare(b.card.id));
+    if (!ranked.length) return [];
+    // Most offers fall within the upper-middle priced cohort; a smaller
+    // unweighted draw lets ANY cataloged edition appear (even an unpriced
+    // experimental card), without affecting pack odds.
+    const upperMiddle = ranked.slice(Math.floor(ranked.length*.08),
+      Math.max(1,Math.ceil(ranked.length*.57)))
+      .filter(row => row.value > 0);
+    const selected = new Set(), offers=[];
+    for (let index=0; index<MARKET_PARTNERS.length; index++) {
+      const pool = rng() < .18 || !upperMiddle.length ? ranked : upperMiddle;
+      let choices = pool.filter(row => !selected.has(row.card.id));
+      if (!choices.length) choices = ranked.filter(row => !selected.has(row.card.id));
+      if (!choices.length) break;
+      const item=choices[Math.floor(rng()*choices.length)];
+      selected.add(item.card.id);
+      const partner = MARKET_PARTNERS[index];
+      const key = dated + ':' + index + ':' + item.card.id;
+      offers.push({...partner, index, key, card:item.card, value:item.value,
+        sold:marketTaken.has(key)});
+    }
+    marketOffersFile = poolFile;
+    marketOffersDay = dated;
+    cachedMarketOffers = offers;
+    return offers;
+  }
+  async function proposeMarketTrade(offerKey, requested) {
+    if (!collectionLoaded || mergingCollection || deletingCards || trading)
+      return {ok:false,error:'Your collection is busy. Try again shortly.'};
+    const found = getMarketOffers().find(offer =>
+      offer.key === offerKey && !offer.sold);
+    if (!found) return {ok:false,error:'That offer is no longer available.'};
+    if (!Array.isArray(requested) || !requested.length || requested.length > 50)
+      return {ok:false,error:'Choose at least one card from your collection.'};
+    const surrendered = new Map();
+    let offeredValue = 0;
+    for (const row of requested) {
+      if (!row || typeof row.id !== 'string' ||
+          !Number.isInteger(row.count) || row.count < 1 ||
+          surrendered.has(row.id))
+        return {ok:false,error:'Invalid offered card quantities.'};
+      const owned = collection.get(row.id);
+      if (!owned || owned.count < row.count ||
+          owned.id === found.card.id)
+        return {ok:false,error:'Those cards are no longer available to offer.'};
+      const value = marketValue(owned);
+      if (!Number.isFinite(value) || value < 0)
+        return {ok:false,error:'A card in the trade has an invalid value.'};
+      offeredValue += value * row.count;
+      surrendered.set(row.id, {owned, count:row.count});
+    }
+    const wantedValue = marketValue(found.card);
+    const ratio = wantedValue > 0 ? offeredValue / wantedValue : offeredValue;
+    const required = found.threshold;
+    const acceptance = ratio < .72 ? 0 :
+      Math.max(.04,Math.min(.96,.53 + (ratio-required)*1.45));
+    if (!(Math.random() < acceptance))
+      return {ok:true,accepted:false,offeredValue,wantedValue,
+        reason:ratio < .72 ? 'The offer is too far below the asking value.' :
+          'The collector passed on this proposal. Try a different combination.'};
+    // Build the entire next inventory before touching live state. A failed
+    // IndexedDB/localStorage write must not surrender or grant any cards.
+    const next = new Map(collection);
+    const now = Date.now();
+    for (const [id,{owned,count}] of surrendered) {
+      const spent = {...(owned.tradeSpent || {})};
+      spent[thisSourceId] = (spent[thisSourceId] || 0) + count;
+      if (spent[thisSourceId] > 1000000)
+        return {ok:false,error:'Trade ledger limit reached.'};
+      const changed = {...owned,tradeSpent:spent,
+        count:netCopies(owned.sourceCounts,spent)};
+      next.set(id,changed);
+    }
+    const received = next.get(found.card.id);
+    if (received && received.count >= 1000000)
+      return {ok:false,error:'Collection quantity limit reached.'};
+    if (received) {
+      const sourceCountsNext={...received.sourceCounts};
+      sourceCountsNext[thisSourceId]=(sourceCountsNext[thisSourceId] || 0)+1;
+      if (sourceCountsNext[thisSourceId] > 1000000)
+        return {ok:false,error:'Collection source limit reached.'};
+      next.set(found.card.id,{...received,sourceCounts:sourceCountsNext,
+        count:netCopies(sourceCountsNext,received.tradeSpent),
+        lastAddedAt:now});
+    } else {
+      next.set(found.card.id,{...found.card,count:1,
+        sourceCounts:{[thisSourceId]:1},tradeSpent:{},
+        favorite:false,lastAddedAt:now});
+    }
+    const nextTaken = new Set(marketTaken);
+    nextTaken.add(offerKey);
+    if (nextTaken.size > 4000)
+      nextTaken.delete(nextTaken.values().next().value);
+    trading = true;
+    notify({type:'trade-start'});
+    try {
+      const state={...snapshot(),marketTaken:[...nextTaken],
+        items:[...next.values()].map(card=>({...card,
+          sourceCounts:{...card.sourceCounts},
+          tradeSpent:{...(card.tradeSpent || {})},
+          photo:photoUrl(card.photo,true),
+          teamLogo:photoUrl(card.teamLogo,true)}))};
+      const durable=saveQueue.catch(()=>{}).then(()=>writeState(state));
+      saveQueue=durable;
+      if (!await durable) {
+        savedOK=false;
+        return {ok:false,error:'Trade could not be saved. No cards were exchanged.'};
+      }
+      collection=next;
+      marketTaken=nextTaken;
+      savedOK=true;
+      return {ok:true,accepted:true,offeredValue,wantedValue,
+        received:found.card,spent:[...surrendered].map(([id,v])=>
+          ({id,count:v.count}))};
+    } finally {
+      trading=false;
+      notify({type:'trade-end'});
+    }
+  }
   const api = Object.freeze({
     currentSeries: CARD_SERIES,
     rarities: [...RARITIES, TEAM_INSERT, TOPPS_PLAYER, TOPPS_UNIFORM, BACKGROUND_TEST, UNDERGROUND_BASE, UNDERGROUND_HEADLINER, UNDERGROUND_NICKNAME].map(r => Object.freeze({
       ...r, minOvr: MIN_OVR_BY_RARITY[r.id]
     })),
     exportCollection, previewCollectionMerge, mergeCollection,
+    getMarketOffers, proposeMarketTrade,
     // A compact, read-only catalog built from the currently uploaded export.
     // Never modify or infer ownership here; saved collections remain separate.
     get checklistPlayers() {
@@ -2022,12 +2311,12 @@
         undergroundNicknamePoolSize: undergroundNicknamePool.length,
         season: activeSeason,
         problem, savedOK, packs, merging: mergingCollection,
-        deletingCards,
-        unique: collection.size,
+        deletingCards, trading,
+        unique: [...collection.values()].filter(c => c.count > 0).length,
         count: [...collection.values()].reduce((n, card) => n + card.count, 0)
       };
     },
-    get items() { return [...collection.values()]; }
+    get items() { return [...collection.values()].filter(c => c.count > 0); }
   });
   window.DBLCardEngine = api;
   hub.subscribe(({file}) => received(file));

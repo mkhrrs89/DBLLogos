@@ -25,6 +25,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Kavoon&family=Lobster&family=Shrikhand&display=swap" />
     <link rel="stylesheet" href="./cards.css?v=20261122-pack-pull-alignment-v3" />
+    <link rel="stylesheet" href="./cards-market.css?v=20261123-market-v1" />
     <link rel="stylesheet" href="./topps-1968-backs.css?v=20261121-logo-position-fix-v2" />
     <link rel="stylesheet" href="./cards-series0-backs.css?v=20261120-college-readable-v3" />
     <link rel="stylesheet" href="./cards-underground.css?v=20261123-opaque-orange-teal-photo-v8" />
@@ -314,6 +315,7 @@
           <nav class="dbl-cards-subtabs" role="tablist" aria-label="Basketball card sections">
             <button id="cardsPacksTab" class="dbl-cards-subtab is-active" type="button" role="tab" aria-selected="true" aria-controls="cardsPackView" tabindex="0">Pack Room</button>
             <button id="cardsCollectionTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsCollectionView" tabindex="-1">My Collection</button>
+            <button id="cardsMarketTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsMarketView" tabindex="-1">Market</button>
             <button id="cardsAllCollectionsTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsAllCollectionsView" tabindex="-1">All Collections</button>
             <button id="cardsChecklistTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsChecklistView" tabindex="-1">Checklist</button>
             <button id="cardsBackgroundTestTab" class="dbl-cards-subtab" type="button" role="tab" aria-selected="false" aria-controls="cardsBackgroundTestView" tabindex="-1">Background Test</button>
@@ -555,6 +557,55 @@
             <p class="dbl-cards-footnote">Four standard player-card finishes: tan Base, silver Chrome, rainbow Refractor, and glossy black Black Label, plus historical Team Season Base, Bronze (playoffs), Silver (Finals) and Gold (champions) inserts and plain-paper 1968 Topps test player/rookie/uniform cards. Every sealed card looks identical until revealed. Minimum peak OVR for standard cards: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+. Higher rarities draw from stronger-rated players. Previously collected editions are combined without losing copies. The year, OVR, team and jersey number reflect the player's highest-rated season in the uploaded league archive. Previously collected cards update when you load a league export with their history. Card prices are fictional nominal-dollar estimates for the uploaded league season (1968-era cents and dollars, NOT modern collectible prices). Rarity, rookies, game-file performance and achievements affect values; they recalculate when you upload a newer league export. No real money, trading or payouts are involved. Cards are stored locally on this browser, separately from your league file; keep a copy of your league export to restore embedded player photos after clearing it. The separate 1968 Underground set uses those same faces, with Headliners! handbill inserts and rookie print badges.</p>
           </section>
 
+
+          <section id="cardsMarketView" class="dbl-cards-market" role="tabpanel"
+            aria-labelledby="cardsMarketTab" hidden>
+            <header class="dbl-market-heading">
+              <div>
+                <p class="dbl-cards-eyebrow">The collectors' exchange</p>
+                <h3>Trading Market</h3>
+                <p>Five virtual collectors. Five offers refreshed daily. Examine their cards, then propose
+                  a trade using cards you actually own. Values use the same estimates as My Collection,
+                  including your player multipliers. Collectors may decline even a fair proposal.</p>
+              </div>
+            </header>
+            <p id="cardsMarketStatus" class="dbl-market-status" role="status" aria-live="polite"></p>
+            <div id="cardsMarketOffers" class="dbl-market-grid" aria-label="Collectors offering cards"></div>
+            <p class="dbl-market-note">Trades are simulated and saved to your collection.
+              Accepted trades permanently exchange the selected copies for the offered card.
+              Trading does not open packs or change pity counters. Completed deals return on the next day's market.</p>
+          </section>
+          <div id="cardsMarketOverlay" class="dbl-market-overlay" hidden>
+            <section class="dbl-market-modal" role="dialog" aria-modal="true"
+              aria-labelledby="cardsMarketModalTitle" aria-describedby="cardsMarketModalIntro">
+              <header class="dbl-market-modal-heading">
+                <div>
+                  <p class="dbl-cards-eyebrow">Make an offer</p>
+                  <h3 id="cardsMarketModalTitle">Propose a trade</h3>
+                  <p id="cardsMarketModalIntro"></p>
+                </div>
+                <button id="cardsMarketModalClose" class="dbl-market-close" type="button"
+                  aria-label="Close trade dialog">×</button>
+              </header>
+              <div class="dbl-market-comparison">
+                <div><span>Collector's card</span><strong id="cardsMarketWantValue">$0.00</strong></div>
+                <div><span>Your offered cards</span><strong id="cardsMarketGiveValue">$0.00</strong></div>
+              </div>
+              <label class="dbl-market-search-label" for="cardsMarketSearch">
+                Find cards to offer
+                <input id="cardsMarketSearch" type="search" autocomplete="off"
+                  placeholder="Search your collection by player, team or edition…" />
+              </label>
+              <p class="dbl-market-selector-hint">Choose cards below. You can offer multiple editions and copies.
+                Cards are initially ordered by closeness to the collector's asking value.</p>
+              <div id="cardsMarketMyCards" class="dbl-market-owned-list" aria-label="Your cards available to trade"></div>
+              <p id="cardsMarketOfferFeedback" class="dbl-market-offer-feedback" role="status" aria-live="polite"></p>
+              <div class="dbl-market-modal-actions">
+                <button id="cardsMarketCancel" type="button" class="dbl-market-button is-secondary">Cancel</button>
+                <button id="cardsMarketSubmit" type="button" class="dbl-market-button">Offer trade</button>
+              </div>
+            </section>
+          </div>
           <section id="cardsAllCollectionsView" class="dbl-cards-all-collections" role="tabpanel" aria-labelledby="cardsAllCollectionsTab" hidden>
             <header class="dbl-cards-checklist-heading">
               <h3>All Collections</h3>
@@ -1474,11 +1525,11 @@
     <script src="./home-file-upload.js?v=20261103-home-upload"></script>
     <script src="./cards-market.js?v=20261123-multiplier-backups-v1"></script>
     <script src="./cards-underground-nicknames.js?v=20261122-sixteen-nicknames-v3"></script>
-    <script src="./cards-engine.js?v=20261123-multiplier-backups-v1"></script>
+    <script src="./cards-engine.js?v=20261123-market-trading-v1"></script>
     <script src="./cards-pack-limits.js?v=20261122-five-per-window-v1"></script>
     <script src="./cards-lightbox.js?v=20261119-card-lightbox-smooth-v2"></script>
     <script src="./cards-underground-ui.js?v=20261122-nickname-clean-front-v4"></script>
-    <script src="./cards-ui.js?v=20261123-multiplier-backups-v1"></script>
+    <script src="./cards-ui.js?v=20261123-market-trading-v1"></script>
     <!-- Internal 1969 card builder; intentionally has no automatic or public activation. -->
     <script src="./topps-1970.js?v=20261119-prelaunch-1970-v1"></script>
     <script src="./cards-background-test.js?v=20261117-white-uniform-guard"></script>

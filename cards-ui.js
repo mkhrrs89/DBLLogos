@@ -42,9 +42,23 @@
   const mergeFile = document.getElementById('cardsImportCollectionFile');
   const mergeFeedback = document.getElementById('cardsMergeFeedback');
   const allCollectionsGrid = document.getElementById('cardsAllCollectionsGrid');
+  const marketGrid = document.getElementById('cardsMarketOffers');
+  const marketStatus = document.getElementById('cardsMarketStatus');
+  const marketOverlay = document.getElementById('cardsMarketOverlay');
+  const marketModalTitle = document.getElementById('cardsMarketModalTitle');
+  const marketModalIntro = document.getElementById('cardsMarketModalIntro');
+  const marketWantValue = document.getElementById('cardsMarketWantValue');
+  const marketGiveValue = document.getElementById('cardsMarketGiveValue');
+  const marketSearch = document.getElementById('cardsMarketSearch');
+  const marketOwnCards = document.getElementById('cardsMarketMyCards');
+  const marketFeedback = document.getElementById('cardsMarketOfferFeedback');
+  const marketSubmit = document.getElementById('cardsMarketSubmit');
+  const marketClose = document.getElementById('cardsMarketModalClose');
+  const marketCancel = document.getElementById('cardsMarketCancel');
   const tabs = [
     ['cardsPacksTab', 'cardsPackView'],
     ['cardsCollectionTab', 'cardsCollectionView'],
+    ['cardsMarketTab', 'cardsMarketView'],
     ['cardsAllCollectionsTab', 'cardsAllCollectionsView'],
     ['cardsChecklistTab', 'cardsChecklistView'],
     ['cardsBackgroundTestTab', 'cardsBackgroundTestView']
@@ -70,12 +84,17 @@
       !search || !rarityFilter || !teamFilter ||
       !favoritesFilter || !mixedPackType || !toppsPackType || !undergroundPackType || !psychedelic || !backgroundPackType || !order || !loadMore ||
       !clearBtn || !exportBtn || !mergeBtn || !mergeFile || !mergeFeedback ||
-      !allCollectionsGrid || tabs.some(([tab, view]) => !tab || !view) ||
+      !allCollectionsGrid || !marketGrid || !marketStatus || !marketOverlay ||
+      !marketModalTitle || !marketModalIntro || !marketWantValue || !marketGiveValue ||
+      !marketSearch || !marketOwnCards || !marketFeedback || !marketSubmit ||
+      !marketClose || !marketCancel ||
+      tabs.some(([tab, view]) => !tab || !view) ||
       !checklistStats || !checklistFranchises || !checklistSearch || !checklistRarity ||
       !checklistOwnership || !checklistSort || !checklistCaption ||
       !checklistList || !checklistMore || !checklistSeriesContext ||
       !checklistDescription || !checklistFranchiseDescription || !checklistNote) return;
 
+  const MARKET_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsMarketTab');
   const ALL_COLLECTIONS_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsAllCollectionsTab');
   const CHECKLIST_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsChecklistTab');
   const BACKGROUND_TEST_TAB_INDEX = tabs.findIndex(([tab]) => tab.id === 'cardsBackgroundTestTab');
@@ -183,6 +202,9 @@
   let lastFileState = '';
   let nameFitScheduled = false;
   let activeCardsSubtab = 0;
+  let activeMarketOffer = null, marketTradeBusy = false;
+  let marketPreviousFocus = null, marketScrollBefore = '';
+  const marketSelection = new Map();
   let checklistLimit = 80;
   let franchiseSortKey = 'franchise';
   let franchiseSortDirection = 'asc';
@@ -264,7 +286,7 @@
     // Never measure all of them in an animation frame while a card zooms.
     const focused = cardLightbox?.container;
     if (focused) fitCardNames(focused);
-    else for (const root of [gallery, packStage]) fitCardNames(root);
+    else for (const root of [gallery, packStage, marketGrid]) fitCardNames(root);
   }
   function scheduleNameFit() {
     if (nameFitScheduled) return;
@@ -433,7 +455,7 @@
     const quota = packQuota();
     showPackQuota(quota);
     openBtn.disabled = busy || clearing || transferBusy || deletingSelected ||
-      s.merging || s.deletingCards ||
+      s.merging || s.deletingCards || s.trading ||
       !s.ready || !canOpenSelected || s.loading || !quota.available;
     openBtn.textContent = busy ? 'Opening pack…' :
       !quota.available && !quota.error ? 'Pack limit reached · check reset time' :
@@ -2028,7 +2050,8 @@
     const totalCopies = [...selectedCardIds].reduce((sum, id) =>
       sum + (owned.get(id)?.count || 0), 0);
     const blocked = busy || clearing || transferBusy || deletingSelected ||
-      api.status.merging || api.status.deletingCards || !api.status.ready;
+      api.status.merging || api.status.deletingCards ||
+      api.status.trading || !api.status.ready;
     selectToggle.disabled = blocked || owned.size === 0;
     selectToggle.setAttribute('aria-pressed', String(selectionMode));
     selectToggle.textContent = selectionMode ? 'Selecting cards' : 'Select cards';
@@ -2549,7 +2572,242 @@
     checklistMore.textContent = 'Show ' +
       format(Math.min(80, result.length - checklistLimit)) + ' more editions';
   }
+  // Five daily partners live entirely inside Cards; all card artwork,
+  // estimated values and flip/lightbox behavior use the existing renderers.
+  let marketNotice = '';
+  const marketTitle = card => isTeamSeason(card)
+    ? String(card.era) + ' ' + card.name + ' · ' + teamVariantName(card)
+    : (card.name || 'Unknown player');
+  function closeMarketDialog() {
+    if (marketTradeBusy || marketOverlay.hidden) return;
+    marketOverlay.hidden = true;
+    document.body.style.overflow = marketScrollBefore;
+    activeMarketOffer = null;
+    marketSelection.clear();
+    marketFeedback.textContent = '';
+    if (marketPreviousFocus?.isConnected) marketPreviousFocus.focus();
+    marketPreviousFocus = null;
+  }
+  function refreshMarketTotals() {
+    if (!activeMarketOffer) return;
+    const inventory = new Map(api.items.map(card=>[card.id,card]));
+    let sum=0, copies=0;
+    for (const [id,count] of marketSelection) {
+      const card = inventory.get(id);
+      if (!card || card.count < count || count < 1) {
+        marketSelection.delete(id);
+        continue;
+      }
+      sum += api.marketValue(card) * count;
+      copies += count;
+    }
+    const wanted = api.marketValue(activeMarketOffer.card);
+    marketGiveValue.textContent = marketMoney(sum);
+    marketWantValue.textContent = marketMoney(wanted);
+    marketSubmit.disabled = marketTradeBusy || api.status.trading || copies === 0;
+  }
+  function showMarketMyCards() {
+    if (!activeMarketOffer) return;
+    const inventory = api.items.filter(card =>
+      card.id !== activeMarketOffer.card.id);
+    const wanted = Math.max(.01, api.marketValue(activeMarketOffer.card));
+    const worth = card => Math.max(.01,api.marketValue(card));
+    inventory.sort((a,b) =>
+      Math.abs(Math.log(worth(a)/wanted)) -
+        Math.abs(Math.log(worth(b)/wanted)) ||
+      a.name.localeCompare(b.name));
+    const q=marketSearch.value.trim().toLowerCase();
+    const matched = inventory.filter(card =>
+      !q || card.name.toLowerCase().includes(q) ||
+      (card.nickname || '').toLowerCase().includes(q) ||
+      String(card.teamName || '').toLowerCase().includes(q) ||
+      (tierMap[card.rarity]?.label || '').toLowerCase().includes(q));
+    const selectedFirst = matched.filter(c => marketSelection.has(c.id));
+    const others = matched.filter(c => !marketSelection.has(c.id));
+    const visible = [...selectedFirst,...others].slice(0,120);
+    const frag=document.createDocumentFragment();
+    if (!visible.length) frag.appendChild(make('p','dbl-cards-empty',
+      inventory.length ? 'No cards match this search.' :
+        'No eligible cards in your collection. Open packs before making a trade.'));
+    for (const card of visible) {
+      const row=make('div','dbl-market-owned-row');
+      const checked=marketSelection.has(card.id);
+      row.classList.toggle('is-chosen',checked);
+      const check=make('input','dbl-market-owned-checkbox');
+      check.type='checkbox';check.checked=checked;
+      check.setAttribute('aria-label','Offer ' + marketTitle(card));
+      const label=make('div','dbl-market-owned-label');
+      label.appendChild(make('strong','',marketTitle(card)));
+      label.appendChild(make('small','',
+        (tierMap[card.rarity]?.label || 'Card') +
+        (card.autograph ? ' · Autograph' : '') +
+        ' · Owned ×' + card.count +
+        ' · ' + marketMoney(api.marketValue(card)) + ' each'));
+      const amount=make('label','dbl-market-owned-quantity');
+      amount.appendChild(make('span','','Copies'));
+      const copies=make('input','dbl-market-quantity-input');
+      copies.type='number';copies.inputMode='numeric';copies.min='1';
+      copies.max=String(card.count);copies.step='1';
+      copies.value=String(marketSelection.get(card.id)||1);
+      copies.disabled=!checked;
+      copies.setAttribute('aria-label','Number of ' + marketTitle(card) + ' copies to offer');
+      const update = () => {
+        const parsed=Number(copies.value);
+        const n=Number.isInteger(parsed) ? Math.min(card.count,Math.max(1,parsed)):1;
+        copies.value=String(n);
+        if (check.checked) marketSelection.set(card.id,n);
+        else marketSelection.delete(card.id);
+        row.classList.toggle('is-chosen',check.checked);
+        copies.disabled=!check.checked;
+        marketFeedback.textContent='';
+        marketFeedback.classList.remove('is-error');
+        refreshMarketTotals();
+      };
+      check.addEventListener('change',update);
+      copies.addEventListener('change',update);
+      amount.appendChild(copies);
+      row.append(check,label,amount);
+      frag.appendChild(row);
+    }
+    if (matched.length>visible.length)
+      frag.appendChild(make('p','dbl-market-more-hint',
+        'Showing ' + visible.length + ' of ' + matched.length +
+        ' matches. Search to find additional cards.'));
+    marketOwnCards.replaceChildren(frag);
+    refreshMarketTotals();
+  }
+  function openMarketDialog(offer) {
+    if (!offer || offer.sold || api.status.trading || marketTradeBusy) return;
+    closeCardLightbox(true);
+    activeMarketOffer=offer;
+    marketSelection.clear();
+    marketPreviousFocus=document.activeElement;
+    marketScrollBefore=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    marketModalTitle.textContent='Trade with ' + offer.name;
+    marketModalIntro.textContent='They are offering ' + marketTitle(offer.card) +
+      '. Choose some of your own cards and offer a package. ' +
+      'A fair value helps, but acceptance is never guaranteed.';
+    marketSearch.value='';
+    marketFeedback.textContent='';
+    marketFeedback.classList.remove('is-error');
+    marketOverlay.hidden=false;
+    showMarketMyCards();
+    marketClose.focus();
+  }
+  function showMarket() {
+    if (activeCardsSubtab !== MARKET_TAB_INDEX || panel.hidden) return;
+    api.ensurePool();
+    marketGrid.replaceChildren();
+    const status=api.status;
+    const offers=api.getMarketOffers?.() || [];
+    if (!offers.length) {
+      marketStatus.textContent=status.loading
+        ? 'Building the collector market from your league file…'
+        : 'Upload a league file in the app to see the five collectors’ offers.';
+      return;
+    }
+    const today=new Date().toLocaleDateString();
+    marketStatus.textContent=marketNotice ||
+      'Five collectors · ' + today +
+      ' · Offers refresh tomorrow · Tap a card to inspect it';
+    const frag=document.createDocumentFragment();
+    for (const offer of offers) {
+      const dealer=make('article','dbl-market-dealer' +
+        (offer.sold?' is-sold':''));
+      const heading=make('div','dbl-market-dealer-header');
+      heading.appendChild(make('span','dbl-market-avatar',
+        offer.name.slice(4,6).toUpperCase()));
+      const info=make('div','');
+      info.appendChild(make('strong','',offer.name));
+      info.appendChild(make('small','',offer.style));
+      heading.appendChild(info);
+      dealer.appendChild(heading);
+      const cover=make('div','dbl-market-card-art');
+      cover.appendChild(cardElement(offer.card));
+      dealer.appendChild(cover);
+      dealer.appendChild(make('strong','dbl-market-card-name',
+        marketTitle(offer.card)));
+      dealer.appendChild(make('span','dbl-market-card-edition',
+        (tierMap[offer.card.rarity]?.label || 'Card') +
+        (offer.card.autograph === true ? ' · Signed' : '')));
+      const value=make('div','dbl-market-dealer-value');
+      value.appendChild(make('span','','EST. VALUE'));
+      value.appendChild(make('strong','',marketMoney(api.marketValue(offer.card))));
+      dealer.appendChild(value);
+      const button=make('button','dbl-market-button',
+        offer.sold ? 'Traded · Come back tomorrow' : 'Trade');
+      button.type='button';button.disabled=offer.sold||status.trading||
+        status.merging||status.deletingCards;
+      if (!offer.sold) button.addEventListener('click',()=>openMarketDialog(offer));
+      dealer.appendChild(button);
+      frag.appendChild(dealer);
+    }
+    marketGrid.appendChild(frag);
+    scheduleNameFit();
+  }
+  marketCancel.addEventListener('click',closeMarketDialog);
+  marketClose.addEventListener('click',closeMarketDialog);
+  marketOverlay.addEventListener('click',event=>{
+    if (event.target===marketOverlay) closeMarketDialog();
+  });
+  marketOverlay.addEventListener('keydown',event=>{
+    if (event.key==='Escape') {
+      event.preventDefault();closeMarketDialog();return;
+    }
+    if (event.key!=='Tab') return;
+    const controls=[...marketOverlay.querySelectorAll(
+      'button:not([disabled]),input:not([disabled])')];
+    if (!controls.length) return;
+    const first=controls[0],last=controls[controls.length-1];
+    if (event.shiftKey&&document.activeElement===first) {
+      event.preventDefault();last.focus();
+    } else if (!event.shiftKey&&document.activeElement===last) {
+      event.preventDefault();first.focus();
+    }
+  });
+  marketSearch.addEventListener('input',showMarketMyCards);
+  marketSubmit.addEventListener('click',async()=>{
+    if (!activeMarketOffer || marketTradeBusy || !marketSelection.size) return;
+    const selected=[...marketSelection].map(([id,count])=>({id,count}));
+    marketTradeBusy=true;
+    marketSubmit.disabled=true;
+    marketCancel.disabled=true;
+    marketClose.disabled=true;
+    marketFeedback.textContent='The collector is considering your offer…';
+    marketFeedback.classList.remove('is-error');
+    try {
+      const outcome=await api.proposeMarketTrade(activeMarketOffer.key,selected);
+      if (!outcome.ok) {
+        marketFeedback.textContent=outcome.error || 'Could not make this trade.';
+        marketFeedback.classList.add('is-error');
+      } else if (!outcome.accepted) {
+        marketFeedback.textContent='Trade declined. ' +
+          (outcome.reason || 'Try offering a more appealing set of cards.');
+        marketFeedback.classList.add('is-error');
+      } else {
+        const name=marketTitle(outcome.received);
+        marketNotice='Trade accepted! You received ' + name +
+          ' for ' + outcome.spent.reduce((n,c)=>n+c.count,0) +
+          ' card(s). The exchange is saved to My Collection.';
+        // Re-enable controls before closing, but never execute a second offer.
+        marketTradeBusy=false;
+        marketCancel.disabled=false;marketClose.disabled=false;
+        closeMarketDialog();
+        showMarket();
+        return;
+      }
+    } catch(error) {
+      marketFeedback.textContent='Trade error: ' + (error?.message || 'Please try again.');
+      marketFeedback.classList.add('is-error');
+    } finally {
+      marketTradeBusy=false;
+      marketCancel.disabled=false;marketClose.disabled=false;
+      refreshMarketTotals();
+    }
+  });
   function openCardsSubtab(index, focus = false) {
+    closeMarketDialog();
     closeCardLightbox(true);
     activeCardsSubtab = index;
     try {
@@ -2569,6 +2827,7 @@
     if (index !== BACKGROUND_TEST_TAB_INDEX)
       window.DBLBackgroundTest?.close();
     if (index === 1) { showGallery(); scheduleNameFit(); }
+    if (index === MARKET_TAB_INDEX) showMarket();
     if (index === BACKGROUND_TEST_TAB_INDEX)
       window.DBLBackgroundTest?.open();
     if (index === ALL_COLLECTIONS_TAB_INDEX) showAllCollections();
@@ -2581,6 +2840,7 @@
     showStatus();
     showCounters();
     if (activeCardsSubtab === 1) showGallery();
+    if (activeCardsSubtab === MARKET_TAB_INDEX) showMarket();
     if (activeCardsSubtab === CHECKLIST_TAB_INDEX) showChecklist();
     // A new file uploaded while Cards is already open should immediately
     // populate the new player pool, not require switching tabs twice.
@@ -2604,6 +2864,7 @@
     const nameResizeObserver = new window.ResizeObserver(scheduleNameFit);
     nameResizeObserver.observe(gallery);
     nameResizeObserver.observe(packStage);
+    nameResizeObserver.observe(marketGrid);
   } else {
     window.addEventListener('resize', scheduleNameFit);
   }
@@ -2789,7 +3050,9 @@
         transferMessage('Cards, packs and player value multipliers are already included here. No changes made.');
         return;
       }
-      const additions = '+' + format(preview.addedCards) + ' card copies, +' +
+      const netChange = (preview.addedCards < 0 ? '−' : '+') +
+        format(Math.abs(preview.addedCards));
+      const additions = netChange + ' net card copies, +' +
         format(preview.addedEditions) + ' unique editions, +' +
         format(preview.addedPacks) + ' packs opened.\n' +
         '+' + format(preview.addedMultipliers) + ' new player multipliers, ' +
@@ -2819,7 +3082,9 @@
           : 'Could not save the merged collection. Your existing cards were kept.', true);
         return;
       }
-      transferMessage('Collections merged! Added ' + format(result.addedCards) +
+      transferMessage('Collections merged! Net change ' +
+        (result.addedCards < 0 ? '−' : '+') +
+        format(Math.abs(result.addedCards)) +
         ' card copies, ' + format(result.addedPacks) + ' packs, and ' +
         format(result.addedMultipliers) + ' player multipliers; updated ' +
         format(result.updatedMultipliers) + ' existing multiplier values. ' +
@@ -2839,7 +3104,7 @@
   });
   clearBtn.addEventListener('click', async () => {
     if (clearing || busy || transferBusy || deletingSelected ||
-        api.status.deletingCards || api.status.merging ||
+        api.status.deletingCards || api.status.merging || api.status.trading ||
         !api.status.ready || !api.status.count) return;
     const okay = window.confirm(
       'Permanently clear all collected cards, duplicates, and pack counts on this device? This cannot be undone.'
@@ -2885,14 +3150,19 @@
       if (card && amount) amount.textContent = marketMoney(api.marketValue(card));
     }
     if (activeCardsSubtab === 1 && !panel.hidden) showGallery();
+    if (activeCardsSubtab === MARKET_TAB_INDEX && !panel.hidden) showMarket();
     if (activeCardsSubtab === CHECKLIST_TAB_INDEX && !panel.hidden) showChecklist();
   });
   window.addEventListener('dbl:tab-change', event => {
-    if (event.detail?.panelId !== 'cardsPanel') closeCardLightbox(true);
+    if (event.detail?.panelId !== 'cardsPanel') {
+      closeMarketDialog();
+      closeCardLightbox(true);
+    }
     if (event.detail?.panelId === 'cardsPanel') {
       api.ensurePool();
       if (activeCardsSubtab === CHECKLIST_TAB_INDEX) showChecklist();
       if (activeCardsSubtab === 1) showGallery();
+      if (activeCardsSubtab === MARKET_TAB_INDEX) showMarket();
       if (activeCardsSubtab === BACKGROUND_TEST_TAB_INDEX)
         window.DBLBackgroundTest?.open();
       scheduleNameFit();
