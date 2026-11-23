@@ -91,11 +91,15 @@
   function makeTeam(raw) {
     const tid=numeric(raw?.tid);
     if (!Number.isSafeInteger(tid)) return null;
+    const playoffRows=new Map((Array.isArray(raw.stats)?raw.stats:[])
+      .filter(row=>row?.playoffs && yr(row?.season)!==null)
+      .map(row=>[yr(row.season),number(row.won ?? row.wins)]));
     const seasons=(Array.isArray(raw.seasons)?raw.seasons:[])
       .filter(s=>yr(s?.season)!==null)
       .map(s=>({
         year:yr(s.season),won:number(s.won),lost:number(s.lost),
-        playoffWins:numeric(s.playoffWins) ?? numeric(s.playoffWon),
+        playoffWins:numeric(s.playoffWins) ?? numeric(s.playoffWon) ??
+          playoffRows.get(yr(s.season)) ?? 0,
         rounds:numeric(s.playoffRoundsWon) ?? numeric(s.roundsWon),
         champ:s.champ===true || s.champion===true || s.playoffFinish==='champion',
         name:([cleanString(s.region)||cleanString(raw.region),
@@ -121,18 +125,19 @@
         roundsByYear.get(s.year).push(s);
       }
     }
+    const activeYear=yr(attrs?.season), activePhase=numeric(attrs?.phase);
     for(const [year,seasons] of roundsByYear) {
       const max=Math.max(0,...seasons.map(s=>s.rounds ?? -1));
       const explicit=seasons.filter(s=>s.champ);
-      // Only infer a winner when the finals have a unique verified leader.
-      const winners=explicit.length?explicit:
-        max>0 ? seasons.filter(s=>s.rounds===max) : [];
-      if(winners.length===1) winners[0].champ=true;
-      // Incomplete regular seasons cannot have an inferred champion.
-      if(explicit.length===0 && winners.length!==1)
-        for(const s of seasons) s.champ=false;
+      // A still-active season cannot have an inferred champion.
+      const currentUnfinished=year===activeYear &&
+        (activePhase===null || activePhase<=2);
+      if(!explicit.length && !currentUnfinished && max>0){
+        const finalists=seasons.filter(s=>s.rounds===max);
+        if(finalists.length===1) finalists[0].champ=true;
+      }
     }
-    // Prefer playoffs team stats when available; seasons retain regular wins.
+    // Historical team season rows are authoritative for wins/colors/titles.
     return teams;
   }
   function makePlayer(raw) {
@@ -141,20 +146,33 @@
     const statRows=Array.isArray(raw.stats)?raw.stats:[];
     const awards=Array.isArray(raw.awards)?raw.awards:[];
     const stats={regular:new Map(),playoffs:new Map()};
-    const teamYears=new Map();
-    for(const s of statRows) {
+    const teamYears=new Map(),byYear=new Map();
+    for(const s of statRows){
       const year=yr(s?.season);
-      if(year===null) continue;
-      const group=s?.playoffs ? stats.playoffs : stats.regular;
-      let values=group.get(year);
-      if(!values) {values={};group.set(year,values);}
-      for(const key of POSITIVE) values[key]=(values[key]||0)+statValue(s,key);
-      if(!s?.playoffs) {
-        const tid=numeric(s?.tid), games=number(s?.gp);
-        if(Number.isSafeInteger(tid) &&
-          (!teamYears.has(year) || games>=teamYears.get(year).gp))
-          teamYears.set(year,{tid,gp:games});
-      }
+      if(year===null)continue;
+      const key=year+'|'+(s?.playoffs?'p':'r');
+      if(!byYear.has(key))byYear.set(key,[]);
+      byYear.get(key).push(s);
+      // When a player moved teams, use the most-played actual franchise,
+      // never the summary "TOT" row, for historical jersey/bar color.
+      const tid=numeric(s?.tid),games=number(s?.gp);
+      if(!s?.playoffs && Number.isSafeInteger(tid) && tid>=0 &&
+        (!teamYears.has(year)||games>=teamYears.get(year).gp))
+        teamYears.set(year,{tid,gp:games});
+    }
+    for(const [key,rows] of byYear){
+      const [yearText,period]=key.split('|'),year=Number(yearText);
+      const group=period==='p'?stats.playoffs:stats.regular;
+      // Basketball GM may include a TOT summary alongside split-team rows.
+      // Counting both silently doubles a traded player's career totals.
+      const total=rows.filter(row=>number(row?.tid)===-1 ||
+        cleanString(row?.abbrev).toUpperCase()==='TOT');
+      const counted=total.length?[total[total.length-1]]:rows;
+      const values={};
+      for(const row of counted)
+        for(const stat of POSITIVE)
+          values[stat]=(values[stat]||0)+statValue(row,stat);
+      group.set(year,values);
     }
     const awardsByYear=new Map();
     for(const award of awards) {
@@ -185,6 +203,22 @@
     const teams=buildTeamData(rawTeams,attrs);
     rawTeams.length=0;
     if(!teams.size) throw Error('No historical team seasons found in this league file.');
+    // Some BBGM exports hold playoff team wins in the top-level teamStats
+    // array instead of each team's own stats. Reconcile without touching wins.
+    const teamPostWins=new Map();
+    await stream.forEachTopLevelArrayItem(fileObject,'teamStats',row=>{
+      if(token!==generation||!row?.playoffs)return;
+      const tid=numeric(row.tid),year=yr(row.season);
+      if(!Number.isSafeInteger(tid)||year===null)return;
+      const wins=numeric(row.won)??numeric(row.wins);
+      if(wins!==null)teamPostWins.set(tid+'|'+year,wins);
+    });
+    if(token!==generation)return null;
+    for(const team of teams.values())
+      for(const season of team.seasons){
+        const wins=teamPostWins.get(team.tid+'|'+season.year);
+        if(wins!==undefined)season.playoffWins=wins;
+      }
     controls.status.textContent='Reading player statistics and awards…';
     const players=new Map(),awardTypes=new Set();
     const addPlayer=raw=>{
@@ -268,6 +302,9 @@
     }
     controls.start.value=String(dataset.min);
     controls.end.value=String(dataset.max);
+    controls.scrub.min=String(dataset.min);
+    controls.scrub.max=String(dataset.max);
+    controls.scrub.value=String(dataset.min);
   }
   function rebuildMetricOptions() {
     const previous=controls.metric.value;
@@ -349,6 +386,10 @@
   function prepareMetric() {
     if(!dataset)return;
     const metric=controls.metric.value,category=controls.category.value;
+    if(!metric) {
+      metricCache={key:'empty',metric:'',category,items:[]};
+      return;
+    }
     const key=category+'|'+metric+'|'+firstYear+'|'+lastYear;
     if(metricCache?.key===key)return;
     const items=[];
