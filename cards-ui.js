@@ -1935,6 +1935,13 @@
         String(item.era ?? '').includes(q);
     });
     switch (order.value) {
+      case 'newest':
+        // Unknown-date legacy cards come last. Among those, preserve the
+        // best available historical clue: reverse their saved insertion order.
+        // Newer duplicate pulls move their existing edition to the top.
+        result.reverse().sort((a, b) =>
+          (b.lastAddedAt || 0) - (a.lastAddedAt || 0));
+        break;
       case 'name': result.sort((a, b) => a.name.localeCompare(b.name)); break;
       case 'duplicates':
         result.sort((a, b) => b.count - a.count || raritySortRank(b) - raritySortRank(a));

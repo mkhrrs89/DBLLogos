@@ -174,6 +174,11 @@
   const number = x => x == null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null;
   const integer = x => Number.isInteger(number(x)) ? number(x) : null;
   const str = x => typeof x === 'string' ? x.trim() : '';
+  // Timestamps are optional metadata: legacy collections and backups have
+  // none. Do not invent past acquisition dates or accept invalid/future ones.
+  const acquisitionTime = value =>
+    Number.isSafeInteger(value) && value > 0 &&
+    value <= Date.now() + 86400000 ? value : 0;
   // The original team:<tid>:<year> ID becomes the Base edition, including
   // all formerly bronze-looking champion cards. New finishes use suffixes.
   const TEAM_VARIANTS = ['base','bronze','silver','gold'];
@@ -269,7 +274,8 @@
         id: autoId('topps:1968:player:' + pid, row),
         type: 'topps-player', rarity: TOPPS_PLAYER.id, series: TOPPS_SERIES,
         autograph: isAutograph(row),
-        count, sourceCounts: sourceLedger, favorite: row.favorite === true, pid, era: TOPPS_YEAR, tid,
+        count, sourceCounts: sourceLedger, favorite: row.favorite === true,
+        lastAddedAt: acquisitionTime(row.lastAddedAt), pid, era: TOPPS_YEAR, tid,
         name: str(row.name) || 'Unknown player',
         firstName: str(row.firstName), lastName: str(row.lastName),
         jersey: /^\d{1,3}$/.test(String(row.jersey || '')) ? String(row.jersey) : '',
@@ -292,7 +298,8 @@
     return {
       id: 'topps:1968:uniform:' + tid + ':' + uniform,
       type: 'topps-uniform', rarity: TOPPS_UNIFORM.id, series: TOPPS_SERIES,
-      count, sourceCounts: sourceLedger, favorite: row.favorite === true, tid, era: TOPPS_YEAR,
+      count, sourceCounts: sourceLedger, favorite: row.favorite === true,
+        lastAddedAt: acquisitionTime(row.lastAddedAt), tid, era: TOPPS_YEAR,
       uniform, name: teamName + ' · ' + uniform.toUpperCase(),
       team, teamName, franchiseName: str(row.franchiseName) || teamName,
       teamLogo: photoUrl(row.teamLogo, true), uniformImage: photoUrl(row.uniformImage, true)
@@ -328,6 +335,7 @@
       autograph: isAutograph(row),
       series: UNDERGROUND_SERIES, era: TOPPS_YEAR, pid, tid: integer(row.tid),
       count, sourceCounts: origins, favorite: row.favorite === true,
+      lastAddedAt: acquisitionTime(row.lastAddedAt),
       name: str(row.name) || 'Unknown player',
       firstName: str(row.firstName), lastName: str(row.lastName),
       team: str(row.team) || 'DBL', teamName,
@@ -367,6 +375,7 @@
       rarity: BACKGROUND_TEST.id, series: BACKGROUND_TEST_SERIES,
       autograph: isAutograph(row),
       count, sourceCounts: origins, favorite: row.favorite === true,
+      lastAddedAt: acquisitionTime(row.lastAddedAt),
       pid, era, tid: integer(row.tid),
       name: str(row.name) || 'Unknown player',
       team: str(row.team) || 'DBL',
@@ -712,6 +721,7 @@
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
           old.count = sumSourceCounts(old.sourceCounts);
           old.favorite ||= item.favorite;
+          old.lastAddedAt = Math.max(old.lastAddedAt || 0, item.lastAddedAt || 0);
           updateBackgroundTest(old, item);
         } else collection.set(item.id, item);
         continue;
@@ -724,6 +734,7 @@
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
           old.count = sumSourceCounts(old.sourceCounts);
           old.favorite ||= item.favorite;
+          old.lastAddedAt = Math.max(old.lastAddedAt || 0, item.lastAddedAt || 0);
           updateUnderground(old, item);
         } else collection.set(item.id, item);
         continue;
@@ -736,6 +747,7 @@
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
           old.count = sumSourceCounts(old.sourceCounts);
           old.favorite = old.favorite === true || item.favorite === true;
+          old.lastAddedAt = Math.max(old.lastAddedAt || 0, item.lastAddedAt || 0);
         } else collection.set(item.id, item);
         continue;
       }
@@ -751,6 +763,7 @@
           id, type: 'team-season', rarity: TEAM_INSERT.id, series: CARD_SERIES,
           teamVariant:variant,
           count: qty, favorite: row.favorite === true, tid, era: year,
+          lastAddedAt: acquisitionTime(row.lastAddedAt),
           name: str(row.name) || str(row.teamName) || 'Unknown team',
           teamName: str(row.teamName) || str(row.name) || 'Unknown team',
           team: str(row.team) || 'DBL',
@@ -766,6 +779,7 @@
           old.sourceCounts = unionSourceCounts(old.sourceCounts, item.sourceCounts);
           old.count = sumSourceCounts(old.sourceCounts);
           old.favorite = old.favorite === true || item.favorite === true;
+          old.lastAddedAt = Math.max(old.lastAddedAt || 0, item.lastAddedAt || 0);
         } else collection.set(id, item);
         continue;
       }
@@ -780,7 +794,7 @@
       const id = autoId(pid + ':' + rarity, {...eligible, autograph});
       const item = {
         id, pid, rarity, autograph, series: CARD_SERIES, count: qty,
-        favorite: row.favorite === true,
+        favorite: row.favorite === true, lastAddedAt: acquisitionTime(row.lastAddedAt),
         name: str(row.name) || 'Unknown player',
         firstName: str(row.firstName), lastName: str(row.lastName),
         jersey: /^\d{1,3}$/.test(String(row.jersey || '')) ? String(row.jersey) : '',
@@ -807,6 +821,7 @@
         existing.sourceCounts = unionSourceCounts(existing.sourceCounts, item.sourceCounts);
         existing.count = sumSourceCounts(existing.sourceCounts);
         existing.favorite = existing.favorite === true || item.favorite === true;
+        existing.lastAddedAt = Math.max(existing.lastAddedAt || 0, item.lastAddedAt || 0);
         if (!existing.photo && item.photo) existing.photo = item.photo;
       } else collection.set(id, item);
     }
@@ -926,6 +941,9 @@
           photo: photoUrl(row.photo, true)
         };
       }
+      // All editions inherit optional acquisition metadata from this backup,
+      // without requiring changes to the long-lived v8 backup format.
+      item.lastAddedAt = acquisitionTime(row.lastAddedAt);
       // Never trust user-edited IDs; build them from actual canonical fields.
       if (cards.has(item.id)) throw Error('The backup contains duplicate card rows.');
       cards.set(item.id, item);
@@ -940,10 +958,14 @@
     const next = new Map([...collection].map(([id, item]) =>
       [id, {...item, sourceCounts: {...item.sourceCounts}}]));
     let addedCards = 0, addedEditions = 0, refreshed = false;
+    const importedNow = Date.now();
     for (const [id, imported] of incoming.cards) {
       const current = next.get(id);
       if (!current) {
-        next.set(id, {...imported, sourceCounts: {...imported.sourceCounts}});
+        // A legacy backup has no original date. For a newly imported edition,
+        // use its first appearance in this collection as the addition time.
+        next.set(id, {...imported, sourceCounts: {...imported.sourceCounts},
+          lastAddedAt: imported.lastAddedAt || importedNow});
         addedCards += imported.count;
         addedEditions++;
         continue;
@@ -957,9 +979,19 @@
       const joined = unionSourceCounts(current.sourceCounts, imported.sourceCounts);
       const mergedCount = sumSourceCounts(joined);
       if (mergedCount > 1000000) throw Error('Merged copies exceed the collection limit.');
+      const gainedCopies = mergedCount > current.count;
       addedCards += mergedCount - current.count;
       current.sourceCounts = joined;
       current.count = mergedCount;
+      // Preserve known times from both devices. For newly gained copies from
+      // an old backup, their addition to this collection is known only now.
+      const newest = Math.max(current.lastAddedAt || 0,
+        imported.lastAddedAt || 0,
+        gainedCopies && !imported.lastAddedAt ? importedNow : 0);
+      if (newest !== (current.lastAddedAt || 0)) {
+        current.lastAddedAt = newest;
+        refreshed = true;
+      }
       if (imported.type === 'background-test') {
         if (updateBackgroundTest(current, imported)) refreshed = true;
       } else if (imported.type === 'underground-player') {
@@ -1484,9 +1516,12 @@
         pending.startingPity[name] === pity[name]))
       pity = {...pending.nextPity};
     pendingPity.delete(picks);
+    const openedAt = Date.now();
     for (const card of picks) {
       const owned = collection.get(card.id);
       if (owned) {
+        // The most recently pulled copy determines the edition's position.
+        owned.lastAddedAt = Math.max(owned.lastAddedAt || 0, openedAt);
         owned.sourceCounts[thisSourceId] = (owned.sourceCounts[thisSourceId] || 0) + 1;
         owned.count = sumSourceCounts(owned.sourceCounts);
         if (card.type === 'background-test') {
@@ -1502,7 +1537,8 @@
           if (!owned.peakVerified || (number(card.peak) ?? -1) >= (number(owned.peak) ?? -1))
             updateCardFromPlayer(owned, card);
         }
-      } else collection.set(card.id, {...card, sourceCounts: {[thisSourceId]: 1}});
+      } else collection.set(card.id, {...card, lastAddedAt: openedAt,
+        sourceCounts: {[thisSourceId]: 1}});
     }
     packSources[thisSourceId] = (packSources[thisSourceId] || 0) + 1;
     packs = sumSourceCounts(packSources);
