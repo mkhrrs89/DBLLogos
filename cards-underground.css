@@ -316,7 +316,7 @@
 .dbl-nickname-poster-banner {
   /* Equal side margins keep the tilted ink banner centered on the card. */
   position:absolute; z-index:5; top:2%; left:5%; right:5%; height:12%;
-  display:grid; place-items:center; box-sizing:border-box; padding:2% 6%;
+  display:grid; place-items:center; box-sizing:border-box; padding:2% 4%;
   color:#f8e6b5; background:#913b4b;
   border:clamp(1px,.8cqw,3px) solid #613342;
   box-shadow:4px 5px 0 rgba(62,40,51,.22);
@@ -326,8 +326,9 @@
   /* The fixed set title must stay on one line inside the red ink banner,
      including at iPhone card sizes and large full-screen lightbox sizes. */
   display:block; width:100%; min-width:0; max-width:100%;
-  font:400 clamp(10px,7.5cqw,28px)/1.05 "Shrikhand","Kavoon",Georgia,serif;
-  letter-spacing:-.045em; white-space:nowrap; text-align:center;
+  /* A little larger, but still one line inside the centered red banner. */
+  font:400 clamp(11px,8.15cqw,32px)/1.05 "Shrikhand","Kavoon",Georgia,serif;
+  letter-spacing:-.05em; white-space:nowrap; text-align:center;
   text-shadow:1px 2px 0 #4d2a3c;
 }
 .dbl-nickname-billboard {
@@ -357,30 +358,30 @@
   font-size:clamp(8px,7cqw,36px);
 }
 .dbl-nickname-cutout {
-  /* No hard-edged photo mat, side letterboxing or skewed frame. Center the
-     full portrait over the existing teal/orange poster shapes. */
-  position:absolute; z-index:3; top:27%; bottom:13%; left:5%; right:5%;
-  display:flex; align-items:center; justify-content:center;
-  box-sizing:border-box; overflow:visible; background:transparent;
-  border:0; box-shadow:none; transform:none; clip-path:none;
+  /* Frame the actual 2:3 portrait, not the old wide/empty letterbox. The
+     orange ink outline and teal offset shadow match the backdrop exactly. */
+  position:absolute; z-index:3; top:27%; left:50%; right:auto; bottom:auto;
+  width:54%; height:57%; display:block;
+  box-sizing:border-box; overflow:hidden; background:#e7bd72;
+  border:clamp(3px,1.9cqw,7px) solid #d67e53;
+  box-shadow:clamp(4px,2.1cqw,9px) clamp(5px,2.6cqw,12px) 0 #276c71;
+  transform:translateX(-50%) rotate(-2.5deg);
+  clip-path:none;
 }
 .dbl-nickname-cutout > .dbl-cards-art {
   display:block; position:absolute; inset:0; width:100%; height:100%;
-  box-sizing:border-box; overflow:visible; z-index:1; border:0;
-  border-radius:0; box-shadow:none; background:transparent;
-  /* Feather the JPEG's rectangular backdrop into the poster artwork.
-     This is a visual mask only: the original photograph is unchanged. */
-  -webkit-mask-image:radial-gradient(ellipse 57% 73% at 50% 51%,
-    #000 48%,rgba(0,0,0,.95) 61%,transparent 97%);
-  mask-image:radial-gradient(ellipse 57% 73% at 50% 51%,
-    #000 48%,rgba(0,0,0,.95) 61%,transparent 97%);
+  box-sizing:border-box; overflow:hidden; z-index:1; border:0;
+  border-radius:0; box-shadow:none; background:#e7bd72;
+  /* The former radial mask made the actual player partially transparent.
+     Keep the complete opaque photo in the printed frame. */
+  -webkit-mask-image:none !important; mask-image:none !important;
+  opacity:1;
 }
 .dbl-nickname-cutout .dbl-cards-player-photo {
   display:block; width:100%; height:100%;
-  /* Preserve the entire centered portrait. Unused space is transparent
-     rather than filled with the old tan rectangular letterbox. */
   object-fit:contain !important; object-position:center center !important;
   filter:grayscale(1) sepia(.6) contrast(1.25) brightness(1);
+  opacity:1 !important; -webkit-mask-image:none !important; mask-image:none !important;
 }
 .dbl-nickname-cutout::after {
   content:none;
