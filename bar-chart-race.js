@@ -270,11 +270,23 @@
       'Load a league file to start the race.';
     if(file&&!panel.hidden)void load();
   }
+  async function waitForMainImport(token) {
+    const status=document.getElementById('statusMessage');
+    const started=Date.now();
+    // Avoid racing the main importer over a large compressed league file.
+    while(token===generation && Date.now()-started<90000){
+      const message=status?.textContent?.trim()||'';
+      if(!/^(Loading|Restoring)\s/i.test(message))break;
+      await new Promise(resolve=>window.setTimeout(resolve,100));
+    }
+  }
   async function load() {
     if(!file || panel.hidden || dataset || loading===generation)return;
     const token=generation, target=file;
     loading=token;
     try {
+      await waitForMainImport(token);
+      if(token!==generation)return;
       const data=await build(target,token);
       if(token!==generation||!data)return;
       dataset=data;
