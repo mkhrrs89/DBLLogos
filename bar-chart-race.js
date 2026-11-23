@@ -14,7 +14,7 @@
     pinLabel:byId('dblRacePinLabel'),pinHint:byId('dblRacePinHint'),
     unpin:byId('dblRaceUnpin'),status:byId('dblRaceStatus'),
     cumulative:byId('dblRaceCumulative'),
-    rows:byId('dblRaceRows'),year:byId('dblRaceYear'),
+    rows:byId('dblRaceRows'),ranks:byId('dblRaceRanks'),year:byId('dblRaceYear'),
     caption:byId('dblRaceCaption'),play:byId('dblRacePlay'),
     scrub:byId('dblRaceScrub'),speed:panel.querySelector('.dbl-race-speed')
   };
@@ -99,6 +99,8 @@
   const MS_PER_SEASON=950;
   const PAINT_INTERVAL=1000/30;
   const rowNodes=new Map();
+  // Fixed rank slots are independent of the animated player/team DOM rows.
+  const rankLabels=[];
   const requestFrame=window.requestAnimationFrame ?
     callback=>window.requestAnimationFrame(callback) :
     callback=>window.setTimeout(()=>callback(Date.now()),16);
@@ -306,7 +308,8 @@
   function setFile(next) {
     if(file===next)return;
     file=next;generation++;loading=-1;dataset=null;metricCache=null;
-    stop();rowNodes.clear();controls.rows.replaceChildren();
+    stop();rowNodes.clear();controls.rows.replaceChildren(controls.ranks);
+    controls.ranks.replaceChildren();rankLabels.length=0;
     controls.year.textContent='—';
     controls.scrub.disabled=true;controls.play.disabled=true;
     controls.status.textContent=file?
@@ -541,16 +544,15 @@
     const bar=document.createElement('span');bar.className='dbl-race-bar';
     const label=document.createElement('span');label.className='dbl-race-label';
     const name=document.createElement('span');name.className='dbl-race-name';
-    const rank=document.createElement('small');rank.className='dbl-race-rank';
     label.append(name);
     const score=document.createElement('span');score.className='dbl-race-score';
     // Rank precedes the portrait. The tally lives inside the colored bar,
     // never at the far edge of the unfilled track.
     bar.appendChild(score);
     track.append(bar,label);
-    root.append(rank,avatar,track);
+    root.append(avatar,track);
     controls.rows.appendChild(root);
-    node={root,avatar,track,bar,label,name,rank,score,image:'',avatarName:'',
+    node={root,avatar,track,bar,label,name,score,image:'',avatarName:'',
       slot:null,missingSince:null};
     rowNodes.set(id,node);
     return node;
@@ -569,6 +571,22 @@
     const top=rows[0],max=Math.max(1,top?.value||0);
     const space=rowHeight();
     controls.rows.style.height=(Math.max(10,limit.length)*space+8)+'px';
+    // Numbered places are stationary slots (#1, #2, etc.). Only competitor
+    // portraits and bars translate when the leaderboard order changes.
+    while(rankLabels.length<limit.length){
+      const place=document.createElement('span');
+      place.className='dbl-race-place';
+      controls.ranks.appendChild(place);
+      rankLabels.push(place);
+    }
+    for(let i=0;i<rankLabels.length;i++){
+      const place=rankLabels[i];
+      place.hidden=i>=limit.length;
+      if(place.hidden)continue;
+      const rank=i<topN?i+1:rows.findIndex(entry=>entry.id===limit[i].id)+1;
+      place.textContent=rank>0?'#'+rank:'—';
+      place.style.top=(i*space)+'px';
+    }
     const active=new Set(),atYear=Math.floor(currentYear+1e-7);
     const now=Date.now();
     limit.forEach((entry,index)=>{
@@ -583,7 +601,6 @@
       node.name.textContent=info.name;
       const actual=rows.findIndex(row=>row.id===id);
       const rank=actual<0?'unranked':String(actual+1);
-      node.rank.textContent=actual<0?'(unranked)':'#'+rank;
       node.bar.style.backgroundColor=info.primary;
       const valueText=formatValue(entry.value);
       // Keep even a tiny bar wide enough for its total. CSS min/max
