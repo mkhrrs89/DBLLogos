@@ -2002,6 +2002,9 @@
     {name:'The Vault', style:'Rare-edition collector', threshold:1.18},
     {name:'The Raconteur', style:'Legends and oddities', threshold:1.05}
   ]);
+  // Experimental Background Test cards are collectible, but never tradable.
+  const marketTradable = card => card?.type !== 'background-test' &&
+    card?.rarity !== BACKGROUND_TEST.id;
   let catalogFile = null, marketCatalog = [];
   let marketOffersFile = null, marketOffersDay = '', cachedMarketOffers = [];
   function tradeCatalog() {
@@ -2009,7 +2012,7 @@
     if (catalogFile === poolFile) return marketCatalog;
     const all = new Map();
     const add = card => {
-      if (!card?.id || all.has(card.id)) return;
+      if (!card?.id || !marketTradable(card) || all.has(card.id)) return;
       const {image, imageFallback, logo, ...clean} = card;
       clean.photo = photoUrl(card.photo, true);
       clean.teamLogo = photoUrl(card.teamLogo, true);
@@ -2035,7 +2038,7 @@
     }
     for (const card of [...toppsPlayerPool, ...toppsUniformPool,
       ...undergroundBasePool, ...undergroundHeadlinerPool,
-      ...undergroundNicknamePool, ...teamSeasonPool, ...backgroundTestPool])
+      ...undergroundNicknamePool, ...teamSeasonPool])
       add(card);
     catalogFile = poolFile;
     marketOffersFile = null;
@@ -2080,8 +2083,8 @@
       .sort((a,b) => b.value - a.value || a.card.id.localeCompare(b.card.id));
     if (!ranked.length) return [];
     // Most offers fall within the upper-middle priced cohort; a smaller
-    // unweighted draw lets ANY cataloged edition appear (even an unpriced
-    // experimental card), without affecting pack odds.
+    // unweighted draw allows every eligible tradable edition a chance,
+    // without affecting pack odds.
     const upperMiddle = ranked.slice(Math.floor(ranked.length*.08),
       Math.max(1,Math.ceil(ranked.length*.57)))
       .filter(row => row.value > 0);
@@ -2122,6 +2125,8 @@
       if (!owned || owned.count < row.count ||
           owned.id === found.card.id)
         return {ok:false,error:'Those cards are no longer available to offer.'};
+      if (!marketTradable(owned))
+        return {ok:false,error:'Background Test cards cannot be used in Market trades.'};
       const value = marketValue(owned);
       if (!Number.isFinite(value) || value < 0)
         return {ok:false,error:'A card in the trade has an invalid value.'};

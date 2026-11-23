@@ -1582,18 +1582,19 @@
       ? first.charAt(0) + '. ' + last : (first + ' ' + last).trim();
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('viewBox', '0 0 340 110');
+    // Leave padding around all four sides for ornate ascenders and flourishes.
+    svg.setAttribute('viewBox', '0 0 340 150');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svg.setAttribute('focusable', 'false');
     const text = document.createElementNS(svgNS, 'text');
     // Great Vibes is loaded explicitly in index.html, so mobile browsers
     // do not silently fall back to a generic italic serif face.
     const signatureFont = '"Great Vibes","Snell Roundhand",cursive';
-    const fontSize = Math.max(49, Math.min(91, 96 - Math.max(0, signature.length - 11) * 2.8));
+    const fontSize = Math.max(46, Math.min(82, 87 - Math.max(0, signature.length - 11) * 2.8));
     const ink = ['#123f98','#174baf','#16449d','#204da8'][seed % 4];
     overlay.style.setProperty('--autograph-ink', ink);
     text.setAttribute('x', '170');
-    text.setAttribute('y', '61');
+    text.setAttribute('y', '91');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('font-family', signatureFont);
     text.setAttribute('font-style', 'italic');
@@ -1606,20 +1607,20 @@
     text.setAttribute('letter-spacing', String(((seed >>> 8) % 7 - 3) / 8));
     text.setAttribute('fill', 'currentColor');
     text.setAttribute('transform',
-      'rotate(' + (((seed >>> 11) % 13) - 6) + ' 170 55)');
-    // Keep longer signatures inside the printed portrait without clipping.
-    const length = Math.min(310, signature.length * fontSize * .53);
-    if (signature.length > 15) {
-      text.setAttribute('textLength', String(length));
-      text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
-    }
+      'rotate(' + (((seed >>> 11) % 13) - 6) + ' 170 85)');
+    // Scale every signature (not just long names) into a safe inner area.
+    // textLength is exact SVG layout width; the CSS viewport also clips
+    // gracefully if a browser substitutes a font or lacks lengthAdjust.
+    const length = Math.min(250, Math.max(72, signature.length * fontSize * .32));
+    text.setAttribute('textLength', String(length));
+    text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
     text.textContent = signature;
     svg.appendChild(text);
     if ((seed >>> 3) % 5 !== 0) {
       const flourish = document.createElementNS(svgNS, 'path');
       const start = 53 + (seed % 23);
       const end = 298 - ((seed >>> 7) % 26);
-      const y = 78 + ((seed >>> 14) % 9);
+      const y = 108 + ((seed >>> 14) % 9);
       flourish.setAttribute('d', 'M ' + start + ' ' + y +
         ' C 127 ' + (y + 13) + ' 244 ' + (y - 4) +
         ' ' + end + ' ' + (y - 9));
@@ -2609,6 +2610,7 @@
   function showMarketMyCards() {
     if (!activeMarketOffer) return;
     const inventory = api.items.filter(card =>
+      !isBackgroundTest(card) && card.rarity !== 'background-test' &&
       card.id !== activeMarketOffer.card.id);
     const wanted = Math.max(.01, api.marketValue(activeMarketOffer.card));
     const worth = card => Math.max(.01,api.marketValue(card));
