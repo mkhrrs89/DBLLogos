@@ -4602,7 +4602,7 @@
   z-index: 9;
   pointer-events: none;
   display: block;
-  color: var(--autograph-ink, #176BFF);
+  color: var(--autograph-ink, #1563F0);
   opacity: 1;
   transform: rotate(-3deg);
   mix-blend-mode: normal;

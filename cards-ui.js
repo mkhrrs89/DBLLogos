@@ -1590,7 +1590,7 @@
     // do not silently fall back to a generic italic serif face.
     const signatureFont = '"Great Vibes","Snell Roundhand",cursive';
     const fontSize = Math.max(46, Math.min(82, 87 - Math.max(0, signature.length - 11) * 2.8));
-    const ink = '#176BFF';
+    const ink = '#1563F0';
     overlay.style.setProperty('--autograph-ink', ink);
     text.setAttribute('x', '170');
     text.setAttribute('y', '91');
