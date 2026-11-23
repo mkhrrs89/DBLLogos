@@ -13,7 +13,7 @@
     pin:byId('dblRacePin'),pinList:byId('dblRacePinList'),
     pinLabel:byId('dblRacePinLabel'),pinHint:byId('dblRacePinHint'),
     unpin:byId('dblRaceUnpin'),status:byId('dblRaceStatus'),
-    leader:byId('dblRaceLeader'),cumulative:byId('dblRaceCumulative'),
+    cumulative:byId('dblRaceCumulative'),
     rows:byId('dblRaceRows'),year:byId('dblRaceYear'),
     caption:byId('dblRaceCaption'),play:byId('dblRacePlay'),
     scrub:byId('dblRaceScrub'),speed:panel.querySelector('.dbl-race-speed')
@@ -85,8 +85,17 @@
   let file=null, generation=0, loading=-1, dataset=null, timer=null;
   let metricCache=null, currentYear=0, firstYear=0, lastYear=0;
   let topN=10,speed=1,pinnedId='',paused=true;
+  let lastFrameTime=null,lastPaintTime=null;
+  const MS_PER_SEASON=950;
+  const PAINT_INTERVAL=1000/30;
   const rowNodes=new Map();
-  const EMPTY_AWARDS = new Map();
+  const requestFrame=window.requestAnimationFrame ?
+    callback=>window.requestAnimationFrame(callback) :
+    callback=>window.setTimeout(()=>callback(Date.now()),16);
+  const cancelFrame=window.cancelAnimationFrame ?
+    handle=>window.cancelAnimationFrame(handle) :
+    handle=>window.clearTimeout(handle);
+  const rowHeight=()=>window.innerWidth<=640?44:48;
 
   function makeTeam(raw) {
     const tid=numeric(raw?.tid);
@@ -147,6 +156,7 @@
     const awards=Array.isArray(raw.awards)?raw.awards:[];
     const stats={regular:new Map(),playoffs:new Map()};
     const teamYears=new Map(),byYear=new Map();
+    const careerTeams=new Map();
     for(const s of statRows){
       const year=yr(s?.season);
       if(year===null)continue;
@@ -156,9 +166,17 @@
       // When a player moved teams, use the most-played actual franchise,
       // never the summary "TOT" row, for historical jersey/bar color.
       const tid=numeric(s?.tid),games=number(s?.gp);
-      if(!s?.playoffs && Number.isSafeInteger(tid) && tid>=0 &&
-        (!teamYears.has(year)||games>=teamYears.get(year).gp))
-        teamYears.set(year,{tid,gp:games});
+      const realTeam=Number.isSafeInteger(tid) && tid>=0 &&
+        cleanString(s?.abbrev).toUpperCase()!=='TOT';
+      if(!s?.playoffs && realTeam){
+        if(!teamYears.has(year)||games>=teamYears.get(year).gp)
+          teamYears.set(year,{tid,gp:games});
+        const totals=careerTeams.get(tid)||{games:0,minutes:0,lastSeason:year};
+        totals.games+=games;
+        totals.minutes+=number(s.min);
+        totals.lastSeason=Math.max(totals.lastSeason,year);
+        careerTeams.set(tid,totals);
+      }
     }
     for(const [key,rows] of byYear){
       const [yearText,period]=key.split('|'),year=Number(yearText);
@@ -183,11 +201,25 @@
       row.set(type,(row.get(type)||0)+1);
     }
     const latestTid=numeric(raw.tid);
+    const majority=[...careerTeams.entries()].sort((a,b)=>
+      b[1].games-a[1].games ||
+      b[1].minutes-a[1].minutes ||
+      b[1].lastSeason-a[1].lastSeason ||
+      a[0]-b[0])[0];
+    const lastPlayed=teamYears.size?Math.max(...teamYears.keys()):null;
+    // Basketball GM marks retirees with retiredYear and/or tid=-3.
+    // When only the retired roster marker exists, freeze after the last
+    // played season rather than recoloring the final playing season.
+    const retiredAt=yr(raw.retiredYear) ??
+      (latestTid===-3 && lastPlayed!==null?lastPlayed+1:null);
     return {
       id:'p'+pid,pid,name:playerName(raw),image:imageURL(raw.imgURL),
       score:statRows.length*2+awards.length,
       regular:stats.regular,playoffs:stats.playoffs,awards:awardsByYear,
       teamYears:[...teamYears].sort((a,b)=>a[0]-b[0]),
+      majorityTid:majority?.[0]??null,
+      majorityYear:majority?.[1].lastSeason??null,
+      retiredAt,
       latestTid:Number.isSafeInteger(latestTid)?latestTid:null
     };
   }
@@ -228,6 +260,8 @@
       const older=players.get(p.pid);
       if(older&&older.score>=p.score) {
         if(!older.image) older.image=p.image;
+        if(older.retiredAt===null && p.retiredAt!==null)
+          older.retiredAt=p.retiredAt;
         return;
       }
       players.set(p.pid,p);
@@ -263,7 +297,7 @@
     if(file===next)return;
     file=next;generation++;loading=-1;dataset=null;metricCache=null;
     stop();rowNodes.clear();controls.rows.replaceChildren();
-    controls.leader.replaceChildren();controls.year.textContent='—';
+    controls.year.textContent='—';
     controls.scrub.disabled=true;controls.play.disabled=true;
     controls.status.textContent=file?
       'Open Bar Chart Race to load historical rankings.' :
@@ -374,6 +408,11 @@
     return item;
   }
   function playerAt(player,year) {
+    if(player.retiredAt!==null && year>=player.retiredAt &&
+      player.majorityTid!==null) {
+      const franchise=teamAt(player.majorityTid,player.majorityYear??year);
+      if(franchise)return franchise;
+    }
     let tid=null;
     for(const [season,record] of player.teamYears){
       if(season>year)break;
@@ -444,7 +483,9 @@
   }
   function formatValue(value) {
     const k=controls.metric.value;
-    const decimals=k==='reg:ws'||k==='post:ws'||/:(vorp|ewa)$/.test(k)?1:0;
+    const decimals=k==='reg:ws'||k==='post:ws'||/:(vorp|ewa)$/.test(k)?1:
+      ((k.startsWith('award:')||k.startsWith('titles:')) &&
+       Math.abs(value-Math.round(value))>.001 ? 1:0);
     return Number(value).toLocaleString(undefined,{minimumFractionDigits:decimals,
       maximumFractionDigits:decimals});
   }
@@ -456,11 +497,16 @@
     const stat=ALL_STATS.find(s=>s.key===metric.split(':')[1]);
     return stat?.unit||'';
   }
+  function valueAt(values,position=currentYear) {
+    const relative=Math.max(0,Math.min(values.length-1,position-firstYear));
+    const index=Math.floor(relative),fraction=relative-index;
+    const start=values[index]||0,end=values[Math.min(values.length-1,index+1)]||0;
+    return start+(end-start)*fraction;
+  }
   function ranking() {
     prepareMetric();
     if(!metricCache)return [];
-    const i=currentYear-firstYear;
-    return metricCache.items.map(item=>({...item,value:item.values[i]||0}))
+    return metricCache.items.map(item=>({...item,value:valueAt(item.values)}))
       .filter(item=>item.value>0).sort((a,b)=>b.value-a.value||
         a.id.localeCompare(b.id));
   }
@@ -491,11 +537,12 @@
     track.append(bar,label,score);
     root.append(avatar,track);
     controls.rows.appendChild(root);
-    node={root,avatar,track,bar,label,name,rank,score,image:'',avatarName:''};
+    node={root,avatar,track,bar,label,name,rank,score,image:'',avatarName:'',
+      slot:null,missingSince:null};
     rowNodes.set(id,node);
     return node;
   }
-  function render() {
+  function render(frameMs=0) {
     if(!dataset || panel.hidden)return;
     prepareMetric();
     const rows=ranking(),limit=rows.slice(0,topN);
@@ -503,20 +550,19 @@
       const selected=rows.find(row=>row.id===pinnedId);
       const missing=metricCache.items.find(row=>row.id===pinnedId);
       if(selected)limit.push(selected);
-      else if(missing)limit.push({...missing,value:missing.values[currentYear-firstYear]||0});
+      else if(missing)limit.push({...missing,value:valueAt(missing.values)});
     }
     const unit=unitName();
     const top=rows[0],max=Math.max(1,top?.value||0);
-    const interval=Math.max(80,Math.round(850/speed));
-    const duration=Math.min(570,Math.round(interval*.8));
-    controls.rows.style.setProperty('--race-duration',duration+'ms');
-    controls.rows.style.height=Math.max(312,limit.length*31+8)+'px';
-    const active=new Set();
+    const space=rowHeight();
+    controls.rows.style.height=(Math.max(10,limit.length)*space+8)+'px';
+    const active=new Set(),atYear=Math.floor(currentYear+1e-7);
+    const now=Date.now();
     limit.forEach((entry,index)=>{
       const id=entry.id;
       active.add(id);
       const node=getNode(id);
-      const info=details(entry,currentYear);
+      const info=details(entry,atYear);
       if(node.image!==info.image||node.avatarName!==info.name) {
         makeAvatar(node.avatar,info.image,info.name);
         node.image=info.image;node.avatarName=info.name;
@@ -528,42 +574,51 @@
       node.bar.style.backgroundColor=info.primary;
       node.bar.style.width=(Math.min(100,entry.value/max*100))+'%';
       node.label.style.color=isLight(info.primary)&&entry.value/max>.38?'#1A1414':'var(--text)';
-      node.label.style.textShadow=isLight(info.primary)&&entry.value/max>.38?'none':'0 1px 2px rgba(0,0,0,.55)';
-      node.score.textContent=formatValue(entry.value);
+      node.label.style.textShadow=isLight(info.primary)&&entry.value/max>.38?
+        'none':'0 1px 2px rgba(0,0,0,.55)';
+      const valueText=formatValue(entry.value);
+      node.score.textContent=valueText;
       node.root.classList.toggle('is-pinned',id===pinnedId);
       node.root.style.opacity='1';
-      node.root.style.transform='translateY('+(index*31)+'px)';
+      // Smooth crossover choreography, independent of year boundaries.
+      const ease=paused?1:1-Math.exp(-Math.min(100,Math.max(0,frameMs))/125);
+      node.slot=node.slot===null?index:node.slot+(index-node.slot)*ease;
+      node.root.style.transform='translateY('+(node.slot*space).toFixed(2)+'px)';
       node.root.setAttribute('aria-label',
-        (actual<0?'Unranked ':'#'+rank+' ')+info.name+', '+
-        formatValue(entry.value)+' '+unit);
+        (actual<0?'Unranked ':'#'+rank+' ')+info.name+', '+valueText+' '+unit);
+      node.missingSince=null;
     });
     for(const [id,node] of rowNodes){
-      if(!active.has(id)){node.root.remove();rowNodes.delete(id);}
+      if(active.has(id))continue;
+      if(paused){
+        node.root.remove();rowNodes.delete(id);
+        continue;
+      }
+      if(node.missingSince===null)node.missingSince=now;
+      node.root.style.opacity='0';
+      if(now-node.missingSince>300){
+        node.root.remove();rowNodes.delete(id);
+      }
     }
-    controls.rows.setAttribute('aria-label',currentYear+' top '+topN+' for '+
+    controls.rows.setAttribute('aria-label',atYear+' top '+topN+' for '+
       (controls.metric.selectedOptions[0]?.textContent||'metric'));
-    controls.year.textContent=String(currentYear);
+    controls.year.textContent=String(atYear);
     controls.scrub.value=String(currentYear);
     const label=controls.metric.selectedOptions[0]?.textContent||'';
-    controls.cumulative.replaceChildren();
-    const bold=document.createElement('strong');bold.textContent=label;
-    controls.cumulative.append(bold,document.createTextNode(' counted from '+firstYear));
-    controls.caption.textContent='Totals through the end of '+currentYear+
-      (pinnedId?' · Pinned entrant remains visible with their overall rank':'');
-    controls.leader.replaceChildren();
-    if(top){
-      const leader=details(top,currentYear);
-      const avatar=document.createElement('span');
-      avatar.className='dbl-race-leader-avatar';
-      makeAvatar(avatar,leader.image,leader.name);
-      const text=document.createElement('span');
-      text.textContent='Leader ';
-      const strong=document.createElement('strong');
-      strong.textContent=leader.name+' · '+formatValue(top.value)+' '+unit;
-      controls.leader.append(avatar,text,strong);
-    }else{
-      controls.leader.textContent='No recorded leaders in '+currentYear+' for this category';
+    // The descriptor is static for a chosen metric; avoid rebuilding its DOM
+    // on every animation frame.
+    const description=label+' counted from '+firstYear;
+    if(controls.cumulative.dataset.description!==description){
+      controls.cumulative.dataset.description=description;
+      controls.cumulative.replaceChildren();
+      const bold=document.createElement('strong');bold.textContent=label;
+      controls.cumulative.append(bold,document.createTextNode(' counted from '+firstYear));
     }
+    const movingTo=Math.min(lastYear,atYear+1);
+    controls.caption.textContent=(currentYear>atYear+.005 && movingTo>atYear?
+      'Cumulative totals progressing toward '+movingTo :
+      'Totals through the end of '+atYear)+
+      (pinnedId?' · Pinned entrant remains visible with their overall rank':'');
   }
   function yearsChanged(changed) {
     if(!dataset)return;
@@ -580,26 +635,38 @@
   }
   function stop() {
     paused=true;
-    if(timer!==null){window.clearTimeout(timer);timer=null;}
+    if(timer!==null){cancelFrame(timer);timer=null;}
+    lastFrameTime=null;lastPaintTime=null;
     controls.play.textContent='▶ Play';
     controls.play.setAttribute('aria-pressed','false');
   }
-  function tick() {
+  function tick(timestamp) {
+    timer=null;
     if(paused||panel.hidden||!dataset){stop();return;}
-    if(currentYear>=lastYear){stop();return;}
-    currentYear++;
-    render();
-    timer=window.setTimeout(tick,Math.max(80,Math.round(850/speed)));
+    if(!Number.isFinite(timestamp))timestamp=Date.now();
+    const previous=lastFrameTime;
+    const elapsed=previous===null?0:Math.min(120,Math.max(0,timestamp-previous));
+    lastFrameTime=timestamp;
+    currentYear=Math.min(lastYear,currentYear+elapsed*speed/MS_PER_SEASON);
+    const paintDelta=lastPaintTime===null?PAINT_INTERVAL:
+      Math.max(0,timestamp-lastPaintTime);
+    if(paintDelta>=PAINT_INTERVAL || currentYear>=lastYear){
+      render(paintDelta);
+      lastPaintTime=timestamp;
+    }
+    if(currentYear>=lastYear){stop();render();return;}
+    timer=requestFrame(tick);
   }
   function togglePlay() {
     if(!dataset)return;
-    if(!paused){stop();return;}
+    if(!paused){stop();render();return;}
     if(currentYear>=lastYear)currentYear=firstYear;
     paused=false;
+    lastFrameTime=null;lastPaintTime=null;
     controls.play.textContent='Ⅱ Pause';
     controls.play.setAttribute('aria-pressed','true');
     render();
-    timer=window.setTimeout(tick,Math.max(80,Math.round(850/speed)));
+    timer=requestFrame(tick);
   }
   function refreshPinList() {
     controls.pinList.replaceChildren();
@@ -669,7 +736,7 @@
         item.classList.toggle('is-active',active);
         item.setAttribute('aria-pressed',String(active));
       });
-      if(!paused){window.clearTimeout(timer);timer=window.setTimeout(tick,Math.max(80,Math.round(850/speed)));}
+      // The current animation frame reads the new multiplier immediately.
       render();
     });
   }
@@ -685,6 +752,12 @@
   window.addEventListener('dbl:tab-change',event=>{
     if(event.detail?.panelId==='barChartRacePanel')void load();
     else stop();
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden && !paused)stop();
+  });
+  window.addEventListener('resize',()=>{
+    if(dataset&&!panel.hidden)render();
   });
   hub.subscribe(({file:next})=>setFile(next));
   setFile(hub.getCurrentFile?.()||null);
