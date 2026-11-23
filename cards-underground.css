@@ -345,7 +345,9 @@
 .dbl-nickname-billboard-type.is-medium {font-size:clamp(11px,10cqw,36px);}
 .dbl-nickname-billboard-type.is-long {font-size:clamp(10px,7.8cqw,28px); line-height:1.04;}
 .dbl-nickname-cutout {
-  position:absolute; z-index:3; top:43%; bottom:14%; left:11%; right:29%;
+  /* Larger, taller photo window: keep the nickname headline above and the
+     full player-name strip below, while showing more of the 1968 portrait. */
+  position:absolute; z-index:3; top:37%; bottom:15%; left:7%; right:20%;
   box-sizing:border-box; overflow:hidden; background:#ddac7a;
   border:clamp(3px,2.1cqw,8px) solid #392e3b;
   box-shadow:clamp(3px,2.8cqw,10px) clamp(4px,3cqw,12px) 0 #e5a65c;
@@ -359,7 +361,9 @@
 }
 .dbl-nickname-cutout .dbl-cards-player-photo {
   display:block; width:100%; height:100%;
-  object-fit:contain; object-position:center center;
+  /* Override the shared player-photo cover!important rule only here:
+     the entire source portrait remains in view instead of being cropped. */
+  object-fit:contain !important; object-position:center center !important;
   filter:grayscale(1) sepia(.6) contrast(1.25) brightness(1);
 }
 .dbl-nickname-cutout::after {
