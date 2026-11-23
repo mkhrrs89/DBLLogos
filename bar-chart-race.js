@@ -65,6 +65,16 @@
     return /^#[0-9a-f]{6}$/i.test(str) ? str.toUpperCase() : '';
   }
   const fallbackColor = '#57515A'; // Neutral only when no team primary color exists.
+  function onBarTextColor(hex) {
+    // Choose dark ink on bright uniforms, pale ink on dark uniforms.
+    // Contrast switch uses WCAG relative luminance near the midpoint.
+    const channel=[1,3,5].map(i=>{
+      const c=parseInt(hex.slice(i,i+2),16)/255;
+      return c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);
+    });
+    const luminance=.2126*channel[0]+.7152*channel[1]+.0722*channel[2];
+    return luminance>.18?'#17110D':'#FFF9F2';
+  }
   function isLight(hex) {
     const rgb=[1,3,5].map(i=>{
       const c=parseInt(hex.slice(i,i+2),16)/255;
@@ -532,10 +542,13 @@
     const label=document.createElement('span');label.className='dbl-race-label';
     const name=document.createElement('span');name.className='dbl-race-name';
     const rank=document.createElement('small');rank.className='dbl-race-rank';
-    label.append(name,rank);
+    label.append(name);
     const score=document.createElement('span');score.className='dbl-race-score';
-    track.append(bar,label,score);
-    root.append(avatar,track);
+    // Rank precedes the portrait. The tally lives inside the colored bar,
+    // never at the far edge of the unfilled track.
+    bar.appendChild(score);
+    track.append(bar,label);
+    root.append(rank,avatar,track);
     controls.rows.appendChild(root);
     node={root,avatar,track,bar,label,name,rank,score,image:'',avatarName:'',
       slot:null,missingSince:null};
@@ -572,12 +585,20 @@
       const rank=actual<0?'unranked':String(actual+1);
       node.rank.textContent=actual<0?'(unranked)':'#'+rank;
       node.bar.style.backgroundColor=info.primary;
-      node.bar.style.width=(Math.min(100,entry.value/max*100))+'%';
+      const valueText=formatValue(entry.value);
+      // Keep even a tiny bar wide enough for its total. CSS min/max
+      // constrains the label-bearing bar inside the actual track.
+      const tallyRoom=valueText.length*(window.innerWidth<=640?7.5:8.5)+17;
+      const proportionalWidth=Math.min(100,entry.value/max*100);
+      node.bar.style.width='min(100%, max('+Math.ceil(Math.max(48,tallyRoom))+
+        'px, '+proportionalWidth+'%))';
       node.label.style.color=isLight(info.primary)&&entry.value/max>.38?'#1A1414':'var(--text)';
       node.label.style.textShadow=isLight(info.primary)&&entry.value/max>.38?
         'none':'0 1px 2px rgba(0,0,0,.55)';
-      const valueText=formatValue(entry.value);
       node.score.textContent=valueText;
+      node.score.style.color=onBarTextColor(info.primary);
+      node.score.style.textShadow=node.score.style.color==='#FFF9F2'?
+        '0 1px 2px rgba(0,0,0,.65)':'none';
       node.root.classList.toggle('is-pinned',id===pinnedId);
       node.root.style.opacity='1';
       // Smooth crossover choreography, independent of year boundaries.
