@@ -314,7 +314,8 @@
   pointer-events:none;
 }
 .dbl-nickname-poster-banner {
-  position:absolute; z-index:5; top:5%; left:-2%; right:9%; height:13%;
+  /* Move the vintage red ink masthead into the unused top margin. */
+  position:absolute; z-index:5; top:2%; left:-2%; right:9%; height:12%;
   display:grid; place-items:center; box-sizing:border-box; padding:2% 6%;
   color:#f8e6b5; background:#913b4b;
   border:clamp(1px,.8cqw,3px) solid #613342;
@@ -330,24 +331,33 @@
   text-shadow:1px 2px 0 #4d2a3c;
 }
 .dbl-nickname-billboard {
-  position:absolute; z-index:6; top:20%; left:7%; right:8%; height:18%;
-  display:flex; align-items:center; justify-content:center;
-  text-align:left; box-sizing:border-box; padding:1% 2%;
+  /* Leave a clean gap after the raised banner, then use just one line for
+     the nickname to free significantly more height for the player photo. */
+  position:absolute; z-index:6; top:15%; left:5%; right:5%; height:11%;
+  display:flex; align-items:center; justify-content:flex-start;
+  text-align:left; box-sizing:border-box; padding:0 2%;
   transform:rotate(-3deg);
 }
 .dbl-nickname-billboard-type {
-  max-width:100%; display:block;
-  color:#552a40; font:400 clamp(12px,12cqw,44px)/.98
+  display:block; max-width:100%; min-width:0;
+  color:#552a40; font:400 clamp(10px,9cqw,40px)/1.05
     "Kavoon","Shrikhand",Georgia,serif;
-  letter-spacing:-.045em; overflow-wrap:anywhere; text-wrap:balance;
+  letter-spacing:-.05em; white-space:nowrap;
+  overflow-wrap:normal; text-wrap:nowrap;
   text-shadow:2px 2px 0 #f9e5ae;
 }
-.dbl-nickname-billboard-type.is-medium {font-size:clamp(11px,10cqw,36px);}
-.dbl-nickname-billboard-type.is-long {font-size:clamp(10px,7.8cqw,28px); line-height:1.04;}
+/* Long nicknames need progressively smaller type rather than wrapping.
+   All three tiers scale with the actual card width, including on iPhone. */
+.dbl-nickname-billboard-type.is-medium {
+  font-size:clamp(9px,7.1cqw,34px);
+}
+.dbl-nickname-billboard-type.is-long {
+  font-size:clamp(7px,5.4cqw,27px);
+}
 .dbl-nickname-cutout {
-  /* Larger, taller photo window: keep the nickname headline above and the
-     full player-name strip below, while showing more of the 1968 portrait. */
-  position:absolute; z-index:3; top:37%; bottom:15%; left:7%; right:20%;
+  /* Extend the portrait below the one-line nickname, widen the photo frame,
+     and stop above the original player-name strip. */
+  position:absolute; z-index:3; top:28%; bottom:14%; left:5%; right:14%;
   box-sizing:border-box; overflow:hidden; background:#ddac7a;
   border:clamp(3px,2.1cqw,8px) solid #392e3b;
   box-shadow:clamp(3px,2.8cqw,10px) clamp(4px,3cqw,12px) 0 #e5a65c;
