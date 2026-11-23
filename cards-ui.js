@@ -228,12 +228,33 @@
     name.appendChild(make('span', 'dbl-topps-uniform-name-glyphs', text));
     return name;
   }
+  // The nickname set has short and very long printed nicknames. Fit the
+  // actual one-line lettering to the available banner width, rather than
+  // estimating by number of characters. Use layout widths (not transformed
+  // lightbox rectangles) so flipping and zooming won't skew the result.
+  function fitNickname(name) {
+    const row = name.parentElement;
+    if (!row || typeof window.getComputedStyle !== 'function') return;
+    const available = row.clientWidth - 14; // keep margin from both edges
+    if (available <= 0 || row.clientHeight <= 0) return;
+    // Reset to its responsive CSS baseline before each measurement, so a
+    // resize or a loaded webfont doesn't compound the prior fitted size.
+    name.style.fontSize = '';
+    const naturalWidth = name.scrollWidth;
+    const baseline = Number.parseFloat(window.getComputedStyle(name).fontSize);
+    if (!naturalWidth || !Number.isFinite(baseline) || baseline <= 0) return;
+    const byWidth = baseline * available / naturalWidth;
+    const byHeight = row.clientHeight * .82;
+    name.style.fontSize = Math.max(7, Math.min(byWidth, byHeight)).toFixed(2) + 'px';
+  }
   function fitCardNames(root) {
     if (!root) return;
     for (const name of root.querySelectorAll?.('.dbl-cards-name') || [])
       fitName(name);
     for (const name of root.querySelectorAll?.('.dbl-topps-uniform-fit-name') || [])
       fitUniformName(name);
+    for (const name of root.querySelectorAll?.('.dbl-nickname-billboard-type') || [])
+      fitNickname(name);
   }
   function fitLightboxNames() {
     fitCardNames(cardLightbox?.container);

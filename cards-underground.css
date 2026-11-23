@@ -314,8 +314,8 @@
   pointer-events:none;
 }
 .dbl-nickname-poster-banner {
-  /* Move the vintage red ink masthead into the unused top margin. */
-  position:absolute; z-index:5; top:2%; left:-2%; right:9%; height:12%;
+  /* Equal side margins keep the tilted ink banner centered on the card. */
+  position:absolute; z-index:5; top:2%; left:5%; right:5%; height:12%;
   display:grid; place-items:center; box-sizing:border-box; padding:2% 6%;
   color:#f8e6b5; background:#913b4b;
   border:clamp(1px,.8cqw,3px) solid #613342;
@@ -331,55 +331,59 @@
   text-shadow:1px 2px 0 #4d2a3c;
 }
 .dbl-nickname-billboard {
-  /* Leave a clean gap after the raised banner, then use just one line for
-     the nickname to free significantly more height for the player photo. */
-  position:absolute; z-index:6; top:15%; left:5%; right:5%; height:11%;
-  display:flex; align-items:center; justify-content:flex-start;
-  text-align:left; box-sizing:border-box; padding:0 2%;
-  transform:rotate(-3deg);
+  /* The label uses the full safe width; the JS fitter sizes the real
+     glyphs within it, including in the iPhone lightbox. */
+  position:absolute; z-index:6; top:15%; left:4%; right:4%; height:11%;
+  display:flex; align-items:center; justify-content:center;
+  text-align:center; box-sizing:border-box; padding:0 1%;
+  transform:rotate(-2deg);
 }
 .dbl-nickname-billboard-type {
-  display:block; max-width:100%; min-width:0;
-  color:#552a40; font:400 clamp(10px,9cqw,40px)/1.05
+  /* Intrinsic width makes scrollWidth report actual lettering dimensions,
+     not the width of a stretched block. One line is mandatory. */
+  display:inline-block; flex:0 0 auto; width:max-content; max-width:none;
+  color:#552a40; font:400 clamp(11px,11cqw,50px)/1.05
     "Kavoon","Shrikhand",Georgia,serif;
-  letter-spacing:-.05em; white-space:nowrap;
+  letter-spacing:-.045em; white-space:nowrap;
   overflow-wrap:normal; text-wrap:nowrap;
   text-shadow:2px 2px 0 #f9e5ae;
 }
-/* Long nicknames need progressively smaller type rather than wrapping.
-   All three tiers scale with the actual card width, including on iPhone. */
+/* Initial sizes before text fitting: the final width adapts to the
+   specific nickname, not just its character count. */
 .dbl-nickname-billboard-type.is-medium {
-  font-size:clamp(9px,7.1cqw,34px);
+  font-size:clamp(10px,9cqw,43px);
 }
 .dbl-nickname-billboard-type.is-long {
-  font-size:clamp(7px,5.4cqw,27px);
+  font-size:clamp(8px,7cqw,36px);
 }
 .dbl-nickname-cutout {
-  /* Extend the portrait below the one-line nickname, widen the photo frame,
-     and stop above the original player-name strip. */
-  position:absolute; z-index:3; top:28%; bottom:14%; left:5%; right:14%;
-  box-sizing:border-box; overflow:hidden; background:#ddac7a;
-  border:clamp(3px,2.1cqw,8px) solid #392e3b;
-  box-shadow:clamp(3px,2.8cqw,10px) clamp(4px,3cqw,12px) 0 #e5a65c;
-  transform:rotate(3deg);
-  clip-path:polygon(0 1%,97% 0,100% 99%,3% 100%);
+  /* No hard-edged photo mat, side letterboxing or skewed frame. Center the
+     full portrait over the existing teal/orange poster shapes. */
+  position:absolute; z-index:3; top:27%; bottom:13%; left:5%; right:5%;
+  display:flex; align-items:center; justify-content:center;
+  box-sizing:border-box; overflow:visible; background:transparent;
+  border:0; box-shadow:none; transform:none; clip-path:none;
 }
 .dbl-nickname-cutout > .dbl-cards-art {
   display:block; position:absolute; inset:0; width:100%; height:100%;
-  box-sizing:border-box; overflow:hidden; z-index:1; border:0;
-  border-radius:0; box-shadow:none; background:#e1b47e;
+  box-sizing:border-box; overflow:visible; z-index:1; border:0;
+  border-radius:0; box-shadow:none; background:transparent;
+  /* Feather the JPEG's rectangular backdrop into the poster artwork.
+     This is a visual mask only: the original photograph is unchanged. */
+  -webkit-mask-image:radial-gradient(ellipse 57% 73% at 50% 51%,
+    #000 48%,rgba(0,0,0,.95) 61%,transparent 97%);
+  mask-image:radial-gradient(ellipse 57% 73% at 50% 51%,
+    #000 48%,rgba(0,0,0,.95) 61%,transparent 97%);
 }
 .dbl-nickname-cutout .dbl-cards-player-photo {
   display:block; width:100%; height:100%;
-  /* Override the shared player-photo cover!important rule only here:
-     the entire source portrait remains in view instead of being cropped. */
+  /* Preserve the entire centered portrait. Unused space is transparent
+     rather than filled with the old tan rectangular letterbox. */
   object-fit:contain !important; object-position:center center !important;
   filter:grayscale(1) sepia(.6) contrast(1.25) brightness(1);
 }
 .dbl-nickname-cutout::after {
-  content:""; position:absolute; inset:0; z-index:2; pointer-events:none;
-  background:linear-gradient(115deg,rgba(187,83,74,.28),transparent 55%,
-    rgba(42,110,102,.27)); mix-blend-mode:multiply;
+  content:none;
 }
 .dbl-nickname-poster-credit {
   position:absolute; z-index:6; bottom:2.5%; left:3%; right:3%; height:12%;
