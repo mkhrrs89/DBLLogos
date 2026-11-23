@@ -17,11 +17,6 @@
   function nicknameFront(card, {make, art}) {
     const face = make('span', 'dbl-cards-face dbl-cards-front dbl-nickname-poster');
     face.appendChild(make('span', 'dbl-nickname-printtexture'));
-    const issue = make('span', 'dbl-nickname-issue');
-    issue.appendChild(make('strong', '', 'DBL UNDERGROUND'));
-    issue.appendChild(make('span', '', '1968'));
-    face.appendChild(issue);
-
     const banner = make('span', 'dbl-nickname-poster-banner');
     banner.appendChild(make('strong', '', 'THEY CALL HIM…'));
     face.appendChild(banner);
@@ -37,7 +32,6 @@
     portrait.appendChild(photo);
     face.appendChild(portrait);
 
-    face.appendChild(make('span', 'dbl-nickname-vertical-ink', '1968 · THE PEOPLE KNOW'));
 
     const credit = make('span', 'dbl-nickname-poster-credit');
     credit.appendChild(make('strong', 'dbl-nickname-poster-realname',
