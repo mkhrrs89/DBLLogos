@@ -1573,13 +1573,12 @@
     overlay.setAttribute('aria-hidden', 'true');
     const name = String(card.name || '').trim();
     const nameParts = name.split(/\s+/).filter(Boolean);
-    // A few players abbreviate their given name in their signatures.
+    // Every autograph uses the first initial followed by the full surname.
     let seed = (Number(card.pid) + 1) >>> 0;
     for (const character of name) seed = (Math.imul(seed ^ character.charCodeAt(0), 16777619)) >>> 0;
     const first = nameParts.shift() || '';
     const last = nameParts.join(' ');
-    const signature = last && seed % 5 === 0
-      ? first.charAt(0) + '. ' + last : (first + ' ' + last).trim();
+    const signature = last ? first.charAt(0) + '. ' + last : first.charAt(0) + '.';
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
     // Leave padding around all four sides for ornate ascenders and flourishes.
@@ -1591,7 +1590,7 @@
     // do not silently fall back to a generic italic serif face.
     const signatureFont = '"Great Vibes","Snell Roundhand",cursive';
     const fontSize = Math.max(46, Math.min(82, 87 - Math.max(0, signature.length - 11) * 2.8));
-    const ink = ['#123f98','#174baf','#16449d','#204da8'][seed % 4];
+    const ink = '#176BFF';
     overlay.style.setProperty('--autograph-ink', ink);
     text.setAttribute('x', '170');
     text.setAttribute('y', '91');

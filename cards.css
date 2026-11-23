@@ -4602,10 +4602,10 @@
   z-index: 9;
   pointer-events: none;
   display: block;
-  color: var(--autograph-ink, #174baf);
-  opacity: .97;
+  color: var(--autograph-ink, #176BFF);
+  opacity: 1;
   transform: rotate(-3deg);
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
 }
 .dbl-cards-autograph svg {
   display: block;
