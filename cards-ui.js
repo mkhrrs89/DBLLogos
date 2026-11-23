@@ -391,7 +391,7 @@
       else if (packType === 'underground-1968' && !s.undergroundPoolSize) status.textContent =
         'No 1968 Underground players yet. Upload an export containing the 1968 season.';
       else if (packType === 'underground-1968') status.textContent =
-        format(s.undergroundPoolSize) + ' 1968 Underground players available · 20% Headliners' +
+        format(s.undergroundPoolSize) + ' 1968 Underground players available · 5% Headliners' +
         (s.undergroundNicknamePoolSize
           ? ' · 5% They Call Him… (' + format(s.undergroundNicknamePoolSize) + ' selected players)'
           : ' · nickname insert roster awaiting entries') + '.';
@@ -2392,7 +2392,7 @@
       ? '1968 Topps player and uniform completion, grouped by 1968 franchise. Duplicates count once.'
       : 'Completion by franchise, including peak-season player editions and historical Team Season inserts. Name changes stay grouped; duplicates count once.';
     checklistNote.textContent = underground
-      ? 'Each eligible 1968 player has Base and Headliners! editions. They Call Him… contains only selected players with approved nicknames. If at least one is eligible, Underground-only pack slots are 75% Base, 20% Headliners!, and 5% nicknames; until then the original 80%/20% split applies. No inserts are guaranteed. Rookie indicators and saved collections remain unchanged.' : topps
+      ? 'Each eligible 1968 player has Base and Headliners! editions. They Call Him… contains only selected players with approved nicknames. If at least one is eligible, Underground-only pack slots are 90% Base, 5% Headliners!, and 5% nicknames; without eligible nicknames the split is 95% Base and 5% Headliners!. No inserts are guaranteed. Rookie indicators and saved collections remain unchanged.' : topps
       ? 'One plain-paper 1968 Topps card per eligible player, with rookie styling for first-season players, plus one home and one away uniform placeholder per 1968 team. No Chrome or Refractor tiers; rare autograph variations can appear but are not required for standard set completion. The checklist comes from the uploaded league export; owned cards remain saved even when that file is unloaded.'
       : 'One entry per player and standard eligible rarity: Base 35+, Chrome 45+, Refractor 55+, and Black Label 60+ peak OVR. Team Season Base is available for every season; Bronze for playoff teams, Silver for finalists, Gold for champions. Each finish is a separate collectible edition. Autographs remain separate; duplicates count once. Owned cards missing from a newer export stay in My Collection.';
     const s = api.status;

@@ -62,13 +62,13 @@
   const TOPPS_UNIFORM_SHARE = .20;
   const BACKGROUND_TEST_SERIES = 2;
   const UNDERGROUND_SERIES = 3;
-  const UNDERGROUND_HEADLINER_CHANCE = .20;
+  const UNDERGROUND_HEADLINER_CHANCE = .05;
   // 5% nickname insert only after the curated roster has eligible players.
   // Until then dedicated packs retain the original 80/20 Base/Headliners.
   const UNDERGROUND_NICKNAME_CHANCE = .05;
   const nicknameRegistry = window.DBLUndergroundNicknames;
-  // Legacy Mixed: occasional Underground inserts, significantly less common
-  // than the 20% Headliners slots in Underground-only packs. These chance
+  // Legacy Mixed: occasional Underground inserts, drawn independently
+  // of the 5% Headliners slots in Underground-only packs. These chance
   // bands are disjoint and never reduce Team Season or 1968 Topps rates.
   const UNDERGROUND_MIXED_BASE_RATE = .04;
   const UNDERGROUND_MIXED_HEADLINER_RATE = .01;
@@ -1374,8 +1374,8 @@
       if (!undergroundBasePool.length) return [];
       const chosenPids = new Set(), chosenIds = new Set();
       for (let i = 0; i < 5; i++) {
-        // 20% Headliners, 5% curated nicknames, 75% Base when nicknames
-        // exist; otherwise the original 20%/80% split is unchanged.
+        // 5% Headliners, 5% curated nicknames, 90% Base when nickname
+        // cards are available; otherwise 5% Headliners and 95% Base.
         const roll = Math.random();
         const headliner = roll < UNDERGROUND_HEADLINER_CHANCE;
         const nickname = !headliner && undergroundNicknamePool.length > 0 &&
