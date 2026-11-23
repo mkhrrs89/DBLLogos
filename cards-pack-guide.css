@@ -85,9 +85,9 @@
 .dbl-cards-guide-formats td:last-child {
   width:20%; text-align:center; font-weight:800; white-space:normal;
 }
-.dbl-cards-guide-underground th:first-child {width:34%;}
-.dbl-cards-guide-underground th:not(:first-child),
-.dbl-cards-guide-underground td:not(:first-child) {text-align:center;}
+.dbl-cards-guide-underground th:first-child {width:72%;}
+.dbl-cards-guide-underground th:last-child,
+.dbl-cards-guide-underground td:last-child {width:28%;text-align:right;}
 .dbl-cards-guide-pity th:first-child {width:23%;}
 .dbl-cards-guide-pity th:not(:first-child),
 .dbl-cards-guide-pity td {text-align:center;}
