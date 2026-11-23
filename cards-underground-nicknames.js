@@ -27,7 +27,11 @@
     { name: 'Calvin Rookstone', nickname: 'Stonewall' },
     { name: 'Jonathan Royals', nickname: 'The Dealer' },
     { name: 'Zesi ZaDuuk', nickname: 'The Wizard of Louisville' },
-    { name: 'Charles Allen', nickname: 'The Buffalo Bull' }
+    { name: 'Charles Allen', nickname: 'The Buffalo Bull' },
+    // Source exports may store his given name with or without the in-name
+    // nickname. All variants resolve to one actual player or none.
+    { name: 'Fred “Floppy” Stewart', aliases: ['Fred Stewart', 'Floppy Stewart'],
+      nickname: 'Floppy', printName: 'Floppy Stewart' }
   ]);
   const normalizedName = value => String(value || '').normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -47,9 +51,12 @@
     for (const row of entries) {
       const nickname = String(row?.nickname || '').trim();
       if (!nickname || nickname.length > 80) continue;
+      const names = [row.name, ...(Array.isArray(row.aliases) ? row.aliases : [])];
       const matches = Number.isSafeInteger(row.pid) && row.pid >= 0
         ? [byPid.get(row.pid)].filter(Boolean)
-        : byName.get(normalizedName(row.name)) || [];
+        : [...new Map(names.flatMap(name =>
+            byName.get(normalizedName(name)) || []).map(player =>
+            [player.pid, player])).values()];
       // Ambiguous or nonexistent names never get assigned to a guessed PID.
       if (matches.length !== 1 || used.has(matches[0].pid)) continue;
       used.add(matches[0].pid);
