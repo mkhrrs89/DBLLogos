@@ -14,6 +14,7 @@
       }
     </script>
     <link rel="stylesheet" href="./styles.css?v=20261123-shortcuts-v1" />
+    <link rel="stylesheet" href="./bar-chart-race.css?v=20261123-race-v1" />
     <link rel="stylesheet" href="./home.css?v=20261103-home-file-upload" />
     <link rel="stylesheet" href="./home-major-events.css?v=20261119-midseason-major-v1" />
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
@@ -156,6 +157,7 @@
         <nav class="tab-bar panel" aria-label="Main views">
           <button id="homeTabBtn" class="tab-btn active" type="button" aria-selected="true">Home</button>
           <button id="cardsTabBtn" class="tab-btn" type="button" aria-selected="false">Cards</button>
+          <button id="barChartRaceTabBtn" class="tab-btn" type="button" aria-selected="false">Bar Chart Race</button>
           <details id="shortcutsTabGroup" class="tab-group dbl-shortcuts-group">
             <summary class="tab-group-toggle">Shortcuts <span id="shortcutsCount" class="dbl-shortcuts-count" hidden></span></summary>
             <div id="shortcutsMenu" class="tab-group-menu dbl-shortcuts-menu" data-tab-group="shortcuts"
@@ -994,6 +996,79 @@
           </div>
         </section>
 
+
+        <section id="barChartRacePanel" class="panel dbl-race-panel" aria-label="Animated historical league leaderboards" hidden>
+          <header class="dbl-race-heading">
+            <div>
+              <p class="dbl-race-kicker">The Delta Basketball League · Across the Years</p>
+              <h2>Bar Chart Race</h2>
+              <p>Watch the league's all-time leaders rise and fall from season to season. Bars use their team's actual historical primary color.</p>
+            </div>
+          </header>
+          <div class="dbl-race-controls">
+            <div class="dbl-race-controls-row">
+              <label class="dbl-race-control"><span>Category</span>
+                <select id="dblRaceCategory">
+                  <option value="stats">Player stats</option>
+                  <option value="awards">Player awards</option>
+                  <option value="wins">Team wins</option>
+                  <option value="titles">Team championships</option>
+                </select>
+              </label>
+              <label class="dbl-race-control dbl-race-metric-control"><span>Stat / award</span>
+                <select id="dblRaceMetric" aria-label="Select statistic or award"></select>
+              </label>
+            </div>
+            <div class="dbl-race-controls-row">
+              <label class="dbl-race-control dbl-race-season"><span>Seasons</span>
+                <select id="dblRaceStart" aria-label="First season"></select>
+              </label>
+              <span class="dbl-race-dash" aria-hidden="true">—</span>
+              <label class="dbl-race-control dbl-race-season"><span class="dbl-race-visually-hidden">Last season</span>
+                <select id="dblRaceEnd" aria-label="Last season"></select>
+              </label>
+              <span class="dbl-race-show">Show</span>
+              <div class="dbl-race-segments" role="group" aria-label="Leaderboard size">
+                <button id="dblRaceTop10" class="is-active" type="button" aria-pressed="true">Top 10</button>
+                <button id="dblRaceTop15" type="button" aria-pressed="false">Top 15</button>
+              </div>
+            </div>
+            <div class="dbl-race-controls-row dbl-race-pin-row">
+              <label class="dbl-race-control dbl-race-pin"><span id="dblRacePinLabel">Pin player</span>
+                <input id="dblRacePin" type="search" list="dblRacePinList" autocomplete="off"
+                  placeholder="Pin a player..." aria-describedby="dblRacePinHint" />
+                <datalist id="dblRacePinList"></datalist>
+              </label>
+              <button id="dblRaceUnpin" class="dbl-race-unpin" type="button" hidden>Clear pin ×</button>
+              <small id="dblRacePinHint">Keep one player on the board, with their actual rank.</small>
+            </div>
+          </div>
+          <div id="dblRaceStatus" class="dbl-race-status" role="status" aria-live="polite">Load a league file to start the race.</div>
+          <section class="dbl-race-stage" aria-label="Animated bar chart standings">
+            <div class="dbl-race-stage-top">
+              <div id="dblRaceLeader" class="dbl-race-leader"></div>
+              <div id="dblRaceCumulative" class="dbl-race-cumulative"></div>
+            </div>
+            <div id="dblRaceRows" class="dbl-race-rows" role="img" aria-label="Historical leaderboard"></div>
+            <div id="dblRaceYear" class="dbl-race-watermark" aria-hidden="true">—</div>
+            <div class="dbl-race-stage-caption">
+              <span id="dblRaceCaption"></span>
+            </div>
+            <div class="dbl-race-playbar">
+              <button id="dblRacePlay" class="dbl-race-play" type="button">▶ Play</button>
+              <input id="dblRaceScrub" type="range" min="0" max="0" step="1" value="0"
+                aria-label="Race year" />
+              <div class="dbl-race-speed" role="group" aria-label="Playback speed">
+                <button type="button" data-speed="0.5">½×</button>
+                <button type="button" data-speed="1" class="is-active" aria-pressed="true">1×</button>
+                <button type="button" data-speed="2">2×</button>
+                <button type="button" data-speed="4">4×</button>
+                <button type="button" data-speed="8">8×</button>
+              </div>
+            </div>
+          </section>
+        </section>
+
         <section id="rankingsPanel" class="panel rankings-panel" hidden>
           <div class="rankings-header">
             <h2>All-Time Teams</h2>
@@ -1577,6 +1652,7 @@
     <script src="./settings.js?v=20261117-multiplier-delete-confirm"></script>
     <script src="./saved-links-backup.js?v=20261123-shortcuts-backups-v1"></script>
     <script src="./tab-router.js?v=20261123-shortcuts-v1"></script>
+    <script src="./bar-chart-race.js?v=20261123-race-v1"></script>
     <script src="./shortcuts.js?v=20261123-shortcuts-v1"></script>
   </body>
 </html>

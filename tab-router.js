@@ -8,6 +8,7 @@
   const PANEL_BY_TAB_ID = {
     homeTabBtn: 'homePanel',
     cardsTabBtn: 'cardsPanel',
+    barChartRaceTabBtn: 'barChartRacePanel',
     storylinesTabBtn: 'storylinesPanel',
     logosTabBtn: 'logosPanel',
     logosByYearTabBtn: 'logosByYearPanel',
