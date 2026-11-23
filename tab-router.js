@@ -183,6 +183,7 @@
     activate,
     activateById,
     getActiveTabId: () => activeTabId,
+    getPanelId,
     closeGroups,
   };
 

@@ -1454,3 +1454,39 @@ body.fullscreen-open {
 #leagueControlsPanel[hidden] {
   display: none;
 }
+
+/* Persistent Shortcuts menu and global per-page pin control. */
+.topbar-actions {display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;min-width:0}
+.dbl-add-shortcut[aria-pressed="true"] {
+  color:var(--text);border-color:rgba(var(--accent-rgb),.7);
+  background:rgba(var(--accent-rgb),.16);
+}
+.dbl-shortcuts-count {
+  display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;
+  border-radius:999px;background:rgba(var(--accent-rgb),.2);font-size:.7rem;
+}
+.dbl-shortcuts-count[hidden] {display:none}
+.dbl-shortcuts-menu {min-width:220px;max-height:min(60dvh,440px);overflow-y:auto;overflow-x:hidden}
+.dbl-shortcut-row {display:flex;align-items:stretch;gap:4px;min-width:0}
+.dbl-shortcut-open,.dbl-shortcut-remove {
+  border:1px solid transparent;border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.04);color:var(--text);cursor:pointer;
+}
+.dbl-shortcut-open {
+  flex:1;min-width:0;padding:9px 10px;text-align:left;
+  line-height:1.25;overflow-wrap:anywhere;font-size:.84rem;
+}
+.dbl-shortcut-remove {flex:0 0 34px;padding:6px;color:var(--muted);font-size:1rem}
+.dbl-shortcut-open:hover,.dbl-shortcut-remove:hover {
+  border-color:var(--accent);background:var(--panel-2);
+}
+.dbl-shortcut-open:focus-visible,.dbl-shortcut-remove:focus-visible,
+.dbl-add-shortcut:focus-visible {outline:2px solid var(--accent);outline-offset:2px}
+.dbl-shortcuts-empty {margin:0;padding:10px 8px;font-size:.83rem;line-height:1.4;color:var(--muted)}
+.dbl-shortcuts-group.has-pinned-current > .tab-group-toggle {
+  border-color:rgba(var(--accent-rgb),.55);
+}
+.dbl-shortcut-status:empty {display:none}
+.dbl-shortcut-status:not(:empty) {color:var(--muted);font-size:.8rem}
+@media(max-width:600px) {.topbar {flex-wrap:wrap}.topbar-actions {width:100%}}
+@media(max-width:420px) {.dbl-shortcuts-menu {max-height:min(55dvh,370px);width:100%}}

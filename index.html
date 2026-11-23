@@ -13,7 +13,7 @@
         document.documentElement.dataset.theme = 'orange';
       }
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20261117-random-page-button" />
+    <link rel="stylesheet" href="./styles.css?v=20261123-shortcuts-v1" />
     <link rel="stylesheet" href="./home.css?v=20261103-home-file-upload" />
     <link rel="stylesheet" href="./home-major-events.css?v=20261119-midseason-major-v1" />
     <link rel="stylesheet" href="./home-team-logos.css?v=20261106-home-team-badges" />
@@ -144,14 +144,23 @@
         <div>
           <h1>ZenGM Companion</h1>
         </div>
-        <button id="randomizePageBtn" class="topbar-randomize" type="button"
-          aria-label="Open a random page" title="Open a random page">⤨ Randomize</button>
+        <div class="topbar-actions">
+          <button id="addShortcutBtn" class="topbar-randomize dbl-add-shortcut" type="button"
+            aria-pressed="false" title="Pin the current page to Shortcuts">☆ Add as shortcut</button>
+          <button id="randomizePageBtn" class="topbar-randomize" type="button"
+            aria-label="Open a random page" title="Open a random page">⤨ Randomize</button>
+        </div>
       </header>
 
       <main class="page">
         <nav class="tab-bar panel" aria-label="Main views">
           <button id="homeTabBtn" class="tab-btn active" type="button" aria-selected="true">Home</button>
           <button id="cardsTabBtn" class="tab-btn" type="button" aria-selected="false">Cards</button>
+          <details id="shortcutsTabGroup" class="tab-group dbl-shortcuts-group">
+            <summary class="tab-group-toggle">Shortcuts <span id="shortcutsCount" class="dbl-shortcuts-count" hidden></span></summary>
+            <div id="shortcutsMenu" class="tab-group-menu dbl-shortcuts-menu" data-tab-group="shortcuts"
+              aria-label="Your pinned pages"></div>
+          </details>
           <details class="tab-group">
             <summary class="tab-group-toggle">Stories</summary>
             <div class="tab-group-menu" data-tab-group="stories">
@@ -218,6 +227,7 @@
             </div>
           </details>
         </nav>
+        <span id="shortcutStatus" class="dbl-shortcut-status" role="status" aria-live="polite"></span>
 
         <section id="homePanel" class="panel home-panel" aria-label="Delta Basketball League home">
           <header class="panel home-league-heading">
@@ -1566,6 +1576,7 @@
     <script src="./colleges.js?v=20261027-hide-assigned-filter"></script>
     <script src="./settings.js?v=20261117-multiplier-delete-confirm"></script>
     <script src="./saved-links-backup.js?v=20261123-multiplier-backups-v5"></script>
-    <script src="./tab-router.js?v=20261119-stories-folder-storylines-v1"></script>
+    <script src="./tab-router.js?v=20261123-shortcuts-v1"></script>
+    <script src="./shortcuts.js?v=20261123-shortcuts-v1"></script>
   </body>
 </html>
