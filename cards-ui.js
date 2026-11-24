@@ -1590,7 +1590,7 @@
     // do not silently fall back to a generic italic serif face.
     const signatureFont = '"Great Vibes","Snell Roundhand",cursive';
     const fontSize = Math.max(46, Math.min(82, 87 - Math.max(0, signature.length - 11) * 2.8));
-    const ink = '#1563F0';
+    const ink = '#012BB9';
     overlay.style.setProperty('--autograph-ink', ink);
     text.setAttribute('x', '170');
     text.setAttribute('y', '91');
@@ -1636,89 +1636,184 @@
     for (const character of String(card.id || ''))
       extraSeed = Math.imul(extraSeed ^ character.charCodeAt(0), 16777619) >>> 0;
     const extraRoll = extraSeed % 100;
-    if (extraRoll < 28) { // 23% one extra, 5% two extras.
+    if (extraRoll < 28) { // 23% one extra, 5% two, as before.
       const recordedJersey = String(api.findJersey?.(card) ?? card.jersey ?? '').trim();
-      // Never invent a uniform number if the league record lacks one.
+      // Numbers are strictly drawn from the player's recorded uniform.
       const jersey = /^\d{1,2}$/.test(recordedJersey) ? recordedJersey : '';
       const styles = jersey
-        ? ['number', 'basketball', 'note', 'loop', 'squiggle', 'star']
-        : ['basketball', 'note', 'loop', 'squiggle', 'star'];
+        ? ['number', 'basketball', 'note', 'loop', 'squiggle', 'star', 'ufo']
+        : ['basketball', 'note', 'loop', 'squiggle', 'star', 'ufo'];
       const firstIndex = (extraSeed >>> 8) % styles.length;
       const count = extraRoll < 5 ? 2 : 1;
-      const phrases = ['Best wishes', 'Good luck!', 'All the best', 'Stay sharp', 'Keep shooting'];
-      const accentPath = (d, weight = 2) => {
+      const phrases = [
+        'Best wishes', 'Good luck!', 'All the best',
+        'Stay sharp', 'Keep ballin!', 'Go get em!', 'Thanks!'
+      ];
+
+      // A real pen doesn't draw perfectly spaced glyphs or geometric icons.
+      // Stable xorshift variation changes size, lean, spacing and stroke weight
+      // for each card without changing any saved collection information.
+      let randomState = extraSeed || 1;
+      const random = () => {
+        randomState ^= randomState << 13;
+        randomState ^= randomState >>> 17;
+        randomState ^= randomState << 5;
+        return (randomState >>> 0) / 4294967296;
+      };
+      const jitter = (low, high) => low + (high - low) * random();
+      const coord = (number) => Number(number).toFixed(1);
+      const point = (x, y) => coord(x + jitter(-2.2, 2.2)) + ' ' +
+        coord(y + jitter(-2.2, 2.2));
+      const groupAt = (kind, x, y, angle, scale = 1) => {
+        const group = document.createElementNS(svgNS, 'g');
+        group.setAttribute('transform', 'translate(' + coord(x) + ' ' +
+          coord(y) + ') rotate(' + coord(angle) + ') scale(' + coord(scale) + ')');
+        group.setAttribute('data-autograph-accent', kind);
+        svg.appendChild(group);
+        return group;
+      };
+      const inkPath = (group, d, width = 2.9) => {
         const path = document.createElementNS(svgNS, 'path');
         path.setAttribute('d', d);
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke', 'currentColor');
-        path.setAttribute('stroke-width', String(weight));
+        path.setAttribute('stroke-width', coord(width * jitter(.83, 1.22)));
         path.setAttribute('stroke-linecap', 'round');
         path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('data-autograph-accent', 'true');
-        svg.appendChild(path);
+        group.appendChild(path);
+        return path;
       };
-      const accentText = (value, x, y, anchor, size, maxLength) => {
-        const note = document.createElementNS(svgNS, 'text');
-        note.setAttribute('x', String(x));
-        note.setAttribute('y', String(y));
-        note.setAttribute('text-anchor', anchor);
-        note.setAttribute('font-family', signatureFont);
-        note.setAttribute('font-style', 'italic');
-        note.setAttribute('font-size', String(size));
-        note.setAttribute('font-weight', '400');
-        note.setAttribute('fill', 'currentColor');
-        note.setAttribute('stroke', 'currentColor');
-        note.setAttribute('stroke-width', '.35');
-        note.setAttribute('paint-order', 'stroke fill');
-        note.setAttribute('textLength',
-          String(Math.min(maxLength, Math.max(28, value.length * size * .34))));
-        note.setAttribute('lengthAdjust', 'spacingAndGlyphs');
-        note.setAttribute('data-autograph-accent', 'true');
-        note.textContent = value;
-        svg.appendChild(note);
+      const letteringAdvance = (character) => {
+        if (character === ' ') return 9;
+        if (/[.,!'ilI]/.test(character)) return 7;
+        if (/[MWmw]/.test(character)) return 21;
+        if (/[fjt]/.test(character)) return 11;
+        return 15;
       };
+      const scribbledLettering = (message, onLeft) => {
+        // Distinct from the Great Vibes name: a casual, hastily jotted
+        // Caveat note or uniform number, with individually crooked letters.
+        const width = [...message].reduce((n, c) => n + letteringAdvance(c), 0);
+        const scale = Math.min(1.08, 148 / Math.max(1, width));
+        const drawingWidth = width * scale;
+        const start = onLeft ? jitter(13, 27) :
+          340 - drawingWidth - jitter(13, 27);
+        const baseline = jitter(117, 128);
+        const angle = jitter(-5.5, 5.5);
+        const group = groupAt('handwritten-note', start, baseline, angle, scale);
+        let pen = 0;
+        for (const character of message) {
+          const advance = letteringAdvance(character);
+          if (character !== ' ') {
+            const letter = document.createElementNS(svgNS, 'text');
+            const y = jitter(-2.5, 2.7);
+            const size = jitter(31, 37);
+            letter.setAttribute('x', coord(pen));
+            letter.setAttribute('y', coord(y));
+            letter.setAttribute('font-family', '"Caveat","Comic Sans MS",cursive');
+            letter.setAttribute('font-size', coord(size));
+            letter.setAttribute('font-weight', random() < .24 ? '600' : '400');
+            letter.setAttribute('letter-spacing', coord(jitter(-.8, .35)));
+            letter.setAttribute('fill', 'currentColor');
+            letter.setAttribute('stroke', 'currentColor');
+            letter.setAttribute('stroke-width', coord(jitter(.15, .65)));
+            letter.setAttribute('paint-order', 'stroke fill');
+            letter.setAttribute('transform',
+              'rotate(' + coord(jitter(-13, 11)) + ' ' + coord(pen) +
+              ' ' + coord(y) + ')');
+            letter.textContent = character;
+            group.appendChild(letter);
+          }
+          pen += advance + jitter(-1.5, 1.3);
+        }
+        // Sometimes the note trails into a quick, lopsided pen flick.
+        if (random() < .42)
+          inkPath(group, 'M ' + point(width * .52, 7) + ' Q ' +
+            point(width * .75, 12) + ' ' + point(Math.min(width, 139), 5), 1.7);
+      };
+
       for (let extra = 0; extra < count; extra += 1) {
         const styleIndex = extra === 0 ? firstIndex :
           (firstIndex + 1 + (extraSeed >>> 23) % (styles.length - 1)) % styles.length;
         const kind = styles[styleIndex];
-        // For a double embellishment, use opposite lower corners; all
-        // paths/text stay inside the existing 340x150 clipped ink viewport.
-        const left = (((extraSeed >>> 16) & 1) === 0) !== (extra === 1);
-        const center = left ? 43 : 297;
+        // Prefer different sides if there are two extras, but don't make
+        // their location, tilt, or sizes perfectly mirrored.
+        const onLeft = (((extraSeed >>> 16) & 1) === 0) !== (extra === 1);
+        const ballX = (onLeft ? 48 : 291) + jitter(-12, 12);
+        const smallY = jitter(112, 119);
         if (kind === 'number') {
-          accentText('#' + jersey, left ? 28 : 312, 139,
-            left ? 'start' : 'end', 23, 54);
+          scribbledLettering('#' + jersey, onLeft);
         } else if (kind === 'note') {
-          const phrase = phrases[(extraSeed >>> (extra ? 11 : 20)) % phrases.length];
-          accentText(phrase, left ? 28 : 312, 140,
-            left ? 'start' : 'end', 19, 110);
+          scribbledLettering(
+            phrases[(extraSeed >>> (extra ? 11 : 20)) % phrases.length], onLeft);
         } else if (kind === 'basketball') {
-          const circle = document.createElementNS(svgNS, 'circle');
-          circle.setAttribute('cx', String(center));
-          circle.setAttribute('cy', '132');
-          circle.setAttribute('r', '11');
-          circle.setAttribute('fill', 'none');
-          circle.setAttribute('stroke', 'currentColor');
-          circle.setAttribute('stroke-width', '2');
-          circle.setAttribute('data-autograph-accent', 'true');
-          svg.appendChild(circle);
-          accentPath('M ' + (center - 10) + ' 132 H ' + (center + 10) +
-            ' M ' + center + ' 121 V 143' +
-            ' M ' + (center - 8) + ' 124 Q ' + (center + 2) + ' 132 ' + (center - 8) + ' 140' +
-            ' M ' + (center + 8) + ' 124 Q ' + (center - 2) + ' 132 ' + (center + 8) + ' 140', 1.4);
+          const group = groupAt('sketched-basketball', ballX, smallY,
+            jitter(-16, 19), jitter(.85, 1.06));
+          // Intentionally unfinished/wobbly outline and uneven seams,
+          // not a stamp-like SVG circle with a perfect cross.
+          inkPath(group, 'M ' + point(-21, 0) + ' C ' + point(-26, -14) +
+            ' ' + point(-11, -25) + ' ' + point(2, -23) +
+            ' C ' + point(16, -23) + ' ' + point(25, -10) +
+            ' ' + point(23, 4) + ' C ' + point(20, 19) +
+            ' ' + point(5, 26) + ' ' + point(-8, 21) +
+            ' C ' + point(-20, 16) + ' ' + point(-24, 8) +
+            ' ' + point(-21, 0), 3.0);
+          inkPath(group, 'M ' + point(-20, -3) + ' Q ' + point(1, -5) +
+            ' ' + point(23, 5) + ' M ' + point(-2, -22) +
+            ' C ' + point(5, -5) + ' ' + point(-7, 10) +
+            ' ' + point(-4, 22), 2.4);
+          inkPath(group, 'M ' + point(-16, -14) + ' C ' + point(-2, -6) +
+            ' ' + point(-2, 8) + ' ' + point(-15, 15) +
+            ' M ' + point(14, -14) + ' Q ' + point(2, 1) +
+            ' ' + point(13, 15), 2);
+        } else if (kind === 'ufo') {
+          const group = groupAt('sketched-ufo', ballX, smallY,
+            jitter(-15, 14), jitter(.83, 1.07));
+          inkPath(group, 'M ' + point(-13, -4) + ' C ' + point(-9, -21) +
+            ' ' + point(6, -21) + ' ' + point(13, -3) +
+            ' M ' + point(-26, 1) + ' Q ' + point(-1, -10) +
+            ' ' + point(25, 2) + ' Q ' + point(33, 9) +
+            ' ' + point(3, 12) + ' Q ' + point(-20, 13) +
+            ' ' + point(-26, 1), 3);
+          inkPath(group, 'M ' + point(-4, 10) + ' L ' + point(-9, 22) +
+            ' M ' + point(8, 10) + ' L ' + point(13, 22), 2.2);
+          for (let i = -1; i <= 1; i++) {
+            inkPath(group, 'M ' + point(i * 11 - 2, 4) +
+              ' l ' + point(2, 1.2), 2.1);
+          }
+        } else if (kind === 'star') {
+          const group = groupAt('rough-star', ballX, smallY,
+            jitter(-20, 22), jitter(.9, 1.2));
+          inkPath(group, 'M ' + point(-2, -22) + ' L ' + point(5, -5) +
+            ' L ' + point(25, -3) + ' L ' + point(9, 8) +
+            ' L ' + point(13, 23) + ' L ' + point(-2, 13) +
+            ' L ' + point(-18, 23) + ' L ' + point(-12, 4) +
+            ' L ' + point(-23, -8) + ' L ' + point(-5, -8) +
+            ' L ' + point(-2, -22), 3.1);
+          inkPath(group, 'M ' + point(19, -19) +
+            ' L ' + point(26, -25), 2);
         } else if (kind === 'loop') {
-          accentPath('M ' + (center - 21) + ' 138 C ' + (center - 7) + ' 114 ' +
-            (center + 1) + ' 143 ' + (center + 11) + ' 128 S ' +
-            (center + 27) + ' 125 ' + (center + 18) + ' 141', 2.3);
-        } else if (kind === 'squiggle') {
-          accentPath('M ' + (center - 25) + ' 133 Q ' + (center - 13) +
-            ' 118 ' + (center - 2) + ' 134 T ' + (center + 21) + ' 132', 2.3);
+          const anchorX = onLeft ? 86 : 251;
+          const group = groupAt('loose-pen-flourish', anchorX, jitter(116, 126),
+            jitter(-12, 12), jitter(.85, 1.07));
+          inkPath(group, 'M ' + point(-57, 9) + ' C ' + point(-36, -8) +
+            ' ' + point(-22, -12) + ' ' + point(-17, 1) +
+            ' C ' + point(-12, 23) + ' ' + point(8, -22) +
+            ' ' + point(24, -2) + ' S ' + point(50, 13) +
+            ' ' + point(58, -8), 3.1);
+          inkPath(group, 'M ' + point(28, 7) + ' Q ' + point(44, 14) +
+            ' ' + point(60, 1), 1.6);
         } else {
-          accentPath('M ' + center + ' 121 L ' + (center + 4) + ' 128 L ' +
-            (center + 13) + ' 130 L ' + (center + 5) + ' 135 L ' +
-            (center + 7) + ' 144 L ' + center + ' 139 L ' +
-            (center - 9) + ' 143 L ' + (center - 6) + ' 135 L ' +
-            (center - 13) + ' 131 L ' + (center - 4) + ' 128 Z', 1.8);
+          const anchorX = onLeft ? 75 : 259;
+          const group = groupAt('freehand-squiggle', anchorX, jitter(116, 125),
+            jitter(-12, 14), jitter(.92, 1.14));
+          inkPath(group, 'M ' + point(-48, 4) + ' Q ' + point(-39, -19) +
+            ' ' + point(-22, 3) + ' T ' + point(0, 4) +
+            ' Q ' + point(12, -17) + ' ' + point(22, 3) +
+            ' T ' + point(49, -8), 3.3);
+          if (random() < .7)
+            inkPath(group, 'M ' + point(30, 9) +
+              ' Q ' + point(43, 13) + ' ' + point(58, 3), 1.7);
         }
       }
     }
