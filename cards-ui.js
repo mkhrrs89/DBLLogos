@@ -1564,6 +1564,36 @@
     window.setTimeout(() => fx.remove(), config.duration + 650);
   }
 
+  // Only the handwritten autograph is abbreviated; printed names stay intact.
+  function compactAutographSurname(surname) {
+    const clean = String(surname || '').trim().replace(/\s+/g, ' ');
+    const chars = value => Array.from(value);
+    if (chars(clean).length <= 10) return clean;
+    const parts = clean.split(' ');
+    if (parts.length === 1) return chars(clean).slice(0, 7).join('');
+    // Keep recognizable surname prefixes and abbreviate the long final word.
+    const prefix = parts.slice(0, -1).join(' ');
+    const tail = chars(parts[parts.length - 1]);
+    const available = 10 - chars(prefix).length - 1;
+    if (available < 2) return chars(clean).slice(0, 7).join('').trimEnd();
+    return prefix + ' ' + tail.slice(0, Math.min(available, 3)).join('');
+  }
+
+  function autographSignatureName(fullName) {
+    const clean = String(fullName || '').trim().replace(/\s+/g, ' ');
+    // Straight and curly double quotes both identify a nickname.
+    const nickname = clean.match(/["“]([^"“”]+)["”]/)?.[1]?.trim();
+    if (nickname) return nickname;
+    const parts = clean.split(' ').filter(Boolean);
+    const first = parts.shift() || '';
+    // Suffixes aren't part of the surname used for the signature.
+    if (parts.length > 1 && /^(?:Jr\.?|Sr\.?|II|III|IV|V)$/i.test(parts[parts.length - 1]))
+      parts.pop();
+    const surname = compactAutographSurname(parts.join(' '));
+    const initial = Array.from(first)[0] || '';
+    return initial ? initial + '.' + (surname ? ' ' + surname : '') : '';
+  }
+
   // Deterministic per-player on-card ink: an SVG signature with a
   // PID-seeded writing style, pen angle and underline. No generated
   // bitmap is saved or exported; it is redrawn from player name and PID.
@@ -1572,13 +1602,10 @@
     const overlay = make('span', 'dbl-cards-autograph');
     overlay.setAttribute('aria-hidden', 'true');
     const name = String(card.name || '').trim();
-    const nameParts = name.split(/\s+/).filter(Boolean);
-    // Every autograph uses the first initial followed by the full surname.
+    // Keep the original seed so existing embellishments remain stable.
     let seed = (Number(card.pid) + 1) >>> 0;
     for (const character of name) seed = (Math.imul(seed ^ character.charCodeAt(0), 16777619)) >>> 0;
-    const first = nameParts.shift() || '';
-    const last = nameParts.join(' ');
-    const signature = last ? first.charAt(0) + '. ' + last : first.charAt(0) + '.';
+    const signature = autographSignatureName(name);
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
     // Leave padding around all four sides for ornate ascenders and flourishes.
