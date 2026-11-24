@@ -1629,6 +1629,99 @@
       flourish.setAttribute('stroke-linecap', 'round');
       svg.appendChild(flourish);
     }
+    // Most signed cards keep only the signature and its normal underline.
+    // A stable, edition-specific hash gives a minority small personal extras
+    // without changing the stored card, rarity, pull odds or autograph format.
+    let extraSeed = seed ^ 0x9e3779b9;
+    for (const character of String(card.id || ''))
+      extraSeed = Math.imul(extraSeed ^ character.charCodeAt(0), 16777619) >>> 0;
+    const extraRoll = extraSeed % 100;
+    if (extraRoll < 28) { // 23% one extra, 5% two extras.
+      const recordedJersey = String(api.findJersey?.(card) ?? card.jersey ?? '').trim();
+      // Never invent a uniform number if the league record lacks one.
+      const jersey = /^\d{1,2}$/.test(recordedJersey) ? recordedJersey : '';
+      const styles = jersey
+        ? ['number', 'basketball', 'note', 'loop', 'squiggle', 'star']
+        : ['basketball', 'note', 'loop', 'squiggle', 'star'];
+      const firstIndex = (extraSeed >>> 8) % styles.length;
+      const count = extraRoll < 5 ? 2 : 1;
+      const phrases = ['Best wishes', 'Good luck!', 'All the best', 'Stay sharp', 'Keep shooting'];
+      const accentPath = (d, weight = 2) => {
+        const path = document.createElementNS(svgNS, 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'currentColor');
+        path.setAttribute('stroke-width', String(weight));
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('data-autograph-accent', 'true');
+        svg.appendChild(path);
+      };
+      const accentText = (value, x, y, anchor, size, maxLength) => {
+        const note = document.createElementNS(svgNS, 'text');
+        note.setAttribute('x', String(x));
+        note.setAttribute('y', String(y));
+        note.setAttribute('text-anchor', anchor);
+        note.setAttribute('font-family', signatureFont);
+        note.setAttribute('font-style', 'italic');
+        note.setAttribute('font-size', String(size));
+        note.setAttribute('font-weight', '400');
+        note.setAttribute('fill', 'currentColor');
+        note.setAttribute('stroke', 'currentColor');
+        note.setAttribute('stroke-width', '.35');
+        note.setAttribute('paint-order', 'stroke fill');
+        note.setAttribute('textLength',
+          String(Math.min(maxLength, Math.max(28, value.length * size * .34))));
+        note.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+        note.setAttribute('data-autograph-accent', 'true');
+        note.textContent = value;
+        svg.appendChild(note);
+      };
+      for (let extra = 0; extra < count; extra += 1) {
+        const styleIndex = extra === 0 ? firstIndex :
+          (firstIndex + 1 + (extraSeed >>> 23) % (styles.length - 1)) % styles.length;
+        const kind = styles[styleIndex];
+        // For a double embellishment, use opposite lower corners; all
+        // paths/text stay inside the existing 340x150 clipped ink viewport.
+        const left = (((extraSeed >>> 16) & 1) === 0) !== (extra === 1);
+        const center = left ? 43 : 297;
+        if (kind === 'number') {
+          accentText('#' + jersey, left ? 28 : 312, 139,
+            left ? 'start' : 'end', 23, 54);
+        } else if (kind === 'note') {
+          const phrase = phrases[(extraSeed >>> (extra ? 11 : 20)) % phrases.length];
+          accentText(phrase, left ? 28 : 312, 140,
+            left ? 'start' : 'end', 19, 110);
+        } else if (kind === 'basketball') {
+          const circle = document.createElementNS(svgNS, 'circle');
+          circle.setAttribute('cx', String(center));
+          circle.setAttribute('cy', '132');
+          circle.setAttribute('r', '11');
+          circle.setAttribute('fill', 'none');
+          circle.setAttribute('stroke', 'currentColor');
+          circle.setAttribute('stroke-width', '2');
+          circle.setAttribute('data-autograph-accent', 'true');
+          svg.appendChild(circle);
+          accentPath('M ' + (center - 10) + ' 132 H ' + (center + 10) +
+            ' M ' + center + ' 121 V 143' +
+            ' M ' + (center - 8) + ' 124 Q ' + (center + 2) + ' 132 ' + (center - 8) + ' 140' +
+            ' M ' + (center + 8) + ' 124 Q ' + (center - 2) + ' 132 ' + (center + 8) + ' 140', 1.4);
+        } else if (kind === 'loop') {
+          accentPath('M ' + (center - 21) + ' 138 C ' + (center - 7) + ' 114 ' +
+            (center + 1) + ' 143 ' + (center + 11) + ' 128 S ' +
+            (center + 27) + ' 125 ' + (center + 18) + ' 141', 2.3);
+        } else if (kind === 'squiggle') {
+          accentPath('M ' + (center - 25) + ' 133 Q ' + (center - 13) +
+            ' 118 ' + (center - 2) + ' 134 T ' + (center + 21) + ' 132', 2.3);
+        } else {
+          accentPath('M ' + center + ' 121 L ' + (center + 4) + ' 128 L ' +
+            (center + 13) + ' 130 L ' + (center + 5) + ' 135 L ' +
+            (center + 7) + ' 144 L ' + center + ' 139 L ' +
+            (center - 9) + ' 143 L ' + (center - 6) + ' 135 L ' +
+            (center - 13) + ' 131 L ' + (center - 4) + ' 128 Z', 1.8);
+        }
+      }
+    }
     overlay.appendChild(svg);
     return overlay;
   }
