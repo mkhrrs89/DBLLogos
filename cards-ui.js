@@ -269,6 +269,18 @@
     const byHeight = row.clientHeight * .82;
     name.style.fontSize = Math.max(7, Math.min(byWidth, byHeight)).toFixed(2) + 'px';
   }
+  // Keep the complete historical masthead centered, even when a narrow
+  // card or a substitute font would otherwise push the last letters off.
+  function fitTeamSeasonMasthead(masthead) {
+    const glyphs = masthead.querySelector('.dbl-cards-team-season-masthead-glyphs');
+    if (!glyphs || masthead.clientWidth <= 0) return;
+    const natural = Math.max(glyphs.scrollWidth || 0, glyphs.offsetWidth || 0);
+    if (natural <= 0) return;
+    const available = masthead.clientWidth * .97;
+    glyphs.style.transform = natural > available
+      ? 'scaleX(' + (available / natural).toFixed(5) + ')'
+      : '';
+  }
   function fitCardNames(root) {
     if (!root) return;
     for (const name of root.querySelectorAll?.('.dbl-cards-name') || [])
@@ -277,6 +289,8 @@
       fitUniformName(name);
     for (const name of root.querySelectorAll?.('.dbl-nickname-billboard-type') || [])
       fitNickname(name);
+    for (const masthead of root.querySelectorAll?.('.dbl-cards-team-season-masthead') || [])
+      fitTeamSeasonMasthead(masthead);
   }
   function fitLightboxNames() {
     fitCardNames(cardLightbox?.container);
@@ -956,7 +970,10 @@
 
   function teamSeasonFront(card) {
     const front = make('span', 'dbl-cards-face dbl-cards-front dbl-cards-team-season-front');
-    front.appendChild(make('span', 'dbl-cards-team-season-masthead', 'HISTORIC TEAMS OF THE DBL'));
+    const masthead = make('span', 'dbl-cards-team-season-masthead');
+    masthead.appendChild(make('span', 'dbl-cards-team-season-masthead-glyphs',
+      'HISTORIC TEAMS OF THE DBL'));
+    front.appendChild(masthead);
     // Plain Base Team Season cards need no visible edition label; metal
     // variants retain their collectible finish names.
     if (teamVariant(card) !== 'base')

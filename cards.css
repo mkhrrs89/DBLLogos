@@ -2949,7 +2949,8 @@
   display: block;
   width: 100%;
   font-family: Georgia,"Times New Roman",serif;
-  font-size: clamp(8px,4.5cqw,15px);
+  font-size: 8px; /* Fallback for browsers without container units. */
+  font-size: 4.2cqw;
   font-weight: 800;
   letter-spacing: .065em;
   border-bottom: 1px solid rgba(119,71,29,.48);
@@ -3062,8 +3063,20 @@
   gap: 1%;
 }
 .dbl-cards-team-season-masthead {
-  font-size: clamp(8px, 4.2cqw, 14px);
+  /* Scale continuously with the card, not the viewport or a pixel floor. */
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  flex: 0 0 auto;
   padding-bottom: 2%;
+}
+.dbl-cards-team-season-masthead-glyphs {
+  display: block;
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+  transform-origin: center center;
 }
 .dbl-cards-team-season-year {
   font-size: clamp(28px, 20cqw, 68px);
