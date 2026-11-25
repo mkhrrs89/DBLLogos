@@ -3889,9 +3889,9 @@
     drop-shadow(0 .65px 0 #16110b)
     drop-shadow(0 -.65px 0 #16110b);
 }
-@media (max-width: 800px) {
-  /* Maintain the crisp one-pixel edge already used by light-logo cards
-     on mobile WebKit, regardless of the champion crest's measured tone. */
+@media (max-width: 800px), (any-pointer: coarse) {
+  /* Use the pixel-aligned stroke on touch devices in either orientation.
+     Landscape iPhones can exceed the 800px portrait layout breakpoint. */
   .dbl-cards-card[data-rarity="team-season"][data-team-variant="bronze"]
     .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
     -webkit-filter:
@@ -3935,9 +3935,9 @@
 }
 
 
-/* On mobile, only light logos receive the stronger pixel-aligned outline
-   that remains visible in WebKit. Dark logos retain their natural edges. */
-@media (max-width: 800px) {
+/* Light-logo outlines use the stronger pixel-aligned stroke on touch
+   devices in either orientation. Dark base logos retain natural edges. */
+@media (max-width: 800px), (any-pointer: coarse) {
   .dbl-cards-team-season-front .dbl-cards-team-season-emblem img.dbl-cards-team-logo.is-light-logo {
     -webkit-filter:
       drop-shadow(1px 0 0 #16110b)
@@ -4842,6 +4842,23 @@
     drop-shadow(-.65px 0 0 #241b0f)
     drop-shadow(0 .65px 0 #241b0f)
     drop-shadow(0 -.65px 0 #241b0f);
+}
+/* Keep the metal-edition stroke pixel-aligned on touch screens too,
+   after the desktop Silver/Gold filter rules so the cascade is stable. */
+@media (max-width: 800px), (any-pointer: coarse) {
+  .dbl-cards-card[data-rarity="team-season"][data-team-variant="silver"]
+   .dbl-cards-team-season-emblem img.dbl-cards-team-logo,
+  .dbl-cards-card[data-rarity="team-season"][data-team-variant="gold"]
+   .dbl-cards-team-season-emblem img.dbl-cards-team-logo {
+    -webkit-filter: drop-shadow(1px 0 0 #241b0f)
+      drop-shadow(-1px 0 0 #241b0f)
+      drop-shadow(0 1px 0 #241b0f)
+      drop-shadow(0 -1px 0 #241b0f);
+    filter: drop-shadow(1px 0 0 #241b0f)
+      drop-shadow(-1px 0 0 #241b0f)
+      drop-shadow(0 1px 0 #241b0f)
+      drop-shadow(0 -1px 0 #241b0f);
+  }
 }
 .dbl-cards-reveal-fx[data-effect="silver-team"] {
   --fx-ink: #f8fbff; --fx-glow: rgba(187,217,239,.79);
