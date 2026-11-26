@@ -6,7 +6,7 @@
   if (window.DBLCardPackLimits) return;
   const STORAGE_KEY='dbl-card-pack-limits:v1';
   const WINDOW_MS=6*60*60*1000;
-  const MAX_PACKS=5;
+  const MAX_PACKS=3;
   // Older active six-hour windows can have up to ten successful pulls.
   // Continue reading those records until they expire instead of treating
   // them as corruption (which would fail closed indefinitely).
