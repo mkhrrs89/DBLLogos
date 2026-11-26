@@ -1,5 +1,6 @@
 (() => {
   const CACHE_KEY = 'dbl-logo-team-leaders:v1';
+  const SELECTION_KEY = 'dbl-logo-team-leaders:selected-tid:v1';
   const LEADER_LIMIT = 10;
   const STAT_DEFINITIONS = [
     { key: 'pts', title: 'Points', valueLabel: 'PTS' },
@@ -14,13 +15,14 @@
   const panel = document.getElementById('teamLeadersPanel');
   const wrap = document.getElementById('teamLeadersWrap');
   const subtitle = document.getElementById('teamLeadersSubtitle');
+  const selector = document.getElementById('teamLeadersFranchise');
   const fileInput = document.getElementById('leagueFile');
   const clearBtn = document.getElementById('clearLeagueFileBtn');
   const statusMessage = document.getElementById('statusMessage');
   const fileHub = window.DBLLeagueFileHub;
   const stream = window.DBLLeagueStream;
 
-  if (!tabBtn || !panel || !wrap || !stream) return;
+  if (!tabBtn || !panel || !wrap || !selector || !stream) return;
 
   let activeFile = null;
   let fileVersion = 0;
@@ -28,7 +30,69 @@
   let loadingVersion = -1;
   let leaders = null;
   let franchise = null;
+  let franchises = [];
+  let leadersByTid = new Map();
+  let selectedTid = readSelection();
   let cachedPayload = loadCache();
+
+  function readSelection() {
+    try { return readOptionalNumber(localStorage.getItem(SELECTION_KEY)); }
+    catch { return null; }
+  }
+
+  function teamLabel(team) {
+    return [team.region, team.name].filter(Boolean).join(' ').trim() ||
+      team.abbrev || 'Franchise ' + team.tid;
+  }
+
+  function chooseFranchise() {
+    franchise = franchises.find(team => team.tid === selectedTid) ||
+      franchises.reduce((best, team) => team.clevelandScore > (best?.clevelandScore || 0)
+        ? team : best, null) || franchises[0] || null;
+    leaders = franchise ? leadersByTid.get(franchise.tid) || null : null;
+    selector.value = franchise ? String(franchise.tid) : '';
+  }
+
+  function populateSelector() {
+    selector.replaceChildren();
+    if (!franchises.length) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'Load a league file first';
+      selector.appendChild(option);
+      selector.disabled = true;
+      return;
+    }
+    const counts = new Map();
+    for (const team of franchises) counts.set(teamLabel(team), (counts.get(teamLabel(team)) || 0) + 1);
+    for (const team of franchises) {
+      const option = document.createElement('option');
+      option.value = String(team.tid);
+      option.textContent = teamLabel(team) + (counts.get(teamLabel(team)) > 1 ? ' (TID ' + team.tid + ')' : '');
+      selector.appendChild(option);
+    }
+    selector.disabled = false;
+    chooseFranchise();
+  }
+
+  function resetResults() {
+    leaders = null;
+    franchise = null;
+    franchises = [];
+    leadersByTid = new Map();
+    populateSelector();
+    updateSubtitle(null);
+  }
+
+  selector.addEventListener('change', () => {
+    const tid = readOptionalNumber(selector.value);
+    if (!franchises.some(team => team.tid === tid)) return;
+    selectedTid = tid;
+    try { localStorage.setItem(SELECTION_KEY, String(tid)); }
+    catch (error) { console.warn('Could not save franchise selection.', error); }
+    chooseFranchise();
+    render();
+  });
 
   tabBtn.addEventListener('click', () => {
     void ensureLoaded();
@@ -46,18 +110,11 @@
     fileVersion += 1;
     loadedVersion = -1;
     loadingVersion = -1;
-    leaders = null;
-    franchise = null;
-
-    const signature = fileSignature(file);
-    if (cachedPayload?.signature === signature) {
-      leaders = normalizeSavedLeaders(cachedPayload.leaders);
-      franchise = normalizeSavedFranchise(cachedPayload.franchise);
-      if (leaders && franchise) {
-        loadedVersion = fileVersion;
-        if (!panel.hidden) render();
-        return;
-      }
+    resetResults();
+    if (cachedPayload?.signature === fileSignature(file) && restoreAllFranchises(cachedPayload)) {
+      loadedVersion = fileVersion;
+      if (!panel.hidden) render();
+      return;
     }
 
     if (!panel.hidden) {
@@ -79,8 +136,7 @@
     fileVersion += 1;
     loadedVersion = -1;
     loadingVersion = -1;
-    leaders = null;
-    franchise = null;
+    resetResults();
 
     try {
       localStorage.removeItem(CACHE_KEY);
@@ -90,7 +146,7 @@
     }
 
     updateSubtitle(null);
-    renderEmpty('Load a league file to calculate Cleveland franchise leaders.');
+    renderEmpty('Load a league file to calculate franchise leaders.');
   });
 
   async function ensureLoaded() {
@@ -102,7 +158,7 @@
 
     if (!file) {
       updateSubtitle(null);
-      renderEmpty('Load a league file to calculate Cleveland franchise leaders.');
+      renderEmpty('Load a league file to calculate franchise leaders.');
       return;
     }
 
@@ -115,102 +171,91 @@
     if (loadingVersion === version) return;
     loadingVersion = version;
 
-    renderEmpty('Finding the Cleveland franchise…', true);
+    renderEmpty('Finding franchises…', true);
 
     try {
       await waitForMainLeagueLoad(version);
       if (!isCurrent(file, version)) return;
 
-      const cleveland = await findClevelandFranchise(file, version);
+      const teams = await findFranchises(file, version);
       if (!isCurrent(file, version)) return;
-
-      if (!cleveland) {
-        updateSubtitle(null);
-        renderEmpty('Could not find a Cleveland franchise in this league file.');
+      if (!teams.length) {
+        resetResults();
+        renderEmpty('Could not find any franchises in this league file.');
         return;
       }
-
-      franchise = cleveland;
-      renderEmpty('Calculating Cleveland career leaders…', true);
-
-      const playersByKey = new Map();
+      renderEmpty('Calculating career leaders for all franchises…', true);
+      const playersByTeam = new Map(teams.map(team => [team.tid, new Map()]));
       let playerCount = 0;
-
-      await stream.forEachTopLevelArrayItem(file, 'players', (player) => {
+      const addPlayer = player => {
+        if (!isCurrent(file, version)) return;
+        const groups = new Map();
+        for (const row of Array.isArray(player?.stats) ? player.stats : []) {
+          const tid = readOptionalNumber(row?.tid);
+          if (row?.playoffs || !(Number(row?.gp) > 0) || !playersByTeam.has(tid)) continue;
+          if (!groups.has(tid)) groups.set(tid, []);
+          groups.get(tid).push(row);
+        }
+        for (const [tid, rows] of groups) mergePlayerSummary(playersByTeam.get(tid), player, rows);
+      };
+      await stream.forEachTopLevelArrayItem(file, 'players', player => {
         if (!isCurrent(file, version)) return;
         playerCount += 1;
-        mergePlayerSummary(playersByKey, player, franchise.tid);
+        addPlayer(player);
       });
-
       if (!isCurrent(file, version)) return;
-
-      if (playerCount === 0) {
+      if (!playerCount) {
         for (const key of ['retiredPlayers', 'releasedPlayers', 'freeAgents']) {
-          await stream.forEachTopLevelArrayItem(file, key, (player) => {
-            if (!isCurrent(file, version)) return;
-            mergePlayerSummary(playersByKey, player, franchise.tid);
-          });
+          await stream.forEachTopLevelArrayItem(file, key, addPlayer);
           if (!isCurrent(file, version)) return;
         }
       }
-
-      leaders = buildLeaderLists(Array.from(playersByKey.values()));
+      franchises = teams;
+      leadersByTid = new Map(teams.map(team => [
+        team.tid, buildLeaderLists(Array.from(playersByTeam.get(team.tid).values()))
+      ]));
       loadedVersion = version;
-
+      populateSelector();
       cachedPayload = {
+        version: 2,
         signature: fileSignature(file),
-        franchise,
-        leaders,
+        franchises,
+        leadersByTid: Object.fromEntries(leadersByTid),
       };
       saveCache(cachedPayload);
       render();
     } catch (error) {
       if (!isCurrent(file, version)) return;
-      console.error('Could not build Cleveland team leaders.', error);
-      renderEmpty('Could not calculate Cleveland franchise leaders from this league file.');
+      resetResults();
+      console.error('Could not build franchise team leaders.', error);
+      renderEmpty('Could not calculate franchise leaders from this league file.');
     } finally {
       if (loadingVersion === version) loadingVersion = -1;
     }
   }
 
-  async function findClevelandFranchise(file, version) {
-    let best = null;
-
-    await stream.forEachTopLevelArrayItem(file, 'teams', (team) => {
+  async function findFranchises(file, version) {
+    const result = new Map();
+    await stream.forEachTopLevelArrayItem(file, 'teams', team => {
       if (!isCurrent(file, version)) return;
-
       const tid = readOptionalNumber(team?.tid);
-      if (tid === null) return;
-
+      if (!Number.isSafeInteger(tid) || tid < 0) return;
+      const seasons = (Array.isArray(team.seasons) ? team.seasons : [])
+        .filter(row => readOptionalNumber(row?.season) !== null)
+        .sort((a, b) => Number(b.season) - Number(a.season));
+      const latest = seasons[0] || {};
       const identity = getClevelandIdentity(team);
-      if (!identity) return;
-
-      const score = identity.score;
-      if (
-        !best
-        || score > best.score
-        || (score === best.score && identity.latestSeason > best.latestSeason)
-      ) {
-        best = {
-          tid,
-          score,
-          latestSeason: identity.latestSeason,
-          region: identity.region || 'Cleveland',
-          name: identity.name || String(team?.name || '').trim(),
-          abbrev: identity.abbrev || String(team?.abbrev || '').trim(),
-        };
-      }
+      result.set(tid, {
+        tid,
+        region: String(team.region || latest.region || '').trim(),
+        name: String(team.name || latest.name || '').trim(),
+        abbrev: String(team.abbrev || latest.abbrev || '').trim(),
+        latestSeason: readOptionalNumber(latest.season) ?? readOptionalNumber(team.season),
+        clevelandScore: identity?.score || 0,
+      });
     });
-
-    if (!best) return null;
-
-    return {
-      tid: best.tid,
-      region: best.region || 'Cleveland',
-      name: best.name || 'Franchise',
-      abbrev: best.abbrev || 'CLE',
-      latestSeason: Number.isFinite(best.latestSeason) ? best.latestSeason : null,
-    };
+    return Array.from(result.values()).sort((a, b) =>
+      teamLabel(a).localeCompare(teamLabel(b)) || a.tid - b.tid);
   }
 
   function getClevelandIdentity(team = {}) {
@@ -265,8 +310,8 @@
     };
   }
 
-  function mergePlayerSummary(target, player, tid) {
-    const summary = buildPlayerSummary(player, tid);
+  function mergePlayerSummary(target, player, rows) {
+    const summary = buildPlayerSummary(player, rows);
     if (!summary || summary.gp <= 0) return;
 
     const key = summary.pid !== null
@@ -279,14 +324,7 @@
     }
   }
 
-  function buildPlayerSummary(player = {}, tid) {
-    const rows = (Array.isArray(player.stats) ? player.stats : [])
-      .filter((row) => (
-        !row?.playoffs
-        && Number(row?.tid) === Number(tid)
-        && Number(row?.gp) > 0
-      ));
-
+  function buildPlayerSummary(player = {}, rows = []) {
     if (!rows.length) return null;
 
     const seasons = rows
@@ -372,7 +410,7 @@
 
     if (!leaders || !franchise) {
       updateSubtitle(null);
-      renderEmpty('Load a league file to calculate Cleveland franchise leaders.');
+      renderEmpty('Load a league file to calculate franchise leaders.');
       return;
     }
 
@@ -499,12 +537,11 @@
     if (!subtitle) return;
 
     if (!team) {
-      subtitle.textContent = 'Top 10 regular-season career totals for the Cleveland franchise.';
+      subtitle.textContent = 'Top 10 regular-season career totals for the selected franchise.';
       return;
     }
 
-    const name = [team.region, team.name].filter(Boolean).join(' ').trim();
-    subtitle.textContent = `Top 10 regular-season career totals for the ${name || 'Cleveland franchise'} (TID ${team.tid}).`;
+    subtitle.textContent = `Top 10 regular-season career totals for the ${teamLabel(team)} (TID ${team.tid}).`;
   }
 
   function getPlayerName(player = {}) {
@@ -611,27 +648,35 @@
     }
   }
 
-  function normalizeSavedFranchise(value) {
-    if (!value || typeof value !== 'object') return null;
-    const tid = readOptionalNumber(value.tid);
-    if (tid === null) return null;
-
-    return {
-      tid,
-      region: String(value.region || 'Cleveland'),
-      name: String(value.name || 'Franchise'),
-      abbrev: String(value.abbrev || 'CLE'),
-      latestSeason: readOptionalNumber(value.latestSeason),
-    };
+  function restoreAllFranchises(payload) {
+    // A Cleveland-only cache cannot populate a complete selector.
+    if (payload?.version !== 2 || !Array.isArray(payload.franchises) ||
+        !payload.leadersByTid || !payload.franchises.length) return false;
+    const teams = [], byTid = new Map();
+    for (const raw of payload.franchises) {
+      const tid = readOptionalNumber(raw?.tid);
+      if (!Number.isSafeInteger(tid) || tid < 0 || byTid.has(tid)) return false;
+      const lists = normalizeSavedLeaders(payload.leadersByTid[tid]);
+      if (!lists) return false;
+      teams.push({
+        tid, region: String(raw.region || ''), name: String(raw.name || ''),
+        abbrev: String(raw.abbrev || ''), latestSeason: readOptionalNumber(raw.latestSeason),
+        clevelandScore: Number(raw.clevelandScore) || 0,
+      });
+      byTid.set(tid, lists);
+    }
+    franchises = teams;
+    leadersByTid = byTid;
+    populateSelector();
+    return true;
   }
 
   function normalizeSavedLeaders(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
 
     const normalized = {};
-    let hasAny = false;
-
     for (const stat of STAT_DEFINITIONS) {
+      if (!Array.isArray(value[stat.key])) return null;
       normalized[stat.key] = Array.isArray(value[stat.key])
         ? value[stat.key].slice(0, LEADER_LIMIT).map((entry) => ({
             ...entry,
@@ -642,9 +687,8 @@
             value: Number(entry?.value) || 0,
           }))
         : [];
-      if (normalized[stat.key].length) hasAny = true;
     }
 
-    return hasAny ? normalized : null;
+    return normalized;
   }
 })();
