@@ -49,12 +49,13 @@
     const insert = isHeadliner(card);
     const face = make('span', 'dbl-cards-face dbl-cards-front dbl-underground-front' +
       (insert ? ' is-headliner' : ''));
-    const heading = make('span', 'dbl-underground-masthead');
-    // Headliners retain their big poster title. Base cards only carry
-    // the small 1968 issue stamp so the portrait can sit higher.
-    if (insert) heading.appendChild(make('strong', 'dbl-underground-title', 'HEADLINERS!'));
-    heading.appendChild(make('span', 'dbl-underground-date', 'DBL · 1968'));
-    face.appendChild(heading);
+    // Only Headliners carry the front masthead and issue stamp.
+    if (insert) {
+      const heading = make('span', 'dbl-underground-masthead');
+      heading.appendChild(make('strong', 'dbl-underground-title', 'HEADLINERS!'));
+      heading.appendChild(make('span', 'dbl-underground-date', 'DBL · 1968'));
+      face.appendChild(heading);
+    }
     face.appendChild(make('span', 'dbl-underground-radiant'));
     const portrait = make('span', 'dbl-underground-portrait');
     const original = art(card);

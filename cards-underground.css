@@ -51,7 +51,8 @@
   text-wrap:balance;
 }
 .is-headliner .dbl-underground-title {
-  color:#ffe2a1; font-size:clamp(14px,12cqw,42px);
+  color:#ffe2a1; font-size:clamp(14px,13.2cqw,46.2px);
+  white-space:nowrap;
   text-shadow:2px 2px 0 #35233e; transform:rotate(2deg);
 }
 .dbl-underground-date {

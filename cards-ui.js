@@ -1644,7 +1644,7 @@
     text.setAttribute('font-size', String(fontSize));
     text.setAttribute('font-weight', '400');
     text.setAttribute('stroke', 'currentColor');
-    text.setAttribute('stroke-width', '1.2');
+    text.setAttribute('stroke-width', '3.0');
     text.setAttribute('stroke-linejoin', 'round');
     text.setAttribute('paint-order', 'stroke fill');
     text.setAttribute('letter-spacing', String(((seed >>> 8) % 7 - 3) / 8));
@@ -1669,7 +1669,7 @@
         ' ' + end + ' ' + (y - 9));
       flourish.setAttribute('fill', 'none');
       flourish.setAttribute('stroke', 'currentColor');
-      flourish.setAttribute('stroke-width', String(2.5 + (seed % 5) * .25));
+      flourish.setAttribute('stroke-width', String(3.2 + (seed % 5) * .25));
       flourish.setAttribute('stroke-linecap', 'round');
       svg.appendChild(flourish);
     }
