@@ -306,3 +306,33 @@
   .story-gen-roll:active:not(:disabled) { transform: none; }
   .story-gen-result { scroll-behavior: auto; }
 }
+/* Expanded stories can be picked directly without rerolling the premise. */
+.story-gen-entry-actions {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:7px 10px;
+  padding:0 15px 14px 51px;
+}
+.story-gen-select {
+  min-height:38px;
+  padding:7px 12px;
+  border:1px solid #d6ad7d;
+  border-radius:5px;
+  background:#e4c295;
+  color:#352018;
+  font:700 .79rem/1.25 Arial,sans-serif;
+  cursor:pointer;
+}
+.story-gen-select:hover:not(:disabled) {filter:brightness(1.08);}
+.story-gen-select:focus-visible {
+  outline:3px solid #e5b55e;
+  outline-offset:3px;
+}
+.story-gen-select:disabled,.story-gen-recast:disabled {opacity:.5;cursor:not-allowed;}
+.story-gen-entry-hint {color:#d0af92;font:.72rem/1.35 Arial,sans-serif;}
+.story-gen-recast {min-height:38px;}
+@media(max-width:480px) {
+  .story-gen-entry-actions {padding-left:15px;}
+  .story-gen-select {width:100%;}
+}

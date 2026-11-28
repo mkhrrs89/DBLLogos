@@ -33,7 +33,7 @@
     <link rel="stylesheet" href="./cards-pack-guide.css?v=20261122-underground-simple-odds-v2" />
     <!-- Dormant 1970 Topps template only: no live Cards collection or pack UI. -->
     <link rel="stylesheet" href="./topps-1970.css?v=20261119-prelaunch-1970-v1" />
-    <link rel="stylesheet" href="./story-generator.css?v=20261111-1968-newsroom" />
+    <link rel="stylesheet" href="./story-generator.css?v=20261128-manual-story-cast-v2" />
     <link rel="stylesheet" href="./storylines.css?v=20261119-storylines-v1" />
     <link rel="stylesheet" href="./notes-timeline.css?v=20261118-notes-history-v1" />
     <link rel="stylesheet" href="./color-schemes.css?v=20260922-colored-headers" />
@@ -754,6 +754,7 @@
                 <section id="storiesTeams" aria-label="Clubs involved"></section>
               </div>
               <div class="story-gen-result-actions">
+                <button id="storiesRecastButton" class="story-gen-copy story-gen-recast" type="button" disabled>Randomize players / teams</button>
                 <button id="storiesCopyButton" class="story-gen-copy" type="button">Copy story</button>
               </div>
             </article>
@@ -761,7 +762,7 @@
               <h3 class="story-gen-library-title">Available Stories</h3>
               <span id="storiesAvailableCount" class="story-gen-library-count">29 available stories</span>
             </div>
-            <p class="story-gen-library-note">Browse all prompts below. Tap a headline to read the premise; the Roll button draws randomly from stories that can be cast using the loaded 1968 players and teams.</p>
+            <p class="story-gen-library-note">Browse all prompts below. Tap a headline to read the premise and pick that story with a randomized cast, or use Roll a Story to draw a random story and cast.</p>
             <div id="storiesAvailableList" class="story-gen-available-list" aria-label="1968 numbered story list"></div>
           </div>
         </section>
@@ -1626,7 +1627,7 @@
     <script src="./topps-1970.js?v=20261119-prelaunch-1970-v1"></script>
     <script src="./cards-background-test.js?v=20261117-white-uniform-guard"></script>
     <script src="./story-generator-engine.js?v=20261118-1968-16-new-stories"></script>
-    <script src="./story-generator-ui.js?v=20261118-hide-stories-disclaimers"></script>
+    <script src="./story-generator-ui.js?v=20261128-manual-story-cast-v2"></script>
     <script src="./storylines.js?v=20261119-storylines-v1"></script>
     <script src="./notes-timeline.js?v=20261118-notes-history-v1"></script>
     <script src="./logos-by-year.js?v=20261012-exact-season"></script>

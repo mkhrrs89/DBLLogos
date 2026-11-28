@@ -18,8 +18,9 @@
   const participants = document.getElementById('storiesParticipants');
   const teams = document.getElementById('storiesTeams');
   const resultCopy = document.getElementById('storiesCopyButton');
+  const recastButton = document.getElementById('storiesRecastButton');
   if ([yearTabs,availableList,availableCount,rollButton,status,result,
-    resultNumber,resultTitle,resultText,participants,teams,resultCopy]
+    resultNumber,resultTitle,resultText,participants,teams,resultCopy,recastButton]
     .some(x=>!x)) return;
 
   let year = 1968;
@@ -29,6 +30,7 @@
   let scanPromise = null;
   let scanNonce = 0;
   let lastStory = null;
+  const storyActions = new Map();
 
   const element = (tag, cls, content) => {
     const el = document.createElement(tag);
@@ -42,6 +44,7 @@
   }
   function clearResult() {
     lastStory = null;
+    recastButton.disabled = true;
     result.hidden = true;
     resultNumber.textContent = '';
     resultTitle.textContent = '';
@@ -76,6 +79,7 @@
     }
   }
   function renderCatalog() {
+    storyActions.clear();
     const catalog = engine.catalogs[year] || [];
     availableCount.textContent = catalog.length + ' available stories';
     const fragment = document.createDocumentFragment();
@@ -88,9 +92,29 @@
       summary.appendChild(element('span', 'story-gen-entry-category', story.category));
       row.appendChild(summary);
       row.appendChild(element('p', 'story-gen-entry-description', story.text));
+      const actions = element('div', 'story-gen-entry-actions');
+      const button = element('button', 'story-gen-select', 'Pick story & randomize cast');
+      button.type = 'button';
+      button.setAttribute('aria-label', 'Pick ' + story.title + ' and randomize players and teams');
+      button.addEventListener('click', () => { void rollStory(story); });
+      const hint = element('small', 'story-gen-entry-hint');
+      actions.append(button, hint);
+      row.appendChild(actions);
+      storyActions.set(story.id, {story,button,hint});
       fragment.appendChild(row);
     }
     availableList.replaceChildren(fragment);
+    updateStoryActions();
+  }
+  function updateStoryActions() {
+    for (const {story,button,hint} of storyActions.values()) {
+      const eligible = Boolean(roster && engine.available(story,roster));
+      button.disabled = !eligible;
+      hint.textContent = eligible ? '' : !file ? 'Upload a league file first.' :
+        !roster ? 'Waiting for eligible rosters…' : 'Not enough eligible players or teams.';
+      hint.hidden = eligible;
+    }
+    recastButton.disabled = !lastStory || !roster || !engine.available(lastStory.story,roster);
   }
   function selectYear(next) {
     if (!engine.catalogs[next] || next === year) return;
@@ -106,7 +130,8 @@
   function renderAssignment(assignment) {
     const story = assignment.story;
     lastStory = assignment;
-    resultNumber.textContent = '1968 · STORY NO. ' +
+    updateStoryActions();
+    resultNumber.textContent = year + ' · STORY NO. ' +
       String(story.id).padStart(2,'0') + ' · ' + story.category.toUpperCase();
     resultTitle.textContent = story.title;
     resultText.textContent = story.text;
@@ -171,6 +196,7 @@
   async function ensureRoster() {
     if (!file) {
       rollButton.disabled = true;
+      updateStoryActions();
       updateStatus('Upload a DBL league file above to cast 1968 players and teams.');
       return null;
     }
@@ -178,6 +204,7 @@
     if (scanPromise) return scanPromise;
     const nonce = ++scanNonce, version = leagueVersion, thisFile = file;
     rollButton.disabled = true;
+    updateStoryActions();
     updateStatus('Reading the uploaded league file for 1968 rosters…', true);
     const work = engine.buildRoster(thisFile,reader,year).then(data => {
       if (nonce !== scanNonce || version !== leagueVersion) return null;
@@ -185,12 +212,14 @@
       const feasible = (engine.catalogs[year] || []).filter(
         story => engine.available(story,data));
       rollButton.disabled = !feasible.length;
+      updateStoryActions();
       updateStatus(feasible.length ? statusFor(data) :
         'This file has no eligible ' + year + ' stories. Check the season and roster history.');
       return data;
     }).catch(error => {
       if (nonce !== scanNonce || version !== leagueVersion) return null;
       rollButton.disabled = true;
+      updateStoryActions();
       updateStatus('Could not read ' + year + ' participants: ' +
         (error?.message || 'Unknown file error'));
       return null;
@@ -200,19 +229,28 @@
     scanPromise = work;
     return work;
   }
-  async function rollStory() {
-    if (rollButton.disabled) return;
+  async function rollStory(chosen = null) {
+    if (!chosen && rollButton.disabled) return;
+    const version = leagueVersion, selectedYear = year;
     const data = roster || await ensureRoster();
-    if (!data) return;
-    const assignment = engine.roll(data,year);
+    if (!data || version !== leagueVersion || selectedYear !== year) return;
+    if (chosen && !(engine.catalogs[year] || []).includes(chosen)) return;
+    // Preserve the selected premise and all its casting rules. Only the
+    // participants/teams are drawn again, using the same engine as lottery rolls.
+    const assignment = chosen ? engine.cast(chosen,data) : engine.roll(data,year);
     if (!assignment) {
-      updateStatus('Not enough eligible 1968 players and teams to cast these stories.');
+      updateStatus(chosen ? 'Not enough eligible players and teams for this story.' :
+        'Not enough eligible 1968 players and teams to cast these stories.');
       return;
     }
+    updateStatus(statusFor(data));
     resultCopy.textContent = 'Copy story';
     renderAssignment(assignment);
   }
   rollButton.addEventListener('click', () => { void rollStory(); });
+  recastButton.addEventListener('click', () => {
+    if (!recastButton.disabled && lastStory) void rollStory(lastStory.story);
+  });
   hub.subscribe(snapshot => {
     leagueVersion = snapshot.version;
     file = snapshot.file;
@@ -221,6 +259,7 @@
     scanNonce++;
     clearResult();
     rollButton.disabled = true;
+    updateStoryActions();
     if (!file) updateStatus('Upload a league file above to assign story participants.');
     else {
       updateStatus('League file ready. Open Stories to load 1968 participants.');
