@@ -31,7 +31,9 @@
     // Source exports may store his given name with or without the in-name
     // nickname. All variants resolve to one actual player or none.
     { name: 'Fred “Floppy” Stewart', aliases: ['Fred Stewart', 'Floppy Stewart'],
-      nickname: 'Floppy', printName: 'Floppy Stewart' }
+      nickname: 'Floppy', printName: 'Floppy Stewart' },
+    { name: 'Roscoe “Razzle” Williams', aliases: ['Roscoe Williams', 'Razzle Williams'],
+      nickname: 'Razzle', printName: 'Roscoe Williams' }
   ]);
   const normalizedName = value => String(value || '').normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '').toLowerCase()
